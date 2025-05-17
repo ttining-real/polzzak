@@ -7,12 +7,12 @@ function SearchResult() {
   const { searchResults } = useSearchStore();
 
   return (
-    <main className="flex h-full w-full flex-1 flex-col gap-4 p-6">
+    <main className="flex h-full w-full flex-1 flex-col gap-4 overflow-hidden bg-white p-6">
       <div>
         <DropdownCustom />
       </div>
       {searchResults.length > 0 ? (
-        <section className="flex flex-col gap-4 overflow-y-scroll">
+        <section className="no-scrollbar flex flex-col gap-4 overflow-y-scroll">
           <ListItem data={searchResults} />
           <Button variant={'secondary'}>더보기</Button>
         </section>
