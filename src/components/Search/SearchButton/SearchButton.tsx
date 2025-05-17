@@ -1,24 +1,22 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { fetchSearchList } from '@/api/openAPI/utils/fetchSearchList';
 import Button from '@/components/Button/Button';
-import { useSearchStore } from '@/store/useSearchStore';
+import { useSearchActive, useSearchStore } from '@/store/useSearchStore';
 
-function SearchButton() {
+const SearchButton = memo(function SearchButton() {
   const navigate = useNavigate();
 
-  const keyword = useSearchStore((state) => state.keyword);
-  const region = useSearchStore((state) => state.region);
-  const theme = useSearchStore((state) => state.theme);
+  const isActive = useSearchActive();
   const setSearchResults = useSearchStore((state) => state.setSearchResults);
 
-  const isDisabled = !keyword && !region && theme.length === 0;
-
   const handleSearchButton = useCallback(async () => {
-    if (isDisabled) return;
+    if (!isActive) return;
 
     try {
+      const { keyword, region, theme } = useSearchStore.getState();
+
       const searchResults = await fetchSearchList({ keyword, region, theme });
       setSearchResults(searchResults);
 
@@ -32,13 +30,15 @@ function SearchButton() {
     } catch (error) {
       console.error('검색 결과를 가져오는 중 오류가 발생했습니다:', error);
     }
-  }, [keyword, region, theme, setSearchResults, navigate, isDisabled]);
+  }, [isActive, setSearchResults, navigate]);
+
+  console.log('SearchButton rendered');
 
   return (
-    <Button disabled={isDisabled} onClick={handleSearchButton}>
+    <Button disabled={!isActive} onClick={handleSearchButton}>
       검색
     </Button>
   );
-}
+});
 
 export default SearchButton;

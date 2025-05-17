@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 
 import { ListItemProps } from '@/components/ListItem/ListItem';
 
@@ -12,7 +14,7 @@ interface SearchState {
 interface SearchActions {
   setKeyWord: (keyword: string) => void;
   setRegion: (region: string) => void;
-  setTheme: (theme: string[] | ((prev: string[]) => string[])) => void;
+  setTheme: (updater: (prev: string[]) => string[]) => void;
   setSearchResults: (data: ListItemProps[]) => void;
   setDetailData: (detailData: ListItemProps[]) => void;
 }
@@ -26,23 +28,34 @@ const initialState: SearchState = {
 };
 
 export const useSearchStore = create<SearchState & SearchActions>()(
-  (set, get) => ({
-    ...initialState,
+  subscribeWithSelector(
+    devtools(
+      (set, get) => ({
+        ...initialState,
 
-    setKeyWord: (keyword) => set({ keyword }),
-    setRegion: (region) => set({ region }),
-    setTheme: (theme) => {
-      const currentTheme = get().theme;
-      if (typeof theme === 'function') {
-        set({ theme: theme(currentTheme) });
-      } else {
-        set({ theme });
-      }
-    },
-    setSearchResults: (data) => set({ searchResults: data }),
-    setDetailData: (detailData) =>
-      set({
-        detailData: detailData,
+        setKeyWord: (keyword) => {
+          if (get().keyword === keyword) return;
+          set({ keyword }, false, 'setKeyWord');
+        },
+        setRegion: (region) => {
+          if (get().region === region) return;
+          set({ region }, false, 'setRegion');
+        },
+        setTheme: (updater) => {
+          const newTheme = updater(get().theme);
+          if (shallow(get().theme, newTheme)) return;
+          set({ theme: newTheme }, false, 'setTheme');
+        },
+        setSearchResults: (searchResults) =>
+          set({ searchResults }, false, 'setSearchResults'),
+        setDetailData: (detailData) => set({ detailData: detailData }),
       }),
-  }),
+      { name: 'search-store' },
+    ),
+  ),
 );
+
+export const useSearchActive = () =>
+  useSearchStore((state) => {
+    return Boolean(state.keyword || state.region || state.theme.length > 0);
+  });

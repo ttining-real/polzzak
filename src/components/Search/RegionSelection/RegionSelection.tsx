@@ -1,10 +1,11 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 
 import Chip from '@/components/Chip/Chip';
 import { ClickedChipItem } from '@/components/Chip/Chip';
 import { useSearchStore } from '@/store/useSearchStore';
 
-function RegionSelection() {
+const RegionSelection = memo(function RegionSelection() {
+  const region = useSearchStore((state) => state.region);
   const setRegion = useSearchStore((state) => state.setRegion);
 
   const handleRegion = useCallback(
@@ -24,8 +25,9 @@ function RegionSelection() {
       label="지역 선택"
       subLabel="단일 선택"
       onClick={handleRegion}
+      selectedValues={region ? [region] : []}
     />
   );
-}
+});
 
 export default RegionSelection;
