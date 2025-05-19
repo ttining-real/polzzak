@@ -12,7 +12,7 @@ export default function ModalContent({ data, contentId }: ModalContentProps) {
   return (
     <>
       {data && (
-        <ul className="flex flex-col">
+        <ul className="flex flex-col gap-4">
           {data?.map(
             (item) =>
               item.contentid &&
