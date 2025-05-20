@@ -1,3 +1,5 @@
+import { FILTER_LIST } from '@/lib/filterMap';
+
 export interface aroundDataTypes {
   addr1: string;
   addr2: string;
@@ -21,3 +23,5 @@ export interface aroundDataTypes {
   tel: string;
   title: string;
 }
+
+export type FilterType = (typeof FILTER_LIST)[number]['type'];
