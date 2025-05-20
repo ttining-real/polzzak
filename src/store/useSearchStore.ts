@@ -6,6 +6,7 @@ import { ListItemProps } from '@/components/ListItem/ListItem';
 
 interface SearchState {
   keyword: string;
+  date: { startDate: Date | null; endDate: Date | null } | null;
   region: string;
   theme: string[];
   searchResults: ListItemProps[];
@@ -13,6 +14,7 @@ interface SearchState {
 }
 interface SearchActions {
   setKeyWord: (keyword: string) => void;
+  setDate: (date: { startDate: Date | null; endDate: Date | null }) => void;
   setRegion: (region: string) => void;
   setTheme: (updater: (prev: string[]) => string[]) => void;
   setSearchResults: (data: ListItemProps[]) => void;
@@ -22,6 +24,7 @@ interface SearchActions {
 
 const initialState: SearchState = {
   keyword: '',
+  date: { startDate: null, endDate: null },
   region: '',
   theme: [],
   searchResults: [],
@@ -38,6 +41,23 @@ export const useSearchStore = create<SearchState & SearchActions>()(
           const trimKeyword = typeof keyword === 'string' ? keyword.trim() : '';
           if (get().keyword === trimKeyword) return;
           set({ keyword: trimKeyword }, false, 'setKeyWord');
+        },
+        setDate: (newDate) => {
+          const currentDate = get().date;
+
+          const isSameStart =
+            currentDate?.startDate &&
+            newDate.startDate &&
+            currentDate.startDate.getTime() === newDate.startDate.getTime();
+
+          const isSameEnd =
+            currentDate?.endDate &&
+            newDate.endDate &&
+            currentDate.endDate.getTime() === newDate.endDate.getTime();
+
+          if (isSameStart && isSameEnd) return;
+
+          set({ date: newDate }, false, 'setDate');
         },
         setRegion: (region) => {
           const trimmedRegion = typeof region === 'string' ? region.trim() : '';
@@ -56,6 +76,7 @@ export const useSearchStore = create<SearchState & SearchActions>()(
           set(
             {
               keyword: '',
+              date: null,
               region: '',
               theme: [],
             },
