@@ -72,7 +72,7 @@ export const useSearchStore = create<SearchState & SearchActions>()(
         setSearchResults: (searchResults) =>
           set({ searchResults }, false, 'setSearchResults'),
         setDetailData: (detailData) => set({ detailData: detailData }),
-        resetSearchState: () => {
+        resetSearch: () => {
           set(
             {
               keyword: '',

@@ -13,13 +13,16 @@ const SearchButton = memo(function SearchButton() {
   const region = useSearchStore((state) => state.region);
   const theme = useSearchStore((state) => state.theme);
   const setSearchResults = useSearchStore((state) => state.setSearchResults);
-  const resetSearch = useSearchStore((state) => state.resetSearch);
 
   const handleSearchButton = useCallback(async () => {
     if (!isActive) return;
 
     try {
-      const searchResults = await fetchSearchList({ keyword, region, theme });
+      const searchResults = await fetchSearchList({
+        keyword,
+        region,
+        theme,
+      });
       setSearchResults(searchResults);
 
       const params = new URLSearchParams();
@@ -29,19 +32,10 @@ const SearchButton = memo(function SearchButton() {
         params.set('theme', theme.join(','));
       }
       navigate(`/search/result?${params.toString()}`);
-      resetSearch();
     } catch (error) {
       console.error('검색 결과를 가져오는 중 오류가 발생했습니다:', error);
     }
-  }, [
-    isActive,
-    keyword,
-    region,
-    theme,
-    setSearchResults,
-    navigate,
-    resetSearch,
-  ]);
+  }, [isActive, keyword, region, theme, setSearchResults, navigate]);
 
   return (
     <Button disabled={!isActive} onClick={handleSearchButton}>

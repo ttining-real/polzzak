@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 
 import Modal from '@/components/Modal/Modal';
 import DateSelector from '@/components/Search/DateSelector/DateSelector';
@@ -6,8 +6,15 @@ import KeywordInput from '@/components/Search/KeywordInput/KeywordInput';
 import RegionSelection from '@/components/Search/RegionSelection/RegionSelection';
 import SearchButton from '@/components/Search/SearchButton/SearchButton';
 import ThemeSelection from '@/components/Search/ThemeSelection/ThemeSelection';
+import { useSearchStore } from '@/store/useSearchStore';
 
 const Search = memo(function Search() {
+  const resetSearch = useSearchStore((state) => state.resetSearch);
+
+  useEffect(() => {
+    resetSearch();
+  }, [resetSearch]);
+
   return (
     <main className="flex h-full w-full flex-1 flex-col overflow-auto p-6">
       <h1 className="sr-only">검색</h1>
