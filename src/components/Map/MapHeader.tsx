@@ -15,7 +15,7 @@ interface MapHeaderProps {
   myLocation: LatLng | null;
   isLoggedIn: boolean;
   selectedFilter: FilterType | null;
-  onFilterChange: (type: FilterType) => void;
+  onFilterChange: (type: FilterType | null) => void;
 }
 
 function MapHeader({
@@ -48,9 +48,9 @@ function MapHeader({
       const current = new URLSearchParams(searchParams);
 
       if (searchValue) {
-        current.set('keyword', searchValue);
+        current.set('search', searchValue);
       } else {
-        current.delete('keyword');
+        current.delete('search');
         closeModal();
       }
       navigate({
@@ -94,7 +94,13 @@ function MapHeader({
                 variant="secondary"
                 size="md"
                 className={`hover:border-primary/80 hover:text-primary h-[40px] gap-[4px] rounded-full border-2 border-white bg-white px-3 hover:bg-white ${isActive ? 'bg-primary border-primary hover:bg-primary hover:border-primary text-white hover:text-white hover:brightness-110' : ''}`}
-                onClick={() => onFilterChange(type)}
+                onClick={() => {
+                  if (selectedFilter === type) {
+                    onFilterChange(null);
+                  } else {
+                    onFilterChange(type);
+                  }
+                }}
               >
                 <img src={`/icons/${filterName}.png`} width={18} height={18} />
                 {renderText}
