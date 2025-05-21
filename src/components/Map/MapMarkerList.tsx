@@ -1,15 +1,9 @@
 import { MapMarker } from 'react-kakao-maps-sdk';
 
-interface MarkerData {
-  contentid: string;
-  contenttypeid: string;
-  mapx: string;
-  mapy: string;
-  title: string;
-}
+import { MakerDataTypes } from '@/types/mapDataType';
 
 interface Props {
-  data: MarkerData[];
+  data: MakerDataTypes[];
 }
 
 const getMarkerSrc = (contentTypeId: string) => {
@@ -46,7 +40,7 @@ export default function MapMarkerList({ data }: Props) {
           key={marker.contentid}
           position={{ lat: Number(marker.mapy), lng: Number(marker.mapx) }}
           image={{
-            src: getMarkerSrc(marker.contenttypeid),
+            src: getMarkerSrc(marker.contenttypeid ?? ''),
             size: { width: 28, height: 28 },
             options: { offset: { x: 14, y: 14 } },
           }}

@@ -1,5 +1,29 @@
 import { FILTER_LIST } from '@/lib/filterMap';
 
+export interface MakerDataTypes {
+  contentid: string;
+  contenttypeid?: string;
+  title: string;
+  mapx: number;
+  mapy: number;
+  addr1?: string;
+  addr2?: string;
+  cat1?: string;
+  cat2?: string;
+  cat3?: string;
+  areacode?: string;
+  booktour?: string;
+  createdtime?: string;
+  dist?: string;
+  firstimage?: string;
+  firstimage2?: string;
+  cpyrhtDivCd?: string;
+  mlevel?: string;
+  modifiedtime?: string;
+  sigungucode?: string;
+  tel?: string;
+}
+
 export interface aroundDataTypes {
   addr1: string;
   addr2: string;

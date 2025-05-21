@@ -1,14 +1,12 @@
 import ListItemCardById from '@/components/ListItem/ListItemCardById';
-import { DetailCommonDataType } from '@/types/detailCommonDataType';
+import { MakerDataTypes } from '@/types/mapDataType';
 
 interface ModalContentProps {
-  data?: DetailCommonDataType[];
+  data?: MakerDataTypes[];
   contentId?: string;
 }
 
 export default function ModalContent({ data, contentId }: ModalContentProps) {
-  // console.log(data);
-
   return (
     <>
       {data && (
