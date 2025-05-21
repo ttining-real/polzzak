@@ -7,6 +7,8 @@ import {
 import { Outlet, useSearchParams } from 'react-router-dom';
 
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
+import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
+import Button from '@/components/Button/Button';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
 import Loader from '@/components/Loader/Loader';
 import MapHeader from '@/components/Map/MapHeader';
@@ -18,7 +20,7 @@ import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 import { LatLng } from '@/types/LatLng';
-import { aroundDataTypes, FilterType } from '@/types/mapDataType';
+import { FilterType, MakerDataTypes } from '@/types/mapDataType';
 
 import NotFound from '../NotFound';
 
@@ -45,7 +47,7 @@ function Map() {
   const mapRef = useRef<kakao.maps.Map | null>(null);
 
   // 마커 데이터 저장
-  const [markerData, setMarkerData] = useState<aroundDataTypes[]>([]);
+  const [markerData, setMarkerData] = useState<MakerDataTypes[]>([]);
 
   // 필터링 상태 추가
   const [selectedFilter, setSelectedFilter] = useState<FilterType | null>(null);
@@ -55,6 +57,9 @@ function Map() {
 
   // 다이얼로그 상태
   const { isOpen, openModal } = useDialogStore();
+
+  // 재검색 버튼 상태
+  const [showReSearchButton, setShowReSearchButton] = useState(false);
 
   // 쿼리 → selectedFilter 세팅
   useEffect(() => {
@@ -112,7 +117,6 @@ function Map() {
             ? [rawItem]
             : [];
 
-        console.log(itemArray); // 🔍 변환된 마커 데이터
         setMarkerData(itemArray);
       })
       .catch((err) => {
@@ -120,12 +124,68 @@ function Map() {
       });
   }, [myLocation, selectedFilter]); // ✅ 의존성 배열 추가로 무한 루프 방지
 
+  // 🗺️ 지도 이동 감지
+  const handleCenterChanged = () => {
+    const map = mapRef.current;
+    if (!map || !mapCenter) return;
+
+    const center = map.getCenter();
+    const newCenter = { lat: center.getLat(), lng: center.getLng() };
+
+    const moved =
+      Math.abs(mapCenter.lat - newCenter.lat) > 0.005 ||
+      Math.abs(mapCenter.lng - newCenter.lng) > 0.005;
+
+    // 🔘 필터링된 상태에서만 버튼 보여주기
+    setShowReSearchButton(!!selectedFilter && moved);
+  };
+
+  // 📍 현재 위치에서 재검색 클릭
+  const handleReSearchClick = () => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const center = map.getCenter();
+    const newCenter = { lat: center.getLat(), lng: center.getLng() };
+
+    setMapCenter(newCenter);
+    setShowReSearchButton(false);
+  };
+
+  useEffect(() => {
+    const search = searchParams.get('search');
+
+    if (!search) return;
+
+    fetchMapSearchList(search).then((result) => {
+      setMarkerData(result);
+    });
+  }, [searchParams]);
+
   // 필터링 상태 && 마커 데이터가 존재할 때 다이얼로그 열기
   useEffect(() => {
     if (selectedFilter && markerData.length > 0) {
       openModal();
     }
   }, [selectedFilter, markerData]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedFilter(null);
+
+      const params = new URLSearchParams(searchParams);
+      params.delete('category');
+      setSearchParams(params, { replace: true });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (selectedFilter === null) {
+      const params = new URLSearchParams(searchParams);
+      params.delete('category');
+      setSearchParams(params, { replace: true });
+    }
+  }, [selectedFilter]);
 
   // ⌛ 카카오 맵 SDK 로딩 중인 상태
   if (mapLoading) return <Loader text="🗺️ 지도를 불러오고 있어요!" />;
@@ -149,6 +209,7 @@ function Map() {
       <MapArea
         ref={mapRef}
         center={mapCenter}
+        onCenterChanged={handleCenterChanged}
         style={{ width: '100%', height: '100%' }}
         className="relative"
         level={3}
@@ -162,6 +223,14 @@ function Map() {
           }}
         />
         <MapMarkerList data={markerData} />
+        {showReSearchButton && (
+          <Button
+            className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
+            onClick={handleReSearchClick}
+          >
+            현재 위치에서 재검색
+          </Button>
+        )}
         <Outlet />
         {isOpen && selectedFilter && markerData.length > 0 && (
           <SlideUpDialog
