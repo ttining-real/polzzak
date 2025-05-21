@@ -5,11 +5,12 @@ import { useSearchStore } from '@/store/useSearchStore';
 
 function SearchResult() {
   const { searchResults } = useSearchStore();
+  const region = useSearchStore((state) => state.region);
 
   return (
     <main className="flex h-full w-full flex-1 flex-col gap-4 overflow-hidden bg-white p-6">
       <div>
-        <DropdownCustom />
+        <DropdownCustom selectedRegion={region} />
       </div>
       {searchResults.length > 0 ? (
         <section className="no-scrollbar flex flex-col gap-4 overflow-y-scroll">

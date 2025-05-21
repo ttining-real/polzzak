@@ -12,9 +12,13 @@ import {
 
 type DropdownProps = {
   options: string[];
+  defaultValue?: string;
 };
 
-function Dropdown({ options }: DropdownProps) {
+function Dropdown({ options, defaultValue }: DropdownProps) {
+  const initialValue = options.includes(defaultValue ?? '')
+    ? defaultValue!
+    : options[0];
   const [dropdownMenu, setDropdownMenu] = useState<string>(options[0]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -53,7 +57,7 @@ function Dropdown({ options }: DropdownProps) {
           onClick={handleClick}
           className="border-gray03 m-0 h-9 rounded-full px-3 text-black"
         >
-          {dropdownMenu}
+          {initialValue}
           <Icon id={isOpen ? 'arrow_top' : 'arrow_bottom'} />
         </Button>
       </DropdownMenuTrigger>
