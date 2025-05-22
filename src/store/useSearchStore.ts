@@ -79,6 +79,8 @@ export const useSearchStore = create<SearchState & SearchActions>()(
               date: null,
               region: '',
               theme: [],
+              searchResults: [],
+              detailData: [],
             },
             false,
             'resetSearchState',
@@ -93,8 +95,9 @@ export const useSearchStore = create<SearchState & SearchActions>()(
 export const useSearchActive = () =>
   useSearchStore((state) => {
     const hasKeyword = state.keyword.trim() !== '';
+    const hasDate = state.date?.startDate || state.date?.endDate;
     const hasRegion = state.region.trim() !== '';
     const hasThemes = Array.isArray(state.theme) && state.theme.length > 0;
 
-    return hasKeyword || hasRegion || hasThemes;
+    return hasKeyword || hasDate || hasRegion || hasThemes;
   });
