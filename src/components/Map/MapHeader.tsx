@@ -1,4 +1,4 @@
-import { MutableRefObject, useState } from 'react';
+import { MutableRefObject } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Button from '@/components/Button/Button';
@@ -7,6 +7,7 @@ import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
 import { FILTER_LIST } from '@/lib/filterMap';
 import { useDialogStore } from '@/store/useDialogStore';
+import { useMapSearchStore } from '@/store/useMapSearchStore';
 import { LatLng } from '@/types/LatLng';
 import { FilterType } from '@/types/mapDataType';
 
@@ -27,8 +28,8 @@ function MapHeader({
 }: MapHeaderProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { closeModal } = useDialogStore();
-  const [searchValue, setSearchValue] = useState('');
+  const { openModal, closeModal } = useDialogStore();
+  const { searchValue, setSearchValue } = useMapSearchStore();
 
   const handleLocationClick = () => {
     if (!mapRef.current || !myLocation) return;
@@ -42,17 +43,20 @@ function MapHeader({
     setSearchValue(e.target.value);
   };
 
-  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+
       const current = new URLSearchParams(searchParams);
 
       if (searchValue) {
         current.set('search', searchValue);
+        openModal();
       } else {
         current.delete('search');
         closeModal();
       }
+
       navigate({
         pathname: '/map',
         search: current.toString(),
