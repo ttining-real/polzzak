@@ -19,6 +19,7 @@ import { filterNameToType, typeToFilterName } from '@/lib/filterMap';
 import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
+import { useMapSearchStore } from '@/store/useMapSearchStore';
 import { LatLng } from '@/types/LatLng';
 import { FilterType, MakerDataTypes } from '@/types/mapDataType';
 
@@ -60,6 +61,8 @@ function Map() {
 
   // 재검색 버튼 상태
   const [showReSearchButton, setShowReSearchButton] = useState(false);
+
+  const { resetSearchValue } = useMapSearchStore();
 
   // 쿼리 → selectedFilter 세팅
   useEffect(() => {
@@ -136,8 +139,12 @@ function Map() {
       Math.abs(mapCenter.lat - newCenter.lat) > 0.005 ||
       Math.abs(mapCenter.lng - newCenter.lng) > 0.005;
 
-    // 🔘 필터링된 상태에서만 버튼 보여주기
+    // 필터링된 상태에서만 버튼 보여주기
     setShowReSearchButton(!!selectedFilter && moved);
+
+    // url에 search가 있을 경우 버튼 보여주기
+    const search = searchParams.get('search');
+    setShowReSearchButton(!!search && moved);
   };
 
   // 📍 현재 위치에서 재검색 클릭
@@ -152,33 +159,40 @@ function Map() {
     setShowReSearchButton(false);
   };
 
+  // 🔍 검색 쿼리에 반응하여 검색 API 호출
   useEffect(() => {
-    const search = searchParams.get('search');
+    const word = searchParams.get('search');
 
-    if (!search) return;
+    if (!word) return;
 
-    fetchMapSearchList(search).then((result) => {
+    fetchMapSearchList(word).then((result) => {
       setMarkerData(result);
     });
-  }, [searchParams]);
+  }, [searchParams, openModal]);
 
   // 필터링 상태 && 마커 데이터가 존재할 때 다이얼로그 열기
   useEffect(() => {
     if (selectedFilter && markerData.length > 0) {
       openModal();
     }
-  }, [selectedFilter, markerData]);
+  }, [selectedFilter, markerData, openModal]);
 
+  // 다이얼로그 닫히면 필터 초기화
   useEffect(() => {
     if (!isOpen) {
       setSelectedFilter(null);
 
       const params = new URLSearchParams(searchParams);
       params.delete('category');
+      params.delete('search');
       setSearchParams(params, { replace: true });
+
+      setShowReSearchButton(false);
+      resetSearchValue();
     }
   }, [isOpen]);
 
+  // 필터 해제 시 쿼리 제거
   useEffect(() => {
     if (selectedFilter === null) {
       const params = new URLSearchParams(searchParams);
@@ -187,63 +201,85 @@ function Map() {
     }
   }, [selectedFilter]);
 
-  // ⌛ 카카오 맵 SDK 로딩 중인 상태
-  if (mapLoading) return <Loader text="🗺️ 지도를 불러오고 있어요!" />;
+  const getFallbackContent = () => {
+    // ⌛ 카카오 맵 SDK 로딩 중인 상태
+    if (mapLoading) {
+      return <Loader text="🗺️ 지도를 불러오고 있어요!" />;
+    }
+    // ⌛ SDK 로딩 실패
+    if (mapError) {
+      return <NotFound text="😭 지도를 불러오는 데 실패했어요." />;
+    }
+    // ⌛ 위치 정보가 아직 준비되지 않음
+    if (!myLocation || !mapCenter) {
+      return <Loader text="🗺️ 지도를 불러오고 있어요!" />;
+    }
+  };
 
-  // ⌛ SDK 로딩 실패
-  if (mapError) return <NotFound text="😭 지도를 불러오는 데 실패했어요." />;
+  const fallbackContent = getFallbackContent();
 
-  // ⌛ 위치 정보가 아직 준비되지 않음
-  if (!myLocation || !mapCenter)
-    return <Loader text="🚩 내 위치를 불러오고 있어요!" />;
+  const searchWord = searchParams.get('search');
+
+  console.log('📌 markerData : ', markerData);
+  console.log('📌 isOpen : ', isOpen);
 
   return (
-    <>
-      <MapHeader
-        mapRef={mapRef}
-        myLocation={myLocation}
-        isLoggedIn={isAuthenticated}
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-      />
-      <MapArea
-        ref={mapRef}
-        center={mapCenter}
-        onCenterChanged={handleCenterChanged}
-        style={{ width: '100%', height: '100%' }}
-        className="relative"
-        level={3}
-      >
-        <MapMarker
-          position={myLocation}
-          image={{
-            src: '/marker/my_location.svg',
-            size: { width: 32, height: 32 },
-            options: { offset: { x: 16, y: 16 } },
-          }}
-        />
-        <MapMarkerList data={markerData} />
-        {showReSearchButton && (
-          <Button
-            className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
-            onClick={handleReSearchClick}
+    <main className="h-full w-full">
+      {fallbackContent ? (
+        fallbackContent
+      ) : (
+        <>
+          <MapHeader
+            mapRef={mapRef}
+            myLocation={myLocation}
+            isLoggedIn={isAuthenticated}
+            selectedFilter={selectedFilter}
+            onFilterChange={setSelectedFilter}
+          />
+          <MapArea
+            ref={mapRef}
+            center={mapCenter!}
+            onCenterChanged={handleCenterChanged}
+            style={{ width: '100%', height: '100%' }}
+            className="relative"
+            level={3}
           >
-            현재 위치에서 재검색
-          </Button>
-        )}
-        <Outlet />
-        {isOpen && selectedFilter && markerData.length > 0 && (
-          <SlideUpDialog
-            header={formatMapDialogHeader(selectedFilter) ?? '내 주변'}
-            dimd={false}
-            dragIcon={true}
-            className="shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
-          >
-            <ModalContent data={markerData} />
-          </SlideUpDialog>
-        )}
-      </MapArea>
-    </>
+            <MapMarker
+              position={myLocation!}
+              image={{
+                src: '/marker/my_location.svg',
+                size: { width: 32, height: 32 },
+                options: { offset: { x: 16, y: 16 } },
+              }}
+            />
+            <MapMarkerList data={markerData} />
+            {showReSearchButton && (
+              <Button
+                className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
+                onClick={handleReSearchClick}
+              >
+                현재 위치에서 재검색
+              </Button>
+            )}
+            <Outlet />
+            {isOpen && markerData.length > 0 && (
+              <SlideUpDialog
+                header={
+                  (searchWord && `${searchWord} 검색 결과`) ||
+                  (selectedFilter && formatMapDialogHeader(selectedFilter)) ||
+                  '내 주변'
+                }
+                dimd={false}
+                dragIcon={true}
+                className="shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
+              >
+                <ModalContent data={markerData} />
+              </SlideUpDialog>
+            )}
+          </MapArea>
+        </>
+      )}
+    </main>
   );
 }
 
