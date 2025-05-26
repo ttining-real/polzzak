@@ -11,15 +11,13 @@ import {
 } from '@/components/SortDropdown/DropdownMenu';
 
 type DropdownProps = {
-  options: string[];
+  options: { name: string; onClick: () => void }[];
   defaultValue?: string;
 };
 
 function Dropdown({ options, defaultValue }: DropdownProps) {
-  const initialValue = options.includes(defaultValue ?? '')
-    ? defaultValue!
-    : options[0];
-  const [dropdownMenu, setDropdownMenu] = useState<string>(options[0]);
+  const initialValue = defaultValue ?? options[0].name;
+  const [dropdownMenu, setDropdownMenu] = useState<string>(initialValue);
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const pointerDownRef = useRef<number | null>(null);
@@ -57,7 +55,7 @@ function Dropdown({ options, defaultValue }: DropdownProps) {
           onClick={handleClick}
           className="border-gray03 m-0 h-9 rounded-full px-3 text-black"
         >
-          {initialValue}
+          {dropdownMenu}
           <Icon id={isOpen ? 'arrow_top' : 'arrow_bottom'} />
         </Button>
       </DropdownMenuTrigger>
@@ -67,11 +65,12 @@ function Dropdown({ options, defaultValue }: DropdownProps) {
             <DropdownMenuItem
               key={index}
               onSelect={() => {
-                setDropdownMenu(menu);
+                menu.onClick();
+                setDropdownMenu(menu.name);
                 setIsOpen(false);
               }}
             >
-              <span>{menu}</span>
+              <span>{menu.name}</span>
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>

@@ -32,7 +32,7 @@ function DropdownCustom({ selectedRegion }: DropdownCustomProps) {
   ) => {
     if (!isDown || !scrollRef.current) return;
     const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
-    const walk = (pageX - startX) * 1.5; // 드래그 속도 조절
+    const walk = (pageX - startX) * 1.5;
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -52,7 +52,11 @@ function DropdownCustom({ selectedRegion }: DropdownCustomProps) {
         <Dropdown
           key={data.label}
           options={data.list}
-          defaultValue={data.label === '지역' ? selectedRegion : undefined}
+          defaultValue={
+            data.label === '지역' && selectedRegion
+              ? selectedRegion
+              : data.list[0].name
+          }
         />
       ))}
     </div>

@@ -7,6 +7,7 @@ import { ListItemProps } from '@/components/ListItem/ListItem';
 interface SearchState {
   keyword: string;
   date: { startDate: Date | null; endDate: Date | null } | null;
+  month: string;
   region: string;
   theme: string[];
   searchResults: ListItemProps[];
@@ -15,16 +16,22 @@ interface SearchState {
 interface SearchActions {
   setKeyWord: (keyword: string) => void;
   setDate: (date: { startDate: Date | null; endDate: Date | null }) => void;
+  setMonth: (month: string) => void;
   setRegion: (region: string) => void;
   setTheme: (updater: (prev: string[]) => string[]) => void;
   setSearchResults: (data: ListItemProps[]) => void;
+  setFilteredResults: (results: ListItemProps[]) => void;
   setDetailData: (detailData: ListItemProps[]) => void;
   resetSearch: () => void;
+  sortSearchResults: (
+    type: 'latest' | 'favorite' | 'review' | 'oldest',
+  ) => void;
 }
 
 const initialState: SearchState = {
   keyword: '',
   date: { startDate: null, endDate: null },
+  month: '',
   region: '',
   theme: [],
   searchResults: [],
@@ -59,6 +66,10 @@ export const useSearchStore = create<SearchState & SearchActions>()(
 
           set({ date: newDate }, false, 'setDate');
         },
+        setMonth: (month) => {
+          if (get().month === month) return;
+          set({ month }, false, 'setMonth');
+        },
         setRegion: (region) => {
           const trimmedRegion = typeof region === 'string' ? region.trim() : '';
           if (get().region === trimmedRegion) return;
@@ -77,6 +88,7 @@ export const useSearchStore = create<SearchState & SearchActions>()(
             {
               keyword: '',
               date: null,
+              month: '',
               region: '',
               theme: [],
               searchResults: [],
@@ -85,6 +97,33 @@ export const useSearchStore = create<SearchState & SearchActions>()(
             false,
             'resetSearchState',
           );
+        },
+        sortSearchResults: (type) => {
+          const results = [...get().searchResults];
+          let sorted;
+
+          switch (type) {
+            case 'latest':
+              sorted = results.sort((a, b) =>
+                b.eventstartdate.localeCompare(a.eventstartdate),
+              );
+              break;
+            case 'oldest':
+              sorted = results.sort((a, b) =>
+                a.eventstartdate.localeCompare(b.eventstartdate),
+              );
+              break;
+            case 'favorite':
+              sorted = results.sort((a, b) => b.likes - a.likes);
+              break;
+            case 'review':
+              sorted = results.sort((a, b) => b.reviews - a.reviews);
+              break;
+            default:
+              sorted = results;
+          }
+
+          set({ searchResults: sorted });
         },
       }),
       { name: 'search-store' },
