@@ -1,10 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
 
 import {
-  fetchDetailCommons,
   fetchGetFestival,
-  fetchRandomContent,
   fetchRecommendTour,
 } from '@/api/openAPI/utils/fetchHomeTheme';
 import supabase from '@/api/supabase';
@@ -14,7 +11,6 @@ import CarouselThemes, {
 } from '@/components/Home/CarouselThemes';
 import CarouselVisual from '@/components/Home/CarouselVisual';
 
-const LIMIT = 7;
 const getMonth = () => new Date().getMonth() + 1;
 
 const getThemeTitle = () => {
@@ -59,16 +55,11 @@ const getThemeTitle = () => {
   }
 };
 
-const fetchRestaurantIds = async (): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('ex_contents')
-    .select('contentid')
-    .eq('contenttypeid', '39')
-    .order('likes', { ascending: false })
-    .limit(LIMIT);
+const fetchRestaurant = async (): Promise<string[]> => {
+  const { data, error } = await supabase.from('home-recommend').select('*');
 
   if (error) throw error;
-  return data?.map((item) => item.contentid) ?? [];
+  return data;
 };
 
 function Home() {
@@ -79,6 +70,9 @@ function Home() {
       queryKey: ['recommendThemes-home', themeTitle.keyword],
       queryFn: () => fetchRecommendTour(themeTitle.keyword),
       staleTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     });
 
   const { data: festivalOfTheMonth = [], isLoading: isLoadingFestival } =
@@ -86,31 +80,20 @@ function Home() {
       queryKey: ['festival-home'],
       queryFn: () => fetchGetFestival(),
       staleTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     });
 
-  const { data: restaurantIds = [], isLoading: isLoadingIds } = useQuery({
-    queryKey: ['restaurant-ids'],
-    queryFn: fetchRestaurantIds,
-    staleTime: 1000 * 60 * 60,
-  });
-
-  const { data: restaurantDetails = [], isLoading: isLoadingFetchRestaurant } =
+  const { data: recommendRestaurants = [], isLoading: isLoadingRestaurants } =
     useQuery({
-      queryKey: ['restaurant-detail', restaurantIds],
-      queryFn: () => fetchDetailCommons(restaurantIds),
-      enabled: restaurantIds.length > 0,
+      queryKey: ['restaurant-home'],
+      queryFn: fetchRestaurant,
+      staleTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
     });
-
-  const shortage = useMemo(
-    () => Math.max(LIMIT - (restaurantDetails?.length ?? 0), 0),
-    [restaurantDetails],
-  );
-
-  const { data: fallbackRestaurants = [] } = useQuery({
-    queryKey: ['restaurant-fallback', shortage],
-    queryFn: () => fetchRandomContent(shortage, 39),
-    enabled: shortage > 0,
-  });
 
   const themeRecommendations: ThemeItemProps[] = [
     {
@@ -126,7 +109,7 @@ function Home() {
     {
       header: '지금 떠오르는 맛집',
       moreUrl: 'search/result?theme=맛집',
-      itemList: [...restaurantDetails, ...fallbackRestaurants],
+      itemList: [...recommendRestaurants],
     },
   ];
 
@@ -134,20 +117,35 @@ function Home() {
     <main className="flex h-full w-full flex-1 flex-col gap-6 overflow-auto pb-8">
       <CarouselVisual />
       <Category />
-      {isLoadingIds ||
-      isLoadingFetchRestaurant ||
-      isLoadingFestival ||
-      isLoadingRecommend ? (
-        <p>Skeleton UI</p> // 수정 필요
+      {isLoadingRecommend ? (
+        <p>Skeleton UI</p>
       ) : (
-        themeRecommendations.map((theme) => (
-          <CarouselThemes
-            key={theme.header}
-            header={theme.header}
-            moreUrl={theme.moreUrl}
-            itemList={theme.itemList}
-          />
-        ))
+        <CarouselThemes
+          key={themeRecommendations[0].header}
+          header={themeRecommendations[0].header}
+          moreUrl={themeRecommendations[0].moreUrl}
+          itemList={themeRecommendations[0].itemList}
+        />
+      )}
+      {isLoadingFestival ? (
+        <p>Skeleton UI</p>
+      ) : (
+        <CarouselThemes
+          key={themeRecommendations[1].header}
+          header={themeRecommendations[1].header}
+          moreUrl={themeRecommendations[1].moreUrl}
+          itemList={themeRecommendations[1].itemList}
+        />
+      )}
+      {isLoadingRestaurants ? (
+        <p>Skeleton UI</p>
+      ) : (
+        <CarouselThemes
+          key={themeRecommendations[2].header}
+          header={themeRecommendations[2].header}
+          moreUrl={themeRecommendations[2].moreUrl}
+          itemList={themeRecommendations[2].itemList}
+        />
       )}
     </main>
   );
