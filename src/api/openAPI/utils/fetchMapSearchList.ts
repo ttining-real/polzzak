@@ -2,6 +2,20 @@ import { AxiosResponse } from 'axios';
 
 import { client } from '@/api/openAPI/client';
 
+interface OpenAPIResponse<T> {
+  response: {
+    body: {
+      items: {
+        item: T[];
+      };
+    };
+  };
+}
+
+interface detailItem {
+  [key: string]: string;
+}
+
 interface DataTypes {
   contentid: string;
   title: string;
@@ -18,17 +32,20 @@ export async function fetchMapSearchList(
   if (!keyword) return [];
 
   try {
-    const res: AxiosResponse<any> = await client.get('/searchKeyword1', {
-      params: {
-        serviceKey: import.meta.env.VITE_OPEN_API_KEY,
-        MobileApp: 'polzzak',
-        MobileOS: 'ETC',
-        _type: 'json',
-        pageNo: 1,
-        numOfRows: 10,
-        keyword,
+    const res: AxiosResponse<OpenAPIResponse<detailItem>> = await client.get(
+      '/searchKeyword1',
+      {
+        params: {
+          serviceKey: import.meta.env.VITE_OPEN_API_KEY,
+          MobileApp: 'polzzak',
+          MobileOS: 'ETC',
+          _type: 'json',
+          pageNo: 1,
+          numOfRows: 10,
+          keyword,
+        },
       },
-    });
+    );
 
     const items = res.data?.response?.body?.items?.item ?? [];
 
