@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import Button from '@/components/Button/Button';
 
@@ -51,7 +51,7 @@ interface ChipProps {
   type?: 'default' | 'multiple';
   onClick?: (clickedChip: ClickedChipItem) => void;
   selectedValue?: string;
-  selectedValues?: string[];
+  selectedValues?: string[] | null;
 }
 
 const Chip = memo(function Chip({
@@ -60,8 +60,20 @@ const Chip = memo(function Chip({
   subLabel,
   type = 'default',
   onClick,
+  selectedValues,
 }: ChipProps) {
   const [chips, setChips] = useState(getChipData());
+
+  useEffect(() => {
+    if (!selectedValues) return;
+
+    setChips((prevChips) =>
+      prevChips.map((chip) => ({
+        ...chip,
+        selected: selectedValues.includes(chip.name),
+      })),
+    );
+  }, [selectedValues]);
 
   function getChipData() {
     const baseMode =

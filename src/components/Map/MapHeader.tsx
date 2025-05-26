@@ -101,13 +101,14 @@ function MapHeader({ mapRef, myLocation, isLoggedIn }: MapHeaderProps) {
         className="absolute top-[62px] right-0 left-0 z-10 py-2"
       >
         <CarouselContent className="flex gap-1 first-of-type:ml-4 last-of-type:mr-4">
-          {MAP_FILTER.filter(
-            ({ category }) =>
-              isLoggedIn || (category !== 'favorite' && category !== 'polzzak'),
-          ).map(({ category, label }) => {
+          {MAP_FILTER.filter(({ category }) => {
+            const isPrivate = category === 'favorite' || category === 'polzzak';
+            return isLoggedIn || !isPrivate;
+          }).map(({ category, label }) => {
             const isActive = searchParams.get('category') === category;
             return (
               <Button
+                key={category}
                 variant="secondary"
                 size="md"
                 className={`h-[40px] gap-[4px] rounded-full px-3.5 ${isActive ? 'bg-primary hover:bg-primary text-white hover:text-white hover:brightness-110' : ''}`}

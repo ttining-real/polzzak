@@ -84,7 +84,7 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
     }
 
     const orderMap = orderData?.map((num) => num.order);
-    const lastNumber = Math.max(...orderMap);
+    const myOrderNumber = orderMap.length ? Math.max(...orderMap) + 1 : 0;
 
     const { error } = await supabase.from('ex_polzzak_detail').insert([
       {
@@ -93,7 +93,7 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
         time: plan.time || null,
         memo: plan.memo.trim() || null,
         content_id: plan?.content_id || null,
-        order: lastNumber + 1,
+        order: myOrderNumber,
       },
     ]);
 

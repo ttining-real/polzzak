@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { DateRange } from 'react-day-picker';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
@@ -16,36 +17,104 @@ import Loader from '@/components/Loader/Loader';
 import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
-import { usePolzzakStore } from '@/store/usePolzzakStroe';
+
+type PolzzakState = {
+  name: string | null;
+  dateRange: DateRange | null;
+  region: string[] | null;
+  thumbnail: string | null;
+  fileName: string | null;
+  imageUrl: string | null;
+  thumbnailBlob: Blob | null;
+};
+
+const initialPolzzakState: PolzzakState = {
+  name: null,
+  dateRange: null,
+  region: null,
+  thumbnail: null,
+  fileName: null,
+  imageUrl: null,
+  thumbnailBlob: null,
+};
+
+type PolzzakAction =
+  | { type: 'SET_NAME'; payload: string | null }
+  | { type: 'SET_DATE_RANGE'; payload: DateRange | null }
+  | { type: 'SET_REGION'; payload: string[] }
+  | { type: 'TOGGLE_REGION'; payload: string }
+  | { type: 'SET_THUMBNAIL'; payload: string | null }
+  | { type: 'SET_FILE_NAME'; payload: string | null }
+  | { type: 'SET_IMAGE_URL'; payload: string | null }
+  | { type: 'SET_THUMBNAIL_BLOB'; payload: Blob | null }
+  | { type: 'RESET' };
+
+function polzzakReducer(
+  state: PolzzakState,
+  action: PolzzakAction,
+): PolzzakState {
+  switch (action.type) {
+    case 'SET_NAME':
+      return { ...state, name: action.payload };
+    case 'SET_DATE_RANGE':
+      return { ...state, dateRange: action.payload };
+    case 'SET_REGION':
+      return { ...state, region: action.payload };
+    case 'TOGGLE_REGION': {
+      const exists = state.region?.includes(action.payload);
+      return {
+        ...state,
+        region: exists
+          ? (state.region?.filter((r) => r !== action.payload) ?? [])
+          : [...(state.region ?? []), action.payload],
+      };
+    }
+    case 'SET_THUMBNAIL':
+      return { ...state, thumbnail: action.payload };
+    case 'SET_FILE_NAME':
+      return { ...state, fileName: action.payload };
+    case 'SET_IMAGE_URL':
+      return { ...state, imageUrl: action.payload };
+    case 'SET_THUMBNAIL_BLOB':
+      return { ...state, thumbnailBlob: action.payload };
+    case 'RESET':
+      return initialPolzzakState;
+    default:
+      return state;
+  }
+}
 
 function AddNEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditPage = Boolean(id);
   const isAddPage = !isEditPage;
-  const [editRegion, setEditRegion] = useState<string[] | null>(null);
-  console.log(editRegion); // Chip 컴포넌트 완료 후 수정
+  const [editDate, setEditDate] = useState<DateRange | null>(null);
+  const [editRegion, setEditRegion] = useState<string[] | null>();
+  const [editFile, setEditFile] = useState<string | null>(null);
   const [showCropper, setShowCropper] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { isOpen, openModal, closeModal } = useDialogStore();
-  const {
-    name,
-    thumbnail,
-    dateRange,
-    region,
-    imageUrl,
-    setName,
-    setDateRange,
-    setRegion,
-    setThumbnail,
-    setFileName,
-    setImageUrl,
-    reset,
-  } = usePolzzakStore();
+  const [state, dispatch] = useReducer(polzzakReducer, initialPolzzakState);
   const inputRef = useRef<HTMLInputElement>(null);
   const getUserId = useAuthStore((state) => state.user);
   const userId = getUserId?.id;
   const showToast = useToast();
+  const {
+    name,
+    dateRange,
+    region,
+    thumbnail,
+    fileName,
+    imageUrl,
+    thumbnailBlob,
+  } = state;
+
+  useEffect(() => {
+    if (!userId) {
+      navigate('/polzzak', { replace: true });
+    }
+  }, [userId, navigate]);
 
   /* 편집 정보 가져오기 */
   const getEditInfo = useCallback(async () => {
@@ -56,47 +125,69 @@ function AddNEdit() {
 
     if (error) {
       showToast(
-        '편집할 데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+        '편집할 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
         'bottom-[64px]',
         5000,
       );
+      console.error(error);
       return;
     }
 
     const getEditRegion = async () => {
-      const { data, error } = await supabase
+      const { data: regionData, error: regionErr } = await supabase
         .from('ex_polzzak_region')
         .select('region')
         .eq('polzzak_id', id);
 
-      if (error) {
+      if (regionErr) {
         showToast(
-          '편집할 데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+          '편집할 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
           'bottom-[64px]',
           5000,
         );
+        console.error(regionErr);
         return;
-      } else if (!data || data.length === 0) {
-        return;
+      } else if (!regionData || regionData.length === 0) {
+        dispatch({ type: 'SET_REGION', payload: [] });
+        setEditRegion([]);
       } else {
-        const regionData = data.map((i) => i.region);
-        setEditRegion(regionData);
+        const editRegionData = regionData.map((i) => i.region);
+        dispatch({ type: 'SET_REGION', payload: editRegionData });
+        setEditRegion(editRegionData);
       }
     };
 
-    setName(data[0]?.name ?? null);
-    setDateRange({ from: data[0].startDate, to: data[0]?.endDate ?? null });
-    setThumbnail(data[0]?.thumbnail ?? null);
+    if (data[0]?.thumbnail) {
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('expolzzak')
+        .createSignedUrl(data[0].thumbnail, 86400);
+
+      dispatch({
+        type: 'SET_FILE_NAME',
+        payload: urlError
+          ? null
+          : (urlData?.signedUrl.split('?')[0].split('/').pop() ?? null),
+      });
+      setEditFile(data[0].thumbnail);
+    }
+
+    dispatch({ type: 'SET_NAME', payload: data[0]?.name ?? null });
+    dispatch({
+      type: 'SET_DATE_RANGE',
+      payload: { from: data[0].startDate, to: data[0]?.endDate ?? null },
+    });
+    setEditDate({ from: data[0].startDate, to: data[0]?.endDate ?? null });
+    dispatch({ type: 'SET_THUMBNAIL', payload: data[0]?.thumbnail ?? null });
     getEditRegion();
-  }, [id, setDateRange, setName, setThumbnail, showToast]);
+  }, [id, showToast]);
 
   useEffect(() => {
-    reset();
+    dispatch({ type: 'RESET' });
 
     if (isEditPage) {
       getEditInfo();
     }
-  }, [reset, isEditPage, getEditInfo]);
+  }, [isEditPage, getEditInfo]);
 
   /* 날짜 선택 */
   const handleCalender = () => {
@@ -121,9 +212,7 @@ function AddNEdit() {
     },
     {
       text: '초기화',
-      onClick: () => {
-        setDateRange(undefined);
-      },
+      onClick: () => dispatch({ type: 'SET_DATE_RANGE', payload: null }),
     },
   ];
 
@@ -134,20 +223,54 @@ function AddNEdit() {
     if (!file) return;
 
     const url = URL.createObjectURL(file);
-    setImageUrl(url);
-    setFileName(file?.name);
+    dispatch({ type: 'SET_IMAGE_URL', payload: url });
+    dispatch({ type: 'SET_FILE_NAME', payload: file.name });
   };
 
   const handleCropDone = (blob: Blob) => {
+    dispatch({ type: 'SET_THUMBNAIL_BLOB', payload: blob });
     const previewUrl = URL.createObjectURL(blob);
-    setThumbnail(previewUrl);
+    dispatch({ type: 'SET_THUMBNAIL', payload: previewUrl });
     setShowCropper(false);
   };
 
+  const uploadFileToStorage = async (blob: Blob) => {
+    const tempId = crypto.randomUUID();
+    const baseName =
+      fileName?.split('.')[0]?.replace(/[^\w\-_.]/g, '') ?? 'thumbnail';
+    const path = `polzzak/${userId}/${tempId}/${baseName}.webp`;
+
+    const { data, error } = await supabase.storage
+      .from('expolzzak')
+      .upload(path, blob, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'image/webp',
+      });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    return data?.path;
+  };
+
+  // 저장할 날짜 배열로 변경
+  const getDateRangeArray = (start: Date, end: Date) => {
+    const result = [];
+    const current = new Date(start);
+    while (current <= end) {
+      result.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return result;
+  };
+
   /* 추가하기 */
-  const errToast = () => {
+  const errToast = (text: string) => {
     showToast(
-      '폴짝을 추가하지 못했어요. 잠시 후 다시 시도해 주세요.',
+      `폴짝을 ${text}하지 못했어요. 잠시 후 다시 시도해 주세요.`,
       'bottom-[64px]',
       5000,
     );
@@ -155,6 +278,11 @@ function AddNEdit() {
 
   const saveAddPolzzak = async () => {
     setIsSaving(true);
+
+    let finalThumbnailPath = null;
+    if (thumbnailBlob) {
+      finalThumbnailPath = await uploadFileToStorage(thumbnailBlob);
+    }
     /* 폴짝 이름 저장 */
     const { data, error } = await supabase
       .from('ex_polzzak')
@@ -168,25 +296,26 @@ function AddNEdit() {
           endDate: dateRange?.to
             ? format(dateRange.to, 'yyyy-MM-dd', { locale: ko })
             : null,
-          thumbnail: thumbnail || null,
+          thumbnail: finalThumbnailPath ?? null,
         },
       ])
       .select();
 
     if (error) {
-      errToast();
-      throw error;
+      errToast('추가');
+      console.error(error);
+      return;
     }
 
     if (!data || data.length === 0) {
-      errToast();
-      throw error;
+      errToast('추가');
+      console.error(error);
+      return;
     }
 
     const polzzakId = data[0].id;
     try {
       /* 폴짝 날짜 저장 */
-      // 날짜 single
       if (dateRange?.from && !dateRange.to) {
         const { error: oneScheduleErr } = await supabase
           .from('ex_polzzak_schedule')
@@ -197,21 +326,8 @@ function AddNEdit() {
             },
           ]);
 
-        if (oneScheduleErr) {
-          errToast();
-          throw oneScheduleErr;
-        }
+        if (oneScheduleErr) throw oneScheduleErr;
       } else if (dateRange?.from && dateRange?.to) {
-        const getDateRangeArray = (start: Date, end: Date) => {
-          const result = [];
-          const current = new Date(start);
-          while (current <= end) {
-            result.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-          }
-          return result;
-        };
-
         const dateList = getDateRangeArray(
           new Date(dateRange.from),
           new Date(dateRange.to),
@@ -226,10 +342,7 @@ function AddNEdit() {
             })),
           );
 
-        if (scheduleErr) {
-          errToast();
-          throw scheduleErr;
-        }
+        if (scheduleErr) throw scheduleErr;
       }
 
       /* 폴짝 지역 저장 */
@@ -243,22 +356,172 @@ function AddNEdit() {
             })),
           );
 
-        if (regionErr) {
-          errToast();
-          throw regionErr;
-        }
+        if (regionErr) throw regionErr;
       }
 
       navigate(`/polzzak/${polzzakId}`, { replace: true });
     } catch (err) {
-      errToast();
+      errToast('추가');
       console.error('데이터 저장 실패 : ', err);
       if (polzzakId) {
         await supabase.from('ex_polzzak').delete().eq('id', polzzakId);
       }
     } finally {
       setIsSaving(false);
-      reset();
+      dispatch({ type: 'RESET' });
+    }
+  };
+
+  /* 편집 정보 저장 */
+  const isSameRegion = (a: string[], b: string[]) => {
+    const sortedA = [...a].sort();
+    const sortedB = [...b].sort();
+    return sortedA.every((val, idx) => val === sortedB[idx]);
+  };
+
+  const saveEditPolzzak = async () => {
+    setIsSaving(true);
+
+    try {
+      let finalThumbnailPath = thumbnail;
+      if ((thumbnailBlob || !thumbnail) && editFile) {
+        const { data, error } = await supabase.storage
+          .from('expolzzak')
+          .remove([editFile]);
+
+        if (error || !data) {
+          showToast(
+            '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+            'bottom-[64px]',
+            5000,
+          );
+          console.error(error);
+          return;
+        }
+      }
+      if (thumbnailBlob) {
+        finalThumbnailPath = (await uploadFileToStorage(thumbnailBlob)) ?? null;
+      }
+
+      const { error } = await supabase
+        .from('ex_polzzak')
+        .update([
+          {
+            user_id: userId,
+            name: name || null,
+            startDate:
+              dateRange?.from &&
+              format(dateRange.from, 'yyyy-MM-dd', { locale: ko }),
+            endDate: dateRange?.to
+              ? format(dateRange.to, 'yyyy-MM-dd', { locale: ko })
+              : null,
+            thumbnail: finalThumbnailPath ?? null,
+          },
+        ])
+        .eq('id', id);
+
+      if (error) {
+        showToast(
+          '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+          'bottom-[64px]',
+          5000,
+        );
+        console.error(error);
+        return;
+      }
+
+      if (
+        dateRange?.from !== editDate?.from ||
+        dateRange?.to !== editDate?.to
+      ) {
+        const formatDate = (d: Date) => format(d, 'yyyy-MM-dd', { locale: ko });
+
+        const oldDates =
+          editDate?.from && editDate?.to
+            ? getDateRangeArray(
+                new Date(editDate.from),
+                new Date(editDate.to),
+              ).map(formatDate)
+            : editDate?.from
+              ? [formatDate(new Date(editDate.from))]
+              : [];
+
+        const newDates =
+          dateRange?.from && dateRange?.to
+            ? getDateRangeArray(
+                new Date(dateRange.from),
+                new Date(dateRange.to),
+              ).map(formatDate)
+            : dateRange?.from
+              ? [formatDate(new Date(dateRange.from))]
+              : [];
+
+        const toInsert = newDates.filter((d) => !oldDates.includes(d));
+        const toDelete = oldDates.filter((d) => !newDates.includes(d));
+
+        if (toDelete.length > 0) {
+          const { error: deleteScheduleErr } = await supabase
+            .from('ex_polzzak_schedule')
+            .delete()
+            .in('date', toDelete)
+            .eq('polzzak_id', id);
+          if (deleteScheduleErr) throw deleteScheduleErr;
+        }
+        // // 추가: 새로 생긴 날짜는 schedule만 insert
+        if (toInsert.length > 0) {
+          const { error: insertScheduleErr } = await supabase
+            .from('ex_polzzak_schedule')
+            .insert(
+              toInsert.map((date) => ({
+                polzzak_id: id,
+                date,
+              })),
+            );
+          if (insertScheduleErr) throw insertScheduleErr;
+        }
+      }
+
+      let changeRegion = false;
+      if (region?.length) {
+        if (editRegion?.length) {
+          changeRegion = !isSameRegion(region, editRegion);
+        }
+        if (changeRegion) {
+          const { error: deleteErr } = await supabase
+            .from('ex_polzzak_region')
+            .delete()
+            .eq('polzzak_id', id);
+
+          if (deleteErr) throw deleteErr;
+        }
+
+        const { error: insertErr } = await supabase
+          .from('ex_polzzak_region')
+          .insert(
+            region.map((item) => ({
+              polzzak_id: id,
+              region: item,
+            })),
+          );
+
+        if (insertErr) throw insertErr;
+      } else {
+        if (editRegion?.length) {
+          const { error: deleteErr } = await supabase
+            .from('ex_polzzak_region')
+            .delete()
+            .eq('polzzak_id', id);
+
+          if (deleteErr) throw deleteErr;
+        }
+      }
+      navigate(-1);
+    } catch (err) {
+      errToast('저장');
+      console.error('데이터 저장 실패 : ', err);
+    } finally {
+      setIsSaving(false);
+      dispatch({ type: 'RESET' });
     }
   };
 
@@ -272,7 +535,9 @@ function AddNEdit() {
             type="text"
             placeholder="폴짝 이름을 입력해 주세요."
             value={name ?? ''}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) =>
+              dispatch({ type: 'SET_NAME', payload: e.target.value })
+            }
             maxLength={20}
           />
         </div>
@@ -304,17 +569,10 @@ function AddNEdit() {
             label="지역 선택"
             subLabel="다중 선택 가능합니다."
             type="multiple"
-            onClick={(selectChip) => {
-              setRegion((prev) => {
-                if (!prev) return [selectChip.name];
-
-                const isAlreadySelected = prev.includes(selectChip.name);
-                return isAlreadySelected
-                  ? prev.filter((chip) => chip !== selectChip.name)
-                  : [...prev, selectChip.name];
-              });
-            }}
-            // selectedValues={editRegion}  // Chip 컴포넌트 완료 후 수정
+            onClick={(selectChip) =>
+              dispatch({ type: 'TOGGLE_REGION', payload: selectChip.name })
+            }
+            selectedValues={region}
           />
         </div>
         <div>
@@ -325,7 +583,23 @@ function AddNEdit() {
             onClick={() => setShowCropper(true)}
             onChange={handleFileChange}
             ref={inputRef}
+            thumbnail={thumbnail}
+            fileName={fileName}
           >
+            {thumbnail && (
+              <Button
+                variant="input"
+                onClick={() => {
+                  dispatch({ type: 'SET_THUMBNAIL', payload: null });
+                  dispatch({ type: 'SET_FILE_NAME', payload: null });
+                  dispatch({ type: 'SET_IMAGE_URL', payload: null });
+                  dispatch({ type: 'SET_THUMBNAIL_BLOB', payload: null });
+                }}
+                className="text-gray07 ml-1"
+              >
+                <Icon id="close" className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant={'tertiary'}
               size="md"
@@ -338,34 +612,34 @@ function AddNEdit() {
           </Input>
         </div>
 
-        {thumbnail && (
+        {thumbnail && imageUrl && (
           <figure>
             <figcaption className="fs-14 m-1 px-1">
               폴짝 사진 미리보기
             </figcaption>
-            <div className="relative w-1/2">
-              <img
-                src={thumbnail}
-                alt="선택한 폴짝 사진 미리보기"
-                className="rounded-lg border drop-shadow-md"
-              />
-              <Button
-                className="absolute top-2 right-2 h-6 w-6"
-                variant={'float'}
-                size={'md'}
-                onClick={() => {
-                  setThumbnail(null);
-                  setFileName(null);
-                  setImageUrl(null);
-                }}
-              >
-                <Icon id="close" />
-              </Button>
-            </div>
+            <img
+              src={thumbnail}
+              alt="선택한 폴짝 사진 미리보기"
+              className="w-1/2 rounded-lg border drop-shadow-md"
+            />
           </figure>
         )}
       </div>
-      <Button disabled={!dateRange?.from} onClick={saveAddPolzzak}>
+      <Button
+        disabled={isSaving || !dateRange?.from}
+        onClick={async () => {
+          if (!userId) {
+            navigate('/polzzak', { replace: true });
+            return;
+          }
+
+          if (isAddPage) {
+            await saveAddPolzzak();
+          } else {
+            await saveEditPolzzak();
+          }
+        }}
+      >
         {isAddPage ? '폴짝 추가하기' : '폴짝 저장하기'}
       </Button>
       {isOpen && (
@@ -376,7 +650,9 @@ function AddNEdit() {
         >
           <CalendarCustom
             selected={dateRange ?? undefined}
-            onSelect={setDateRange}
+            onSelect={(range) =>
+              dispatch({ type: 'SET_DATE_RANGE', payload: range ?? null })
+            }
           />
         </SlideUpDialog>
       )}

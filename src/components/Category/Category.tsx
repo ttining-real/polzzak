@@ -10,19 +10,19 @@ const CATEGORY_LIST = [
   {
     id: 1,
     name: '관광',
-    linkURL: `search/q=관광`,
+    linkURL: `search/result?theme=관광`,
     imageURL: '/icons/tour.png',
   },
   {
     id: 2,
     name: '축제',
-    linkURL: `search/q=축제`,
+    linkURL: `search/result?theme=축제`,
     imageURL: '/icons/festival.png',
   },
   {
     id: 3,
     name: '맛집',
-    linkURL: `search/q=맛집`,
+    linkURL: `search/result?theme=맛집`,
     imageURL: '/icons/food.png',
   },
 ];

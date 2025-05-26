@@ -3,7 +3,6 @@ import Cropper, { Area } from 'react-easy-crop';
 
 import Button from '@/components/Button/Button';
 import { getCroppedImg } from '@/lib/getCroppedImg';
-import { usePolzzakStore } from '@/store/usePolzzakStroe';
 
 function ImageCropper({
   imageUrl,
@@ -15,7 +14,6 @@ function ImageCropper({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const url = usePolzzakStore((state) => state.imageUrl);
 
   const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
     setCroppedAreaPixels(areaPixels);
@@ -30,11 +28,11 @@ function ImageCropper({
 
   return (
     <article>
-      {url && (
+      {imageUrl && (
         <>
           <div className="bg-gray05 absolute inset-0 w-full">
             <Cropper
-              image={url}
+              image={imageUrl}
               crop={crop}
               zoom={zoom}
               aspect={1 / 1}

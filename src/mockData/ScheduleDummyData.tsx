@@ -1,5 +1,3 @@
-import { LIST_ITEM_DUMMY_DATA } from '@/mockData/ListItemDummyData';
-
 export const ScheduleDummyData = [
   {
     id: 0,
@@ -42,26 +40,3 @@ export interface Bookmark {
     review_count: number;
   }[];
 }
-
-export const BookmarkDummyData: Bookmark[] = [
-  {
-    id: 0,
-    name: '기본 폴더',
-    storage: LIST_ITEM_DUMMY_DATA,
-  },
-  {
-    id: 1,
-    name: '서울 맛집',
-    storage: [LIST_ITEM_DUMMY_DATA[0], LIST_ITEM_DUMMY_DATA[1]],
-  },
-  {
-    id: 2,
-    name: '제주 여행',
-    storage: [LIST_ITEM_DUMMY_DATA[0]],
-  },
-  {
-    id: 3,
-    name: '부산 갈매기 끼룩끼룩끼룩끼룩',
-    storage: [],
-  },
-];
