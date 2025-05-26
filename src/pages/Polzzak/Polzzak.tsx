@@ -18,6 +18,7 @@ export type ListItemType = {
   startDate: Date | null;
   endDate: Date | null;
   thumbnail: string | null;
+  thumbnailUrl: string | null;
   created_at: string;
 };
 
@@ -66,6 +67,23 @@ function Polzzak() {
     }
 
     setMyPolzzak(data);
+
+    if (!data) return;
+    const withUrl = await Promise.all(
+      data.map(async (item) => {
+        if (!item.thumbnail) return { ...item, thumbnailUrl: null };
+
+        const { data: urlData, error: urlError } = await supabase.storage
+          .from('expolzzak')
+          .createSignedUrl(item.thumbnail, 86400);
+
+        return {
+          ...item,
+          thumbnailUrl: urlError ? null : urlData?.signedUrl,
+        };
+      }),
+    );
+    setMyPolzzak(withUrl);
   }, [userId, showToast]);
 
   useEffect(() => {

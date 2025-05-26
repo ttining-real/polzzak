@@ -25,6 +25,7 @@ export interface ListItemProps {
   restdate: string;
   reviews: number;
   likes: number;
+  createdtime: string;
 }
 
 interface ListItemData {
@@ -73,6 +74,8 @@ function ListItem({ data }: ListItemData) {
   const handleMoveDetail = (id: string) => {
     navigate(`/contents/${id}`);
   };
+
+  console.log(data);
 
   return (
     <ul className="flex flex-col gap-6">

@@ -2,17 +2,22 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import Button from '@/components/Button/Button';
-import Icon, { type IconId } from '@/components/Icon/Icon';
+import Icon from '@/components/Icon/Icon';
 import { useHeaderStore } from '@/store/useHeaderStore';
 
 interface HeaderProps {
   title: string;
   subTitle?: string;
   editHide?: boolean;
-  iconId?: IconId;
+  searchBtn?: boolean;
 }
 
-function Header({ title, subTitle, editHide = false, iconId }: HeaderProps) {
+function Header({
+  title,
+  subTitle,
+  editHide = false,
+  searchBtn = false,
+}: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === '/';
@@ -52,15 +57,15 @@ function Header({ title, subTitle, editHide = false, iconId }: HeaderProps) {
         >
           {isEditMode ? '완료' : '편집'}
         </Button>
-      ) : iconId ? (
+      ) : searchBtn === false ? (
         <Button
           type="button"
           variant="tertiary"
-          size="md"
-          aria-label={`${iconId} 버튼`}
+          size="default"
+          aria-label={`검색 페이지로 이동`}
           onClick={() => navigate(`/search`)}
         >
-          <Icon id={iconId} />
+          <Icon id={'search'} />
         </Button>
       ) : null}
     </header>

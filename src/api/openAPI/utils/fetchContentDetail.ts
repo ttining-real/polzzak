@@ -23,23 +23,8 @@ interface OpenAPIResponse<T> {
   };
 }
 
-interface IntroItem {
+interface detailItem {
   [key: string]: string;
-}
-
-interface CommonItem {
-  title: string;
-  firstimage?: string;
-  addr1: string;
-  addr2?: string;
-  overview?: string;
-  eventhomepage?: string;
-  eventplace?: string;
-  placeinfo?: string;
-  playtime?: string;
-  program?: string;
-  subevent?: string;
-  usetimefestival?: string;
 }
 
 /* 📍 detail=true는 콘텐츠가 세부 페이지일 때 */
@@ -64,8 +49,8 @@ async function fetchContentDetail(
 
   /* 🧩 detailCommon1과 detailIntro1 함께 호출 */
   const [commonRes, introRes]: [
-    AxiosResponse<OpenAPIResponse<CommonItem>>,
-    AxiosResponse<OpenAPIResponse<IntroItem>>,
+    AxiosResponse<OpenAPIResponse<detailItem>>,
+    AxiosResponse<OpenAPIResponse<detailItem>>,
   ] = await Promise.all([
     client.get(`/detailCommon1`, {
       params: {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   Carousel,
@@ -15,16 +16,19 @@ const banner = [
     src: 'images/visual_1.png',
     alt: '친구와 함께 서울로 폴짝',
     text: ['친구와 함께', '서울로 폴짝'],
+    url: '/search/result?region=서울',
   },
   {
     src: 'images/visual_2.png',
     alt: '연인과 함께 제주로 폴짝',
     text: ['연인과 함께', '제주도로 폴짝'],
+    url: '/search/result?region=제주',
   },
   {
     src: 'images/visual_3.png',
     alt: '가족과 함께 부산으로 폴짝',
     text: ['가족과 함께', '부산으로 폴짝'],
+    url: '/search/result?region=부산',
   },
 ];
 
@@ -58,21 +62,23 @@ function CarouselVisual() {
         <CarouselContent>
           {banner.map((item, index) => (
             <CarouselItem key={index} className="relative">
-              <h3 className="absolute bottom-[14%] left-[14%] flex flex-col gap-0 text-xl font-bold text-white sm:gap-0 sm:text-xl md:gap-1 md:text-3xl lg:text-4xl">
-                <RabbitFace
-                  src="/images/rabbit.svg"
-                  alt="깡총"
-                  className="mb-2 w-[32px] sm:w-[32px] md:w-[48px]"
+              <Link to={item.url}>
+                <h3 className="absolute bottom-[14%] left-[14%] flex flex-col gap-0 text-xl font-bold text-white sm:gap-0 sm:text-xl md:gap-1 md:text-3xl lg:text-4xl">
+                  <RabbitFace
+                    src="/images/rabbit.svg"
+                    alt="깡총"
+                    className="mb-2 w-[32px] sm:w-[32px] md:w-[48px]"
+                  />
+                  {item.text.map((text, index) => (
+                    <p key={index}>{text}</p>
+                  ))}
+                </h3>
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  className="h-full min-h-[15rem] w-full"
                 />
-                {item.text.map((text, index) => (
-                  <p key={index}>{text}</p>
-                ))}
-              </h3>
-              <img
-                src={item.src}
-                alt={item.alt}
-                className="h-full min-h-[15rem] w-full"
-              />
+              </Link>
             </CarouselItem>
           ))}
         </CarouselContent>
