@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import supabase from '@/api/supabase';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
@@ -37,23 +37,29 @@ function Favorites() {
     enabled: !!userId,
   });
 
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setCurrentFolder({ id: '', folder_name: '' });
     setDialogType('add');
     openModal();
-  };
+  }, [openModal]);
 
-  const handleEditClick = (id: string, folder_name: string) => {
-    setCurrentFolder({ id, folder_name });
-    setDialogType('edit');
-    openModal();
-  };
+  const handleEditClick = useCallback(
+    (id: string, folder_name: string) => {
+      setCurrentFolder({ id, folder_name });
+      setDialogType('edit');
+      openModal();
+    },
+    [openModal],
+  );
 
-  const handleDeleteClick = (id: string, folder_name: string) => {
-    setCurrentFolder({ id, folder_name });
-    setDialogType('delete');
-    openModal();
-  };
+  const handleDeleteClick = useCallback(
+    (id: string, folder_name: string) => {
+      setCurrentFolder({ id, folder_name });
+      setDialogType('delete');
+      openModal();
+    },
+    [openModal],
+  );
 
   const handleSaveFolder = async (type: 'add' | 'edit') => {
     if (!currentFolder?.folder_name.trim()) {
