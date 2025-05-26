@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import Button from '@/components/Button/Button';
 
@@ -54,7 +54,7 @@ interface ChipProps {
   selectedValues?: string[] | null;
 }
 
-function Chip({
+const Chip = memo(function Chip({
   mode,
   label,
   subLabel,
@@ -131,6 +131,6 @@ function Chip({
       </ul>
     </section>
   );
-}
+});
 
 export default Chip;
