@@ -19,37 +19,37 @@ const getThemeTitle = () => {
   if (month >= 3 && month <= 4) {
     return {
       title: '벚꽃 하면 바로 이곳',
-      url: 'search/result?q=벚꽃',
+      url: `search/result?30q=벚꽃&startDate=20250301&endDate=20250430`, // 날짜 변경
       keyword: '벚꽃',
     };
   } else if (month >= 5 && month <= 6) {
     return {
       title: '봄바람 타고 떠나고 싶은 이곳',
-      url: 'search/result?q=봄',
+      url: `search/result?q=봄&startDate=20250501&endDate=20250630`,
       keyword: '봄',
     };
   } else if (month >= 7 && month <= 9) {
     return {
       title: '시원한 바다와 함께하는 여름',
-      url: 'search/result?q=바다',
+      url: `search/result?q=바다&startDate=20250701&endDate=20250930`,
       keyword: '바다',
     };
   } else if (month >= 10 && month <= 11) {
     return {
       title: '단풍 하면 바로 이곳',
-      url: `search/result?q=단풍`,
+      url: `search/result?q=단풍&startDate=20251001&endDate=20251130`,
       keyword: '단풍',
     };
   } else if (month === 12) {
     return {
       title: '따듯한 크리스마스를 즐길 이곳',
-      url: 'search/result?q=크리스마스',
+      url: `search/result?q=크리스마스&startDate=20251201&endDate=20251231`,
       keyword: '크리스마스',
     };
   } else {
     return {
       title: '흰 눈 사이로 썰매를 타며 즐기기 좋은 이곳',
-      url: `search/result?q=겨울`,
+      url: `search/result?q=겨울&startDate=20250101&endDate=20250228`,
       keyword: '겨울',
     };
   }
@@ -103,7 +103,7 @@ function Home() {
     },
     {
       header: '이달의 축제',
-      moreUrl: `search/result?theme=축제&date=${getMonth()}`, // 수정 필요
+      moreUrl: `search/result?startDate=2025${String(getMonth()).padStart(2, '0')}01&endDate=2025${String(getMonth()).padStart(2, '0')}30&theme=축제`,
       itemList: [...festivalOfTheMonth],
     },
     {
