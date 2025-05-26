@@ -3,7 +3,11 @@ import { useRef, useState } from 'react';
 import Dropdown from '@/components/SortDropdown/Dropdown';
 import { dropdownData } from '@/mockData/SortDropdownData';
 
-function DropdownCustom() {
+interface DropdownCustomProps {
+  selectedRegion: string;
+}
+
+function DropdownCustom({ selectedRegion }: DropdownCustomProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [isDown, setIsDown] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -28,7 +32,7 @@ function DropdownCustom() {
   ) => {
     if (!isDown || !scrollRef.current) return;
     const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
-    const walk = (pageX - startX) * 1.5; // 드래그 속도 조절
+    const walk = (pageX - startX) * 1.5;
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -45,7 +49,15 @@ function DropdownCustom() {
       className="sort-scroll flex flex-nowrap gap-2 overflow-x-auto py-2"
     >
       {dropdownData.map((data) => (
-        <Dropdown key={data.label} options={data.list} />
+        <Dropdown
+          key={data.label}
+          options={data.list}
+          defaultValue={
+            data.label === '지역' && selectedRegion
+              ? selectedRegion
+              : data.list[0].name
+          }
+        />
       ))}
     </div>
   );

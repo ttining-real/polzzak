@@ -1,6 +1,9 @@
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { DateRange } from 'react-day-picker';
 
-// import { useState } from 'react';
 import Button from '@/components/Button/Button';
 import Calendar from '@/components/Calendar/Calendar';
 import Icon from '@/components/Icon/Icon';
@@ -10,6 +13,7 @@ import { Textarea } from '@/components/Input/Textarea';
 import ListItem from '@/components/ListItem/ListItem';
 import { ScheduleDummyData } from '@/mockData/ScheduleDummyData';
 import { useModalStore } from '@/store/useModalStore';
+import { useSearchStore } from '@/store/useSearchStore';
 
 interface ModalActionParams {
   buttonText: string;
@@ -36,8 +40,7 @@ const MODAL_DATA = [
     type: 'calendar',
     content: <Calendar />,
     prevBtn: '초기화',
-    nextBtn: '',
-    // nextBtn: '2025.03.17(월) ~ 2025.03.19(수)',
+    nextBtn: '날짜를 선택해 주세요.',
   },
   {
     id: 2,
@@ -137,9 +140,33 @@ function SlideUpModal({ type, handleButtonClick }: SlideUpModal) {
   const { closeModal, setButtonText } = useModalStore();
   const modalContent = MODAL_DATA.find((item) => item.type === type);
   // 즐겨찾기 폴더 추가
-  // const [inputValue, setInputValue] = useState('');
+  const [inputValue] = useState('');
+  const [range, setRange] = useState<DateRange | undefined>(undefined);
+  const setDate = useSearchStore((state) => state.setDate);
+
+  const formatDateRange = () => {
+    if (!range?.from || !range?.to) return '날짜를 선택해 주세요.';
+    const from = format(range.from, 'yyyy.MM.dd(eee)', { locale: ko });
+    const to = format(range.to, 'yyyy.MM.dd(eee)', { locale: ko });
+    return `${from} ~ ${to}`;
+  };
 
   if (!modalContent) return null;
+
+  const isCalendar = type === 'calendar';
+
+  const content = isCalendar ? (
+    <Calendar mode="range" selected={range} onSelect={setRange} />
+  ) : (
+    modalContent.content
+  );
+
+  const handleDateRange = () => {
+    if (!range?.from || !range?.to) return;
+
+    setDate({ startDate: range.from, endDate: range.to });
+    closeModal();
+  };
 
   return (
     <motion.dialog
@@ -171,19 +198,17 @@ function SlideUpModal({ type, handleButtonClick }: SlideUpModal) {
           <Icon id="close" />
         </Button>
       </header>
-      {/* <div>
-        {modalContent.contentComponent
-          ? modalContent.contentComponent({ inputValue, setInputValue })
-          : modalContent.content ||
-            modalContent.text?.map((i, index) => (
-              <p
-                className="fs-14 ls lh font-regular text-gray07 text-center"
-                key={index}
-              >
-                <span>{i}</span>
-              </p>
-            ))}
-      </div> */}
+      <div>
+        {content ||
+          modalContent.text?.map((i, index) => (
+            <p
+              className="fs-14 ls lh font-regular text-gray07 text-center"
+              key={index}
+            >
+              <span>{i}</span>
+            </p>
+          ))}
+      </div>
       <div
         className={`flex w-full items-center justify-center gap-1 ${type === 'calendar' ? 'flex-col' : 'flex-row'}`}
       >
@@ -199,21 +224,22 @@ function SlideUpModal({ type, handleButtonClick }: SlideUpModal) {
             {modalContent.prevBtn}
           </Button>
         )}
-        {/* {modalContent.nextBtn && (
+        {modalContent.nextBtn !== undefined && (
           <Button
-            className={`${type === 'calendar' ? 'order-first w-full' : 'w-1/2'}`}
-            onClick={() =>
+            className={`${isCalendar ? 'order-first w-full' : 'w-1/2'}`}
+            onClick={() => {
               handleButtonClick({
-                buttonText: modalContent.nextBtn,
-                inputValue: modalContent.contentComponent
-                  ? inputValue
-                  : undefined,
-              })
-            }
+                buttonText: isCalendar
+                  ? formatDateRange()
+                  : modalContent.nextBtn!,
+                inputValue,
+              });
+              handleDateRange();
+            }}
           >
-            {modalContent.nextBtn}
+            {isCalendar ? formatDateRange() : modalContent.nextBtn}
           </Button>
-        )} */}
+        )}
       </div>
     </motion.dialog>
   );

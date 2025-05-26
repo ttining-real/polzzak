@@ -5,6 +5,7 @@ import { updateNickname } from '@/api/supabase/hooks/updateNickname';
 import { useUserUpdate } from '@/hooks/register/useUserUpdate';
 import { useModalStore } from '@/store/useModalStore';
 import { useRegisterStore } from '@/store/useRegisterStore';
+import { useSearchStore } from '@/store/useSearchStore';
 
 export interface ModalActionParams {
   buttonText: string;
@@ -15,6 +16,7 @@ export function useModalActions() {
   const { closeModal } = useModalStore();
   const { phoneNumber, nickname } = useRegisterStore();
   const { userUpdate } = useUserUpdate(phoneNumber);
+  const setDate = useSearchStore((state) => state.setDate);
 
   const modalActions: Record<string, (inputValue?: string) => void> = {
     취소: () => {
@@ -42,7 +44,10 @@ export function useModalActions() {
     저장: () => console.log('저장 버튼에 맞는 함수'),
     삭제: () => console.log('삭제 버튼에 맞는 함수'),
     추가: () => console.log('추가 버튼에 맞는 함수'),
-    초기화: () => console.log('초기화 버튼에 맞는 함수'),
+    초기화: () => {
+      setDate({ startDate: null, endDate: null });
+      closeModal();
+    },
     변경: () => console.log('변경 버튼에 맞는 함수'),
     로그아웃: () => {
       navigate('/login', {
