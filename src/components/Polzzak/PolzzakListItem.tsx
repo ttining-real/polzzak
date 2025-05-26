@@ -75,6 +75,16 @@ function PolzzakListItem({
       );
       console.error('폴짝 삭제 실패', error);
     } else {
+      if (item.thumbnail) {
+        const { data, error } = await supabase.storage
+          .from('expolzzak')
+          .remove([item.thumbnail]);
+
+        if (error || !data) {
+          console.error(error);
+          return;
+        }
+      }
       if (onDeleted) {
         onDeleted();
         showToast('삭제가 완료되었습니다.', 'top-[64px]', 2000);
@@ -91,8 +101,8 @@ function PolzzakListItem({
     return (
       <>
         <figure className="bg-primary/10 flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg object-cover">
-          {item.thumbnail ? (
-            <img src={item.thumbnail} alt="폴짝" className="h-full w-full" />
+          {item.thumbnailUrl ? (
+            <img src={item.thumbnailUrl} alt="폴짝" className="h-full w-full" />
           ) : (
             <RabbitFace alt="폴짝 사진을 지정하지 않았어요." />
           )}
@@ -141,6 +151,7 @@ function PolzzakListItem({
                   onClick: (e: React.MouseEvent) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    setOpenMeatball(false);
 
                     openModal(item.id);
                   },

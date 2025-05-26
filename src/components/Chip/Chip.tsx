@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import Button from '@/components/Button/Button';
-import { Label } from '@/components/Label';
 
 const REGIONS_DATA = [
   { id: 0, name: '서울', selected: false },
@@ -39,7 +38,7 @@ const MAP_FILTER_DATA = [
   { id: 4, name: '관광지', selected: false },
 ];
 
-interface ClickedChipItem {
+export interface ClickedChipItem {
   id: number;
   name: string;
   selected: boolean;
@@ -51,9 +50,31 @@ interface ChipProps {
   subLabel?: string;
   type?: 'default' | 'multiple';
   onClick?: (clickedChip: ClickedChipItem) => void;
+  selectedValue?: string;
+  selectedValues?: string[] | null;
 }
 
-function Chip({ mode, label, subLabel, type = 'default', onClick }: ChipProps) {
+const Chip = memo(function Chip({
+  mode,
+  label,
+  subLabel,
+  type = 'default',
+  onClick,
+  selectedValues,
+}: ChipProps) {
+  const [chips, setChips] = useState(getChipData());
+
+  useEffect(() => {
+    if (!selectedValues) return;
+
+    setChips((prevChips) =>
+      prevChips.map((chip) => ({
+        ...chip,
+        selected: selectedValues.includes(chip.name),
+      })),
+    );
+  }, [selectedValues]);
+
   function getChipData() {
     const baseMode =
       mode === 'region'
@@ -64,37 +85,34 @@ function Chip({ mode, label, subLabel, type = 'default', onClick }: ChipProps) {
 
     return baseMode.map((item) => ({ ...item, selected: item.selected }));
   }
-  const [chips, setChips] = useState(getChipData());
+
   function handleChips(id: number) {
-    setChips((prev) => {
-      const updatedChips =
-        type === 'multiple'
-          ? prev.map((chip) =>
-              chip.id === id ? { ...chip, selected: !chip.selected } : chip,
-            )
-          : prev.map((chip) =>
-              chip.id === id
-                ? { ...chip, selected: !chip.selected }
-                : { ...chip, selected: false },
-            );
+    const updatedChips =
+      type === 'multiple'
+        ? chips.map((chip) =>
+            chip.id === id ? { ...chip, selected: !chip.selected } : chip,
+          )
+        : chips.map((chip) =>
+            chip.id === id
+              ? { ...chip, selected: !chip.selected }
+              : { ...chip, selected: false },
+          );
+    setChips(updatedChips);
 
-      const clickedChip = updatedChips.find((chip) => chip.id === id);
-      if (onClick && clickedChip) {
-        onClick(clickedChip);
-      }
-
-      return updatedChips;
-    });
+    const clickedChip = updatedChips.find((chip) => chip.id === id);
+    if (onClick && clickedChip) {
+      onClick(clickedChip);
+    }
   }
 
   return (
     <section className="flex flex-col gap-4">
       {label && (
-        <div className="flex items-center justify-start gap-2 px-2">
-          <Label className="fs-14 lh ls font-regular text-black">{label}</Label>
-          <Label className="fs-13 text-gray06 lh ls font-regular">
+        <div className="inline-flex items-center justify-start gap-2">
+          <span className="fs-14 lh ls font-regular text-black">{label}</span>
+          <span className="fs-13 text-gray06 lh ls font-regular">
             {subLabel}
-          </Label>
+          </span>
         </div>
       )}
       <ul className="flex flex-wrap gap-2">
@@ -103,7 +121,7 @@ function Chip({ mode, label, subLabel, type = 'default', onClick }: ChipProps) {
             <Button
               type="button"
               size="md"
-              className={`rounded-4xl border ${chip.selected ? 'bg-primary border-primary text-white' : 'text-gray07 border-gray07 bg-white'}`}
+              className={`rounded-4xl border ${chip.selected ? 'bg-primary border-primary text-white' : 'text-gray07 border-gray07 bg-white'} active:text-white`}
               onClick={() => handleChips(chip.id)}
             >
               {chip.name}
@@ -113,6 +131,6 @@ function Chip({ mode, label, subLabel, type = 'default', onClick }: ChipProps) {
       </ul>
     </section>
   );
-}
+});
 
 export default Chip;

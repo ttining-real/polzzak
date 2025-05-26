@@ -144,7 +144,7 @@ function SlideUpDialog({
       {...(dimd
         ? {
             className:
-              'fixed top-0 right-0 bottom-0 left-0 z-[99] h-screen w-screen bg-black/45',
+              'fixed top-0 right-0 bottom-0 left-0 z-[99] h-screen max-w-[640px] w-screen bg-black/45',
           }
         : null)}
     >
@@ -160,7 +160,7 @@ function SlideUpDialog({
           height: height ?? 'auto',
           transition: 'height 0.3s ease',
         }}
-        className={`fixed bottom-0 left-1/2 z-[100] flex w-screen -translate-x-1/2 transform flex-col gap-4 rounded-t-2xl bg-white px-8 py-6 ${className}`}
+        className={`fixed bottom-0 left-1/2 z-[100] flex w-screen max-w-[640px] -translate-x-1/2 transform flex-col gap-4 rounded-t-2xl bg-white px-8 py-6 ${className}`}
       >
         {dragIcon ? (
           <div className="text-gray05 absolute top-0 right-0 left-0 flex w-full transform cursor-grab items-center justify-center">

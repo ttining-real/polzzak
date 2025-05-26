@@ -1,53 +1,33 @@
-import Button from '@/components/Button/Button';
-import Chip from '@/components/Chip/Chip';
-import Icon from '@/components/Icon/Icon';
-import Input from '@/components/Input/Input';
+import { memo, useEffect } from 'react';
+
 import Modal from '@/components/Modal/Modal';
-import { useModalStore } from '@/store/useModalStore';
+import DateSelector from '@/components/Search/DateSelector/DateSelector';
+import KeywordInput from '@/components/Search/KeywordInput/KeywordInput';
+import RegionSelection from '@/components/Search/RegionSelection/RegionSelection';
+import SearchButton from '@/components/Search/SearchButton/SearchButton';
+import ThemeSelection from '@/components/Search/ThemeSelection/ThemeSelection';
+import { useSearchStore } from '@/store/useSearchStore';
 
-function Search() {
-  const { openModal } = useModalStore();
+const Search = memo(function Search() {
+  const resetSearch = useSearchStore((state) => state.resetSearch);
 
-  const openCalendar = () => {
-    openModal('calendar');
-  };
+  useEffect(() => {
+    resetSearch();
+  }, [resetSearch]);
 
   return (
-    <section className="flex h-full w-full flex-col justify-between">
+    <main className="flex h-full w-full flex-1 flex-col overflow-auto p-6">
       <h1 className="sr-only">검색</h1>
       <div className="flex flex-1 flex-col gap-4">
-        <div>
-          <Input
-            label="검색"
-            hideLabel={true}
-            type="text"
-            placeholder="검색어를 입력해 주세요."
-          >
-            <Button variant={'tertiary'} size="md">
-              <Icon id="search" className="text-gray05" />
-            </Button>
-          </Input>
-        </div>
-        <div>
-          <Input
-            label="폴짝 날짜"
-            hideLabel={true}
-            type="button"
-            value={'날짜를 선택해 주세요.'}
-            onClick={openCalendar}
-          >
-            <Button variant={'tertiary'} size="md" onClick={openCalendar}>
-              <Icon id="calendar" className="text-gray05" />
-            </Button>
-          </Input>
-        </div>
-        <Chip mode="region" />
-        <Chip mode="theme" type="multiple" />
+        <KeywordInput />
+        <DateSelector />
+        <RegionSelection />
+        <ThemeSelection />
       </div>
-      <Button>검색</Button>
+      <SearchButton />
       <Modal mode="slide" type="calendar" />
-    </section>
+    </main>
   );
-}
+});
 
 export default Search;

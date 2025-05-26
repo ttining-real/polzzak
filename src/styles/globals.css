@@ -30,6 +30,10 @@ body {
   letter-spacing: -0.005rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--gray01);
+  background-image: url('/images/pattern.png');
+  width: 100%;
+  height: 100%;
 }
 
 ::selection {
@@ -38,10 +42,15 @@ body {
 }
 
 #root {
+  position: relative;
   display: flex;
   flex-flow: column nowrap;
   width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
   height: 100vh;
+  background: var(--color-white);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.1);
 }
 
 :root {
@@ -243,6 +252,15 @@ body {
   /* font title */
   .font-title {
     font-family: 'ownglyph', 'Pretendard', sans-serif;
+  }
+
+  /* scrollbar hide */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 

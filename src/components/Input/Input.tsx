@@ -2,7 +2,6 @@ import * as React from 'react';
 
 import { Label } from '@/components/Label';
 import { cn } from '@/lib/utils';
-import { usePolzzakStore } from '@/store/usePolzzakStroe';
 
 interface InputProps extends Omit<React.ComponentProps<'input'>, 'type'> {
   type?: 'text' | 'password' | 'button' | 'file' | 'time';
@@ -11,6 +10,8 @@ interface InputProps extends Omit<React.ComponentProps<'input'>, 'type'> {
   placeholder?: string;
   children?: React.ReactNode;
   timeValue?: string;
+  thumbnail?: string | null;
+  fileName?: string | null;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -23,12 +24,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       placeholder,
       children,
       timeValue,
+      thumbnail,
+      fileName,
       ...props
     },
     ref,
   ) => {
     const labelId = React.useId();
-    const { thumbnail, fileName } = usePolzzakStore();
     const Wrapper = children ? 'div' : React.Fragment;
 
     const inputClassName = cn(

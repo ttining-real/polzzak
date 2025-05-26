@@ -13,20 +13,11 @@ async function fetchImage(contentIds: string[]) {
   );
 
   const response = await Promise.all(requests);
-  const validImg = response.reduce<string[]>(
-    (acc, res) => {
-      const imgUrl = res.data?.response?.body?.items?.item?.[0]?.originimgurl;
-
-      if (imgUrl && imgUrl !== '') {
-        acc.push(imgUrl);
-      }
-
-      return acc;
-    },
-    [].slice(0, 3),
+  const result = response.map(
+    (res) => res.data?.response?.body?.items?.item?.[0]?.originimgurl,
   );
 
-  return validImg;
+  return result;
 }
 
 export { fetchImage };

@@ -6,8 +6,12 @@ import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import Icon from '@/components/Icon/Icon';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
+import { useFavoriteCheck } from '@/hooks/useFavoriteCheck';
+import { useFavoriteFolderId } from '@/hooks/useFavoriteFolderId';
 import { useToast } from '@/hooks/useToast';
-import { useFavoritesStore } from '@/store/useFavoritesStore';
+import { addFavoriteWithContentCheck } from '@/lib/favorite';
+import { removeFavorite } from '@/lib/removeFavorite';
+import { useAuthStore } from '@/store/useAuthStore';
 
 function ListItemCardById({
   contentId,
@@ -16,11 +20,11 @@ function ListItemCardById({
   contentId: string;
   contentTypeId: string;
 }) {
+  const { isAuthenticated, user } = useAuthStore();
+  const [isCheck, setIsCheck] = useFavoriteCheck(contentId);
+  const folderId = useFavoriteFolderId();
   const [item, setItem] = useState<Record<string, string | undefined>>({});
   const [likeAndReview, setLikeAndReview] = useState({ likes: 0, reviews: 0 });
-  const [cardId, setCardId] = useState(''); // uuid로 변경 필요
-  const [isCheck, setIsCheck] = useState(true);
-  const folderId = useFavoritesStore((state) => state.folderId);
   const showToast = useToast();
 
   useEffect(() => {
@@ -36,11 +40,11 @@ function ListItemCardById({
     const getLikesAndReviews = async () => {
       const { data, error } = await supabase
         .from('ex_contents')
-        .select('likes, reviews, ex_favorite(id)')
+        .select('likes, reviews, ex_favorite(folder_id)')
         .eq('contentid', contentId)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
         console.log('❌ getLikesAndReviews 에러:', error);
         return;
       }
@@ -49,100 +53,72 @@ function ListItemCardById({
         likes: data?.likes ?? 0,
         reviews: data?.reviews ?? 0,
       });
-
-      setCardId(`${data?.ex_favorite[0].id}_0`);
     };
 
     fetchData();
     getLikesAndReviews();
   }, [contentId, contentTypeId]);
 
-  if (!item.title) return <p>불러오는 중...</p>;
-
-  /* 🍞 찜 기능 - 토스트 */
-  const deleteToast = () => {
-    showToast(
-      '삭제하지 못했어요. 잠시 후 다시 시도해 주세요.',
-      'top-[64px]',
-      4000,
-    );
-  };
-  const addToast = () => {
-    showToast(
-      '추가하지 못했어요. 잠시 후 다시 시도해 주세요.',
-      'top-[64px]',
-      4000,
-    );
-  };
-
-  /* ⏳ 찜 기능 - DB연결 */
-  const addFavorite = async (
-    folderId: string,
-    contentId: string,
-    cardId?: string,
-  ) => {
-    return await supabase
-      .from('ex_favorite')
-      .insert([{ id: cardId, folder_id: folderId, content_id: contentId }]);
-  };
-  const removeFavorite = async (folderId: string, contentId: string) => {
-    return await supabase
-      .from('ex_favorite')
-      .delete()
-      .match({ folder_id: folderId, content_id: contentId });
-  };
+  if (!item.title) return <p>불러오는 중...</p>; // 추후 스켈레톤으로 변경
 
   /* 🕹️ 찜 기능 - 실행 */
-  const handleFavorite = async (contentId: string) => {
+  const handleFavoriteClick = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    e.preventDefault();
+
+    if (!user) {
+      setIsCheck((prev) => {
+        const next = !prev;
+        // 비로그인: sessionStorage 업데이트
+        const stored = sessionStorage.getItem('favorites');
+        const parsed: string[] = stored ? JSON.parse(stored) : [];
+        const updated = next
+          ? [...parsed, contentId]
+          : parsed.filter((id) => id !== contentId);
+        sessionStorage.setItem('favorites', JSON.stringify(updated));
+        return next;
+      });
+      return;
+    }
+
     if (!folderId) {
-      showToast(
-        '데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
-        'top-[64px]',
-        5000,
-      );
       console.error('❌ 폴더 ID가 없습니다.');
       return;
     }
 
     if (isCheck) {
-      try {
-        const { error } = await removeFavorite(folderId, contentId);
+      const { error } = await removeFavorite(folderId, contentId);
 
-        if (error) {
-          deleteToast();
-          console.error('❌ 즐겨찾기 삭제 실패:', error);
-          return;
-        }
-
-        setIsCheck(false);
-        setLikeAndReview((prev) => ({
-          likes: Math.max((prev.likes ?? 0) - 1, 0),
-          reviews: prev.reviews,
-        }));
-      } catch (err) {
-        deleteToast();
-        console.error('❌ 삭제 중 에러:', err);
-        setIsCheck(true);
+      if (error) {
+        showToast('🚫 즐겨찾기 삭제에 실패했어요.', 'top-[64px]', 4000);
+        return;
       }
+
+      showToast('🗑️ 즐겨찾기를 삭제했어요.', 'top-[64px]', 4000);
+      setIsCheck(false);
+
+      setLikeAndReview((prev) => ({
+        likes: Math.max((prev.likes ?? 0) - 1, 0),
+        reviews: prev.reviews,
+      }));
     } else {
-      try {
-        const { error } = await addFavorite(folderId, contentId, cardId);
-
-        if (error) {
-          addToast();
-          console.error('❌ 즐겨찾기 추가 실패:', error);
-          return;
-        }
-        setIsCheck(true);
-        setLikeAndReview((prev) => ({
-          likes: (prev.likes ?? 0) + 1,
-          reviews: prev.reviews,
-        }));
-      } catch (err) {
-        addToast();
-        console.error('❌ 즐겨찾기 추가 실패:', err);
-        setIsCheck(false);
+      const { error } = await addFavoriteWithContentCheck(
+        folderId,
+        contentId,
+        contentTypeId,
+      );
+      if (error) {
+        showToast('💔 즐겨찾기를 추가하지 못했어요.', 'top-[64px]', 4000);
+        return;
       }
+      showToast('🧡 즐겨찾기를 추가했어요!', 'top-[64px]', 4000);
+      setIsCheck(true);
+
+      setLikeAndReview((prev) => ({
+        likes: (prev.likes ?? 0) + 1,
+        reviews: prev.reviews,
+      }));
     }
   };
 
@@ -216,12 +192,10 @@ function ListItemCardById({
               variant="tertiary"
               size="md"
               className='m-0.5 h-6 w-6 [&_svg:not([class*="size-"])]:size-5'
-              onClick={(e) => {
-                e.preventDefault();
-                handleFavorite(contentId);
-              }}
+              onClick={handleFavoriteClick}
               aria-label={isCheck ? '즐겨찾기 취소' : '즐겨찾기 추가'}
               aria-live="polite"
+              disabled={isAuthenticated && !folderId}
             >
               <Icon
                 id={isCheck ? 'favorite_on' : 'favorite_off'}

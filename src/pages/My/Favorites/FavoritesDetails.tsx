@@ -1,83 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
 import ListItemCardById from '@/components/ListItem/ListItemCardById';
 import { useToast } from '@/hooks/useToast';
 import RequireLogin from '@/pages/RequireLogin';
-import { useFavoritesStore } from '@/store/useFavoritesStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useHeaderStore } from '@/store/useHeaderStore';
 
 function FavoritesDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [itemList, setItemList] = useState<
     { contentid: string; contenttypeid: string }[] | null
   >(null);
-  const { id } = useParams();
-  const navigate = useNavigate();
   const showToast = useToast();
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
-  const { folderId, folderName, setSelectFolder } = useFavoritesStore();
-
-  // 유저
-  const isAuth = localStorage.getItem('user') || sessionStorage.getItem('user');
-  const isAuthPrimaryId =
-    localStorage.getItem('user_id') || sessionStorage.getItem('user_id');
-
-  // 🕹️ 헤더 설정
-  useEffect(() => {
-    if (folderId && folderName) {
-      setContentsTitle(folderName);
-      return () => setContentsTitle(null);
-    }
-
-    const checkFolderIndex = async () => {
-      const folderIndex = parseInt(`${id}`, 10);
-      if (isNaN(folderIndex) || folderIndex < 0) {
-        navigate('/not-found');
-        return;
-      }
-
-      const getFolderId = `${isAuth}_${folderIndex}`;
-      const { data, error } = await supabase
-        .from('ex_favorite_folders')
-        .select('folder_id, folder_name')
-        .eq('folder_id', getFolderId);
-
-      if (error || !data || !data[0].folder_id || !data[0].folder_name) {
-        navigate('/not-found');
-        return;
-      }
-
-      setSelectFolder({
-        id: data[0].folder_id,
-        name: data[0].folder_name,
-      });
-
-      setContentsTitle(data[0].folder_name);
-    };
-
-    checkFolderIndex();
-
-    return () => setContentsTitle(null);
-  }, [
-    id,
-    folderId,
-    folderName,
-    isAuth,
-    navigate,
-    setContentsTitle,
-    setSelectFolder,
-  ]);
+  const { user, isAuthenticated } = useAuthStore();
+  const userId = user?.id;
 
   // 🕹️ 즐겨찾기 리스트 fetch
-  useEffect(() => {
-    if (!folderId) return;
+  const checkFolderExists = useCallback(
+    async (folderId: string) => {
+      const { data, error } = await supabase
+        .from('ex_favorite_folders')
+        .select('user_id, folder_name')
+        .eq('user_id', userId)
+        .eq('id', folderId)
+        .single();
 
-    const fetchFavoriteList = async () => {
+      if (error || !data) {
+        navigate('/my/favorites');
+        return null;
+      }
+
+      return data;
+    },
+    [userId, navigate],
+  );
+
+  const fetchFavoriteList = useCallback(
+    async (folderId: string) => {
       const { data, error } = await supabase
         .from('ex_favorite')
         .select('ex_contents(contentid, contenttypeid)')
-        .eq('folder_id', folderId);
+        .eq('folder_id', folderId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         showToast(
@@ -104,26 +72,44 @@ function FavoritesDetails() {
       }));
 
       setItemList(contentsData);
+    },
+    [showToast],
+  );
+
+  useEffect(() => {
+    if (!id || !userId) return;
+    const init = async () => {
+      const folder = await checkFolderExists(id);
+      if (!folder) return;
+      setContentsTitle(folder.folder_name);
+
+      await fetchFavoriteList(id);
     };
+    init();
+    return () => setContentsTitle(null);
+  }, [id, userId, checkFolderExists, fetchFavoriteList, setContentsTitle]);
 
-    fetchFavoriteList();
-  }, [folderId, showToast, setItemList]);
-
-  if (!isAuth || !isAuthPrimaryId) {
+  if (!userId || !isAuthenticated) {
     return <RequireLogin />;
   }
 
   return (
     <section>
-      <ul className="flex flex-col gap-6">
-        {itemList?.map((item, idx) => (
-          <ListItemCardById
-            key={idx}
-            contentId={item.contentid}
-            contentTypeId={item.contenttypeid}
-          />
-        ))}
-      </ul>
+      {itemList?.length ? (
+        <ul className="flex flex-col gap-6">
+          {itemList?.map((item, idx) => (
+            <ListItemCardById
+              key={idx}
+              contentId={item.contentid}
+              contentTypeId={item.contenttypeid}
+            />
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray01 text-gray07 fs-14 rounded-sm px-4 py-2">
+          저장된 폴더가 없습니다.
+        </p>
+      )}
     </section>
   );
 }

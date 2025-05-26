@@ -3,10 +3,11 @@ import { useParams } from 'react-router-dom';
 
 import { useGetDetailCommon } from '@/api/openAPI';
 import Button from '@/components/Button/Button';
-// import Details from '@/components/Contents/Details';
+import Details from '@/components/Contents/Details';
 import Icon from '@/components/Icon/Icon';
 import UserMenu, { MenuItemTypes } from '@/components/UserMenu/UserMenu';
 import { useHeaderStore } from '@/store/useHeaderStore';
+import { useSearchStore } from '@/store/useSearchStore';
 
 const userMenu: MenuItemTypes[] = [
   {
@@ -33,76 +34,57 @@ const userMenu: MenuItemTypes[] = [
 
 function ViewDetails() {
   const { id } = useParams();
+  const { detailData } = useSearchStore();
+  const info = detailData.filter((item) => item.contentid === id);
   const data = useGetDetailCommon(id as string);
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
-  console.log(data);
-  console.log(data.length);
 
-  // 헤더 타이틀 변경
   useEffect(() => {
     if (data.length > 0) {
       setContentsTitle(data[0].title);
     }
     return () => {
-      setContentsTitle(null); // 페이지를 벗어날 때 초기화
+      setContentsTitle(null);
     };
   }, [data, setContentsTitle]);
 
-  // let contentSection;
-
-  // if (data.length === 0) {
-  //   contentSection = <div className="text-center">로딩 중...</div>;
-  // } else if (
-  //   ['39', '32', '14', '28'].includes(data[0].contenttypeid.toString())
-  // ) {
-  //   contentSection = (
-  //     <Details type="guide" data={data[0]}>
-  //       이용 안내
-  //     </Details>
-  //   );
-  // } else if (['15', '12'].includes(data[0].contenttypeid)) {
-  //   contentSection = (
-  //     <div className="flex flex-col gap-6">
-  //       <Details type="guide" data={data[0]}>
-  //         이용 안내
-  //       </Details>
-  //       <Details type="detail" data={data[0]}>
-  //         행사 소개
-  //       </Details>
-  //       <Details type="detail" data={data[0]}>
-  //         행사 내용
-  //       </Details>
-  //     </div>
-  //   );
-  // } else {
-  //   contentSection = null; // 혹은 다른 fallback
-  // }
-
   return (
-    <>
-      {data.length > 0 ? (
-        data[0].firstimage ? (
-          <img
-            src={data[0].firstimage}
-            alt={data[0].title}
-            className="aspect-video w-full rounded-2xl"
-          />
+    <div className="flex flex-col gap-4">
+      <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
+        {info.length > 0 ? (
+          info[0].image ? (
+            <>
+              <img
+                src={info[0].image}
+                alt=""
+                className="h-full w-full rounded-2xl"
+              />
+              <figcaption className="sr-only">{info[0].title}</figcaption>
+            </>
+          ) : (
+            <>
+              <img
+                src="/images/rabbit_face.png"
+                alt=""
+                className="mb-4 aspect-square h-12"
+              />
+              <figcaption className="">등록된 이미지가 없습니다.</figcaption>
+            </>
+          )
         ) : (
-          <img
-            src="/images/rabbit_face.png"
-            alt="이미지 준비 중입니다."
-            className="m-auto aspect-square h-12"
-          />
-        )
-      ) : (
-        <div className="text-center">로딩 중...</div>
-      )}
+          <div className="text-center">이미지를 불러오는 중 입니다.</div>
+        )}
+      </figure>
       <UserMenu menus={userMenu} />
-      {/* {contentSection} */}
+      {data[0] && info[0] ? (
+        <Details info={info[0]} data={data[0]} />
+      ) : (
+        <div>데이터를 불러오는 중 입니다.</div>
+      )}
       <Button variant={'float'}>
         <Icon id="arrow_top" />
       </Button>
-    </>
+    </div>
   );
 }
 

@@ -1,15 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export interface NearItemType {
-  contentid: string;
-  title: string;
-  addr1: string;
-  addr2?: string;
-  mapx: string;
-  mapy: string;
-  firstimage?: string | null;
-  tel?: string | null;
-}
+import { NearItemType } from '@/types/detailCommonDataType';
 
 interface UseGetNearDataOptions {
   contentTypeId: string;

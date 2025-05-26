@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Button from '@/components/Button/Button';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 
-function NotFound() {
+function NotFound({
+  text = '요청하신 페이지를 찾을 수 없습니다.',
+}: {
+  text?: string;
+}) {
   const navigate = useNavigate();
 
   return (
@@ -14,9 +18,7 @@ function NotFound() {
           <span>4</span>
           <RabbitFace size={64} className="absolute" />
         </h1>
-        <p className="fs-16 font-semibold">
-          요청하신 페이지를 찾을 수 없습니다.
-        </p>
+        <p className="fs-16 font-semibold">{text}</p>
       </div>
       <div className="flex w-full flex-col gap-2">
         <Button

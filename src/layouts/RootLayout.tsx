@@ -95,6 +95,7 @@ function RootLayout() {
     [path, isRegisterPath, isEditPath],
   );
   const editHide = useMemo(() => path !== '/my/favorites', [path]);
+  const searchBtn = useMemo(() => path !== '/', [path]);
 
   return (
     <>
@@ -113,7 +114,9 @@ function RootLayout() {
         <meta name="og:site_name" content="국내 여행지를 찾고 싶을 땐, 폴짝!" />
         <meta name="og:site_author" content="nowashgirls" />
       </Helmet>
-      {showHeader && <Header title={headerTitle} editHide={editHide} />}
+      {showHeader && (
+        <Header title={headerTitle} editHide={editHide} searchBtn={searchBtn} />
+      )}
       {showNav && <NavMenu />}
 
       <Suspense>

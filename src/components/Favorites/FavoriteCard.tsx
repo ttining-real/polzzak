@@ -1,3 +1,5 @@
+import { memo, useCallback } from 'react';
+
 import Button from '@/components/Button/Button';
 import Icon from '@/components/Icon/Icon';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
@@ -24,7 +26,7 @@ function FavoriteCard({
   const isEditMode = useHeaderStore((state) => state.isEditMode);
   const commonImgClass = cn('h-full object-cover object-center');
 
-  const renderImages = () => {
+  const renderImages = useCallback(() => {
     if (images.length === 0 && addFolder) {
       return (
         <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-full text-white">
@@ -47,7 +49,7 @@ function FavoriteCard({
       return images.map((url, index) => (
         <img
           key={index}
-          src={url}
+          src={url ? url : '/images/rabbit_face.png'}
           alt={`${name} 폴더의 ${index + 1}번`}
           className={`${commonImgClass} ${images.length === 1 ? 'w-full' : 'w-1/2'}`}
         />
@@ -57,7 +59,7 @@ function FavoriteCard({
     return (
       <>
         <img
-          src={images[0]}
+          src={images[0] === 'rabbit' ? '/images/rabbit_face.png' : images[0]}
           alt={`${name} 폴더의 1번`}
           className={`${commonImgClass} w-3/5`}
         />
@@ -65,7 +67,7 @@ function FavoriteCard({
           {[images[1], images[2]].map((url, index) => (
             <img
               key={index}
-              src={url}
+              src={url ? url : '/images/rabbit_face.png'}
               alt={`${name} 폴더의 ${index + 1}번`}
               className={`${commonImgClass} aspect-[6/5]`}
             />
@@ -73,7 +75,7 @@ function FavoriteCard({
         </div>
       </>
     );
-  };
+  }, [addFolder, commonImgClass, images, name]);
 
   return (
     <article
@@ -138,4 +140,4 @@ function FavoriteCard({
   );
 }
 
-export default FavoriteCard;
+export default memo(FavoriteCard);

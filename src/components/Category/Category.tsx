@@ -5,25 +5,25 @@ const CATEGORY_LIST = [
     id: 0,
     name: '즐겨찾기',
     linkURL: 'my/favorites',
-    imageURL: '/images/favorite.png',
+    imageURL: '/icons/favorite.png',
   },
   {
     id: 1,
     name: '관광',
-    linkURL: `search/q=관광`,
-    imageURL: '/images/attraction.png',
+    linkURL: `search/result?theme=관광`,
+    imageURL: '/icons/tour.png',
   },
   {
     id: 2,
     name: '축제',
-    linkURL: `search/q=축제`,
-    imageURL: '/images/festival.png',
+    linkURL: `search/result?theme=축제`,
+    imageURL: '/icons/festival.png',
   },
   {
     id: 3,
     name: '맛집',
-    linkURL: `search/q=맛집`,
-    imageURL: '/images/restaurant.png',
+    linkURL: `search/result?theme=맛집`,
+    imageURL: '/icons/food.png',
   },
 ];
 
@@ -45,7 +45,7 @@ function Category() {
                 <img
                   src={item.imageURL}
                   alt={`${item.name} 카테고리 아이콘`}
-                  className="h-6 w-6"
+                  className="h-8 w-8"
                   aria-label="hidden"
                 />
               </div>

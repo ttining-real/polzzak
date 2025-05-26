@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { client } from '@/api/openAPI/client';
+
 interface detailsTypes {
   overview: string;
   contentid: string;
@@ -33,11 +35,21 @@ function useGetDetailCommon(contentId: string) {
   useEffect(() => {
     const fetchDetailCommon = async () => {
       try {
-        const res = await fetch(
-          `/tourapi/${import.meta.env.VITE_OPEN_API_BASE_URL}/detailCommon1?serviceKey=${import.meta.env.VITE_OPEN_API_KEY}&MobileApp=polzzak&MobileOS=ETC&_type=json&pageNo=1&numOfRows=20&contentId=${contentId}&defaultYN=Y&firstImageYN=Y&areacodeYN=Y&catcodeYN=Y&addrinfoYN=Y&mapinfoYN=Y&&overviewYN=Y`,
-        );
-        const data = await res.json();
-        const items = data?.response?.body?.items?.item ?? [];
+        const res = await client.get('/detailCommon1', {
+          params: {
+            pageNo: '1',
+            numOfRows: '20',
+            defaultYN: 'Y',
+            firstImageYN: 'Y',
+            areacodeYN: 'Y',
+            catcodeYN: 'Y',
+            addrinfoYN: 'Y',
+            mapinfoYN: 'Y',
+            overviewYN: 'Y',
+            contentId,
+          },
+        });
+        const items = res.data?.response?.body?.items?.item[0] ?? [];
 
         setDetails(items);
       } catch (err) {
