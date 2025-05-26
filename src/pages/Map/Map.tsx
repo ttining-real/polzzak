@@ -14,12 +14,14 @@ import Loader from '@/components/Loader/Loader';
 import MapHeader from '@/components/Map/MapHeader';
 import MapMarkerList from '@/components/Map/MapMarkerList';
 import ModalContent from '@/components/Map/ModalContent';
+import ModalDetailContent from '@/components/Map/ModalDetailContent';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { filterNameToType, typeToFilterName } from '@/lib/filterMap';
 import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 import { useMapSearchStore } from '@/store/useMapSearchStore';
+import { DetailCommonDataType } from '@/types/detailCommonDataType';
 import { LatLng } from '@/types/LatLng';
 import { FilterType, MakerDataTypes } from '@/types/mapDataType';
 
@@ -64,6 +66,10 @@ function Map() {
 
   const { resetSearchValue } = useMapSearchStore();
 
+  // 선택된 마커
+  const [selectedMarker, setSelectedMarker] =
+    useState<DetailCommonDataType | null>(null);
+
   // 쿼리 → selectedFilter 세팅
   useEffect(() => {
     const categoryParam = searchParams.get('category');
@@ -105,6 +111,8 @@ function Map() {
 
   useEffect(() => {
     if (!myLocation) return;
+
+    if (!selectedFilter) return;
 
     fetchAroundList({
       mapX: myLocation.lng,
@@ -220,8 +228,7 @@ function Map() {
 
   const searchWord = searchParams.get('search');
 
-  console.log('📌 markerData : ', markerData);
-  console.log('📌 isOpen : ', isOpen);
+  console.log(selectedMarker);
 
   return (
     <main className="h-full w-full">
@@ -252,7 +259,7 @@ function Map() {
                 options: { offset: { x: 16, y: 16 } },
               }}
             />
-            <MapMarkerList data={markerData} />
+            <MapMarkerList data={markerData} onMakerClick={setSelectedMarker} />
             {showReSearchButton && (
               <Button
                 className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
@@ -265,15 +272,26 @@ function Map() {
             {isOpen && markerData.length > 0 && (
               <SlideUpDialog
                 header={
-                  (searchWord && `${searchWord} 검색 결과`) ||
-                  (selectedFilter && formatMapDialogHeader(selectedFilter)) ||
-                  '내 주변'
+                  selectedMarker
+                    ? (selectedMarker.title ?? '상세 정보')
+                    : searchWord
+                      ? `${searchWord} 검색 결과`
+                      : selectedFilter
+                        ? (formatMapDialogHeader(selectedFilter) ?? '필터 결과')
+                        : '내 주변'
                 }
                 dimd={false}
                 dragIcon={true}
                 className="shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
               >
-                <ModalContent data={markerData} />
+                {selectedMarker ? (
+                  <ModalDetailContent
+                    data={selectedMarker}
+                    contentId={selectedMarker.contentid}
+                  />
+                ) : (
+                  markerData.length > 0 && <ModalContent data={markerData} />
+                )}
               </SlideUpDialog>
             )}
           </MapArea>

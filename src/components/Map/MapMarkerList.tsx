@@ -1,9 +1,11 @@
 import { MapMarker } from 'react-kakao-maps-sdk';
 
+import { useDialogStore } from '@/store/useDialogStore';
 import { MakerDataTypes } from '@/types/mapDataType';
 
 interface Props {
   data: MakerDataTypes[];
+  onMakerClick?: (marker) => void;
 }
 
 const getMarkerSrc = (contentTypeId: string) => {
@@ -27,7 +29,10 @@ const getMarkerSrc = (contentTypeId: string) => {
   }
 };
 
-export default function MapMarkerList({ data }: Props) {
+export default function MapMarkerList({ data, onMakerClick }: Props) {
+  // 다이얼로그 상태
+  const { openModal } = useDialogStore();
+
   if (!Array.isArray(data)) {
     console.warn('⚠️ 마커 데이터는 배열이어야 합니다. : ', data);
     return null;
@@ -46,6 +51,9 @@ export default function MapMarkerList({ data }: Props) {
           }}
           onClick={() => {
             console.log(`${marker.title} 마커 클릭!`);
+
+            onMakerClick?.(marker);
+            openModal();
           }}
         />
       ))}
