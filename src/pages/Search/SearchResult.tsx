@@ -10,7 +10,7 @@ function SearchResult() {
   const filteredResults = searchResults.filter((item) => {
     const matchesRegion = region ? item.addr1.includes(region) : true;
 
-    const startMonth = item.eventstartdate.substring(4, 6);
+    const startMonth = item.eventstartdate?.substring(4, 6);
     const paddedMonth = month ? month.padStart(2, '0') : null;
     const matchesMonth = month ? startMonth === paddedMonth : true;
 
