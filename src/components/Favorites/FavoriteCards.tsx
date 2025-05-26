@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 
 import FavoritesCard from '@/components/Favorites/FavoriteCard';
@@ -46,4 +47,4 @@ function FavoritesCards({
   );
 }
 
-export default FavoritesCards;
+export default memo(FavoritesCards);
