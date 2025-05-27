@@ -21,7 +21,7 @@ function UserMenu({ menus }: UserMenuProps) {
           <button
             key={index}
             onClick={item.onClick}
-            className="fs-14 font-regular focus-visible:border-ring focus-visible:ring-ring flex flex-1 flex-col items-center gap-2 rounded-sm py-3 outline-none focus-visible:ring-[2px] focus-visible:ring-offset-2"
+            className="fs-14 font-regular focus-visible:border-ring focus-visible:ring-ring flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-sm py-3 outline-none focus-visible:ring-[2px] focus-visible:ring-offset-2"
           >
             <Icon id={item.icon} />
             {item.label}
