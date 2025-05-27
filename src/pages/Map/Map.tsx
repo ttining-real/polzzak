@@ -59,7 +59,7 @@ function Map() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // 다이얼로그 상태
-  const { isOpen, openModal } = useDialogStore();
+  const { isOpen, openModal, closeModal } = useDialogStore();
 
   // 재검색 버튼 상태
   const [showReSearchButton, setShowReSearchButton] = useState(false);
@@ -212,6 +212,8 @@ function Map() {
   // 필터 해제 시 쿼리 제거
   useEffect(() => {
     if (selectedFilter === null) {
+      closeModal();
+      setMarkerData([]);
       const params = new URLSearchParams(searchParams);
       params.delete('category');
       setSearchParams(params, { replace: true });
@@ -266,10 +268,12 @@ function Map() {
                 options: { offset: { x: 16, y: 16 } },
               }}
             />
-            <MapMarkerList
-              data={markerData}
-              onMarkerClick={setSelectedMarker}
-            />
+            {markerData.length > 0 && (
+              <MapMarkerList
+                data={markerData}
+                onMarkerClick={setSelectedMarker}
+              />
+            )}
             {showReSearchButton && (
               <Button
                 className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
