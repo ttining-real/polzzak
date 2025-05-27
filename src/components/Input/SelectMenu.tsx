@@ -7,16 +7,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/Input/Select';
-import { formatDate, getTripDays, Schedule } from '@/lib/dateUtils';
+
+export interface FavoirteType {
+  id: string;
+  name: string;
+  storage: string[];
+}
+
+export interface PolzzakType {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  storage: {
+    schedule_id: string;
+    date: string;
+  }[];
+}
 
 interface SelectMenuProps {
-  data: Schedule | 'email';
+  data: PolzzakType | 'email';
   className?: string;
   onSelectedEmail?: (email: string) => void;
 }
 
 function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
-  const [daySelected, setDaySelected] = useState('Day1');
+  const [daySelected, setDaySelected] = useState('Day 1');
 
   const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
 
@@ -36,18 +52,11 @@ function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
       </Select>
     );
   } else {
-    const { days } = getTripDays(data);
-
-    const selectItems = Array.from({ length: days }, (_, i) => {
-      const dayLabel = `Day${i + 1}`;
-      const dateLabel = formatDate(data.startDate, i, false);
-
-      return (
-        <SelectItem key={dayLabel} value={dayLabel}>
-          {dayLabel} ({dateLabel})
-        </SelectItem>
-      );
-    });
+    const selectItems = data?.storage?.map((item, idx) => (
+      <SelectItem key={item.schedule_id} value={`Day ${idx + 1}`}>
+        Day {idx + 1} ({item.date})
+      </SelectItem>
+    ));
 
     return (
       <Select value={daySelected} onValueChange={setDaySelected}>
