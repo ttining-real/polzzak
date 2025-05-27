@@ -1,11 +1,11 @@
 import { FILTER_LIST } from '@/lib/filterMap';
 
-export interface MakerDataTypes {
+export interface MarkerDataTypes {
   contentid: string;
   contenttypeid?: string;
   title: string;
-  mapx: number;
-  mapy: number;
+  mapx: string;
+  mapy: string;
   addr1?: string;
   addr2?: string;
   cat1?: string;
