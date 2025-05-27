@@ -2,7 +2,7 @@ import axios from 'axios';
 import qs from 'qs';
 
 export const client = axios.create({
-  baseURL: `/tourapi${import.meta.env.VITE_OPEN_API_BASE_URL}`,
+  baseURL: import.meta.env.VITE_OPEN_API_BASE_URL,
   paramsSerializer: (params) => qs.stringify(params, { encode: false }),
 });
 
