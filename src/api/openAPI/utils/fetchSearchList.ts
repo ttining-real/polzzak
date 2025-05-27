@@ -41,7 +41,7 @@ async function fetchSearchList({
   startDate,
   endDate,
 }: SearchList) {
-  const results: DetailCommonDataType[] = [];
+  const results: ItemTypes[] = [];
   const regionCode = REGION_MAP[region] || '';
 
   try {
