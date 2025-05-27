@@ -21,8 +21,8 @@ interface DataTypes {
   title: string;
   addr1: string;
   firstimage: string;
-  mapx: number;
-  mapy: number;
+  mapx: string;
+  mapy: string;
   contenttypeid: string;
 }
 
@@ -54,8 +54,8 @@ export async function fetchMapSearchList(
       title: item.title,
       addr1: item.addr1,
       firstimage: item.firstimage,
-      mapx: parseFloat(item.mapx),
-      mapy: parseFloat(item.mapy),
+      mapx: item.mapx,
+      mapy: item.mapy,
       contenttypeid: item.contenttypeid,
     }));
   } catch (error) {
