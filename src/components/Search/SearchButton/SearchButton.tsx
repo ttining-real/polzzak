@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { fetchSearchList } from '@/api/openAPI/utils/fetchSearchList';
 import Button from '@/components/Button/Button';
+import { ListItemProps } from '@/components/ListItem/ListItem';
 import { useSearchActive, useSearchStore } from '@/store/useSearchStore';
 
 const SearchButton = memo(function SearchButton() {
@@ -37,7 +38,15 @@ const SearchButton = memo(function SearchButton() {
         startDate: formattedStart,
         endDate: formattedEnd,
       });
-      setSearchResults(searchResults);
+
+      const transformedResults = searchResults.filter(
+        (item): item is ListItemProps =>
+          !!item.contentid &&
+          !!item.contenttypeid &&
+          !!item.title &&
+          !!item.addr1,
+      );
+      setSearchResults(transformedResults);
 
       const params = new URLSearchParams();
       if (keyword) params.set('q', keyword);

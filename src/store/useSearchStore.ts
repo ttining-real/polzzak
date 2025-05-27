@@ -12,6 +12,7 @@ interface SearchState {
   theme: string[];
   searchResults: ListItemProps[];
   detailData: ListItemProps[];
+  pageNo: number;
 }
 interface SearchActions {
   setKeyWord: (keyword: string) => void;
@@ -26,6 +27,8 @@ interface SearchActions {
   sortSearchResults: (
     type: 'latest' | 'favorite' | 'review' | 'oldest',
   ) => void;
+  setPageNo: (pageNo: number) => void;
+  appendSearchResults: (results: ListItemProps[]) => void;
 }
 
 const initialState: SearchState = {
@@ -36,6 +39,7 @@ const initialState: SearchState = {
   theme: [],
   searchResults: [],
   detailData: [],
+  pageNo: 1,
 };
 
 export const useSearchStore = create<SearchState & SearchActions>()(
@@ -114,10 +118,10 @@ export const useSearchStore = create<SearchState & SearchActions>()(
               );
               break;
             case 'favorite':
-              sorted = results.sort((a, b) => b.likes - a.likes);
+              // sorted = results.sort((a, b) => b.likes - a.likes);
               break;
             case 'review':
-              sorted = results.sort((a, b) => b.reviews - a.reviews);
+              // sorted = results.sort((a, b) => b.reviews - a.reviews);
               break;
             default:
               sorted = results;
@@ -125,6 +129,11 @@ export const useSearchStore = create<SearchState & SearchActions>()(
 
           set({ searchResults: sorted });
         },
+        setPageNo: (pageNo) => set({ pageNo }),
+        appendSearchResults: (newResults) =>
+          set((state) => ({
+            searchResults: [...state.searchResults, ...newResults],
+          })),
       }),
       { name: 'search-store' },
     ),
