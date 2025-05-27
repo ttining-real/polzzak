@@ -23,7 +23,7 @@ import { useDialogStore } from '@/store/useDialogStore';
 import { useMapSearchStore } from '@/store/useMapSearchStore';
 import { DetailCommonDataType } from '@/types/detailCommonDataType';
 import { LatLng } from '@/types/LatLng';
-import { FilterType, MakerDataTypes } from '@/types/mapDataType';
+import { FilterType, MarkerDataTypes } from '@/types/mapDataType';
 
 import NotFound from '../NotFound';
 
@@ -50,7 +50,7 @@ function Map() {
   const mapRef = useRef<kakao.maps.Map | null>(null);
 
   // 마커 데이터 저장
-  const [markerData, setMarkerData] = useState<MakerDataTypes[]>([]);
+  const [markerData, setMarkerData] = useState<MarkerDataTypes[]>([]);
 
   // 필터링 상태 추가
   const [selectedFilter, setSelectedFilter] = useState<FilterType | null>(null);
@@ -128,7 +128,16 @@ function Map() {
             ? [rawItem]
             : [];
 
-        setMarkerData(itemArray);
+        // detailItem[] → MarkerDataTypes[] 매핑
+        const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
+          contentid: item.contentid,
+          contenttypeid: item.contenttypeid,
+          title: item.title,
+          mapx: item.mapx,
+          mapy: item.mapy,
+        }));
+
+        setMarkerData(mappedArray);
       })
       .catch((err) => {
         console.error('🚫 API 호출 실패: ', err);
@@ -228,8 +237,6 @@ function Map() {
 
   const searchWord = searchParams.get('search');
 
-  console.log(selectedMarker);
-
   return (
     <main className="h-full w-full">
       {fallbackContent ? (
@@ -259,7 +266,10 @@ function Map() {
                 options: { offset: { x: 16, y: 16 } },
               }}
             />
-            <MapMarkerList data={markerData} onMakerClick={setSelectedMarker} />
+            <MapMarkerList
+              data={markerData}
+              onMarkerClick={setSelectedMarker}
+            />
             {showReSearchButton && (
               <Button
                 className="absolute top-30 left-1/2 z-20 h-[40px] -translate-x-1/2 rounded-full px-4 font-normal shadow-md"
