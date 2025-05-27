@@ -1,18 +1,16 @@
 import ListItemCardById from '@/components/ListItem/ListItemCardById';
-import { DetailCommonDataType } from '@/types/detailCommonDataType';
+import { MarkerDataTypes } from '@/types/mapDataType';
 
 interface ModalContentProps {
-  data?: DetailCommonDataType[];
+  data?: MarkerDataTypes[];
   contentId?: string;
 }
 
 export default function ModalContent({ data, contentId }: ModalContentProps) {
-  // console.log(data);
-
   return (
     <>
       {data && (
-        <ul className="flex flex-col">
+        <ul className="flex flex-col gap-4">
           {data?.map(
             (item) =>
               item.contentid &&

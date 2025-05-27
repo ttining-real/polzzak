@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { memo } from 'react';
 
 import { fetchImage } from '@/api/openAPI/utils/fetchImage';
 import supabase from '@/api/supabase';
@@ -24,70 +25,58 @@ function FavoritesList({
   onClickDelete,
   onClickModify,
 }: FavoritesListProps) {
-  const [folderMap, setFolderMap] = useState<Record<string, string[]>>({});
   const showToast = useToast();
 
-  useEffect(() => {
-    if (!folders.length) return;
+  const fetchImagesQueries = useQueries({
+    queries: folders.map((folder) => ({
+      queryKey: ['favorite=images', folder.id],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('ex_favorite')
+          .select('content_id')
+          .eq('folder_id', folder.id)
+          .limit(3)
+          .order('created_at', { ascending: false });
 
-    const fetchAllImages = async () => {
-      const folderContentMap: Record<string, string[]> = {};
-      const allContentIds = new Set<string>();
-
-      await Promise.all(
-        folders.map(async (folder) => {
-          const { data, error } = await supabase
-            .from('ex_favorite')
-            .select('content_id')
-            .eq('folder_id', folder.id)
-            .limit(3)
-            .order('created_at', { ascending: false });
-
-          if (error || !data) {
-            showToast(
-              '데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
-              'top-[64px]',
-              5000,
-            );
-            console.error('❌ 폴더 데이터 불러오기 실패:', error);
-            return;
-          }
-
-          const contentIds = data.map((item) => item.content_id);
-          folderContentMap[folder.id] = contentIds;
-          contentIds.forEach((id) => allContentIds.add(id));
-        }),
-      );
-
-      const imageUrls = await fetchImage([...allContentIds]);
-
-      const folderImages: Record<string, string[]> = {};
-      Object.entries(folderContentMap).forEach(([folderId, ids]) => {
-        folderImages[folderId] = ids.map(
-          (_, idx) => imageUrls[idx] ?? 'rabbit',
-        );
-      });
-      setFolderMap(folderImages);
-    };
-
-    fetchAllImages();
-  }, [folders, showToast]);
+        if (error || !data) {
+          showToast(
+            '데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+            'top-[64px]',
+            5000,
+          );
+          console.error('❌ 폴더 데이터 불러오기 실패:', error);
+          return;
+        }
+        const contentIds = data.map((item) => item.content_id);
+        const images = await fetchImage(contentIds);
+        return images;
+      },
+      staleTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      enabled: true,
+    })),
+  });
 
   return (
     <section className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-6">
-      {folders.map((folder) => (
-        <FavoritesCards
-          key={folder.id}
-          id={folder.id}
-          name={folder.folder_name}
-          images={folderMap[folder.id] || []}
-          onClickDelete={() => onClickDelete(folder.id, folder.folder_name)}
-          onClickModify={() => onClickModify(folder.id, folder.folder_name)}
-        />
-      ))}
+      {folders.map((folder, idx) => {
+        const { data: images = [], isLoading } = fetchImagesQueries[idx];
+        return (
+          <FavoritesCards
+            key={folder.id}
+            id={folder.id}
+            name={folder.folder_name}
+            images={isLoading ? [] : images}
+            onClickDelete={() => onClickDelete(folder.id, folder.folder_name)}
+            onClickModify={() => onClickModify(folder.id, folder.folder_name)}
+          />
+        );
+      })}
       <AddFavoriteCard onClick={onClick} />
     </section>
   );
 }
 
-export default FavoritesList;
+export default memo(FavoritesList);

@@ -11,6 +11,10 @@ interface SearchList {
   pageNo?: number;
 }
 
+interface ItemTypes {
+  [key: string]: string;
+}
+
 const REGION_MAP: Record<string, string> = {
   서울: '1',
   인천: '2',
