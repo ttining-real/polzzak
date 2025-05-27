@@ -1,11 +1,11 @@
 import { MapMarker } from 'react-kakao-maps-sdk';
 
 import { useDialogStore } from '@/store/useDialogStore';
-import { MakerDataTypes } from '@/types/mapDataType';
+import { MarkerDataTypes } from '@/types/mapDataType';
 
-interface Props {
-  data: MakerDataTypes[];
-  onMakerClick?: (marker) => void;
+interface MapMarkerListProps {
+  data: MarkerDataTypes[];
+  onMarkerClick?: (marker: MarkerDataTypes) => void;
 }
 
 const getMarkerSrc = (contentTypeId: string) => {
@@ -29,7 +29,10 @@ const getMarkerSrc = (contentTypeId: string) => {
   }
 };
 
-export default function MapMarkerList({ data, onMakerClick }: Props) {
+export default function MapMarkerList({
+  data,
+  onMarkerClick,
+}: MapMarkerListProps) {
   // 다이얼로그 상태
   const { openModal } = useDialogStore();
 
@@ -52,7 +55,7 @@ export default function MapMarkerList({ data, onMakerClick }: Props) {
           onClick={() => {
             console.log(`${marker.title} 마커 클릭!`);
 
-            onMakerClick?.(marker);
+            onMarkerClick?.(marker);
             openModal();
           }}
         />

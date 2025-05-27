@@ -1,8 +1,8 @@
 import ListItemCardById from '@/components/ListItem/ListItemCardById';
-import { MakerDataTypes } from '@/types/mapDataType';
+import { MarkerDataTypes } from '@/types/mapDataType';
 
 interface ModalContentProps {
-  data?: MakerDataTypes[];
+  data?: MarkerDataTypes[];
   contentId?: string;
 }
 
