@@ -1,4 +1,5 @@
 import { client } from '@/api/openAPI/client';
+import { DetailCommonDataType } from '@/types/detailCommonDataType';
 
 interface SearchList {
   keyword?: string;
@@ -7,6 +8,7 @@ interface SearchList {
   theme?: string[];
   startDate?: string;
   endDate?: string;
+  pageNo?: number;
 }
 
 interface ItemTypes {
@@ -39,7 +41,7 @@ async function fetchSearchList({
   startDate,
   endDate,
 }: SearchList) {
-  const results: ItemTypes[] = [];
+  const results: DetailCommonDataType[] = [];
   const regionCode = REGION_MAP[region] || '';
 
   try {
@@ -105,18 +107,22 @@ async function fetchSearchList({
       }
     }
 
-    const uniqueResults = results.reduce((acc, item) => {
-      if (
-        item &&
-        item.contentid &&
-        !acc.some(
-          (existing: ItemTypes) => existing.contentid === item.contentid,
-        )
-      ) {
-        acc.push(item);
-      }
-      return acc;
-    }, []);
+    const uniqueResults = results.reduce<DetailCommonDataType[]>(
+      (acc, item) => {
+        if (
+          item &&
+          item.contentid &&
+          !acc.some(
+            (existing: DetailCommonDataType) =>
+              existing.contentid === item.contentid,
+          )
+        ) {
+          acc.push(item);
+        }
+        return acc;
+      },
+      [],
+    );
 
     return uniqueResults;
   } catch (error) {
