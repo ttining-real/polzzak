@@ -17,32 +17,36 @@ import { useSearchStore } from '@/store/useSearchStore';
 
 function ViewDetails() {
   const { id } = useParams();
-  const { detailData } = useSearchStore();
-  const info = detailData.filter((item) => item.contentid === id);
-  const rawData = useGetDetailCommon(id as string);
-  const data = rawData ?? null;
-  const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
-  const { isOpen, openModal, closeModal } = useDialogStore();
-  const { user } = useAuthStore();
-  const userId = user?.id;
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
   >(null);
+  const [selectFolder, setSelectFolder] = useState<string | null>(null);
+  const [selectPolzzak, setSelectPolzzak] = useState<string | null>(null);
+  const [isMyContent, setIsMyContent] = useState(false);
+  const [isSaveContent, setIsSaveContent] = useState(false);
+  const { detailData } = useSearchStore();
+  const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
+  const { isOpenId, openModal, closeModal } = useDialogStore();
+  const info = detailData.filter((item) => item.contentid === id);
+  const rawData = useGetDetailCommon(id as string);
+  const data = rawData ?? null;
+  const { user } = useAuthStore();
+  const userId = user?.id;
   const userMenu: MenuItemTypes[] = [
     {
       label: '즐겨찾기',
-      icon: 'favorite_off',
+      icon: isMyContent ? 'favorite_on' : 'favorite_off',
       onClick: () => {
-        openModal();
-        onClickAddFavorite();
+        openModal('즐겨찾기');
+        onClickFavorite();
       },
     },
     {
       label: '폴짝추가',
       icon: 'calendar',
       onClick: () => {
-        openModal();
-        onClickAddPolzzak();
+        openModal('폴짝추가');
+        onClickPolzzak();
       },
     },
     {
@@ -59,7 +63,52 @@ function ViewDetails() {
     },
   ];
 
-  const onClickAddFavorite = async () => {
+  useEffect(() => {
+    if (data?.title) {
+      setContentsTitle(data.title);
+    }
+    return () => {
+      setContentsTitle(null);
+    };
+  }, [data, setContentsTitle]);
+
+  useEffect(() => {
+    if (!id || !userId) return;
+    const isMyFavorite = async () => {
+      const { data, error } = await supabase
+        .from('ex_favorite_folders')
+        .select('ex_favorite(content_id)')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const hasMyContent = data.some((folder) =>
+        folder.ex_favorite?.some((item) => item.content_id === id),
+      );
+      setIsMyContent(hasMyContent);
+    };
+    isMyFavorite();
+
+    const getContent = async () => {
+      const { data, error } = await supabase
+        .from('ex_content')
+        .select('contentid')
+        .eq('contentid', id);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+      const hasContent = data.some((content) => content.contentid === id);
+      setIsSaveContent(hasContent);
+    };
+    getContent();
+  }, [id, userId]);
+
+  const onClickFavorite = async () => {
     if (!id || !userId) return;
     try {
       const { data, error } = await supabase
@@ -83,7 +132,7 @@ function ViewDetails() {
     }
   };
 
-  const onClickAddPolzzak = async () => {
+  const onClickPolzzak = async () => {
     if (!id || !userId) return;
     try {
       const { data, error } = await supabase
@@ -126,14 +175,40 @@ function ViewDetails() {
     }
   };
 
-  useEffect(() => {
-    if (data?.title) {
-      setContentsTitle(data.title);
+  const onClickAdd = async () => {
+    if (!selectFolder || !selectPolzzak) return;
+    try {
+      if (isOpenId === '즐겨찾기') {
+        if (isSaveContent) {
+          const { error } = await supabase
+            .from('ex_contents')
+            .insert([{ contentid: id, contenttypeid: info[0].contenttypeid }]);
+          if (error) throw error;
+        }
+
+        const { error } = await supabase
+          .from('ex_favorite')
+          .insert([{ folder_id: selectFolder?.slice(5), content_id: id }]);
+
+        if (error) throw error;
+      }
+      if (isOpenId === '폴짝추가') {
+        const { error } = await supabase.from('ex_polzzak_detail').insert([
+          {
+            schedule_id: selectFolder?.slice(5),
+            place: info[0].title,
+            memo: info[0].addr1,
+            content_id: id,
+            order: 99,
+          },
+        ]);
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error(err);
+      return;
     }
-    return () => {
-      setContentsTitle(null);
-    };
-  }, [data, setContentsTitle]);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -168,9 +243,9 @@ function ViewDetails() {
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
-      {isOpen && (
+      {isOpenId && (
         <SlideUpDialog
-          header="즐겨찾기 추가하기"
+          header={`${isOpenId === '즐겨찾기' ? '즐겨찾기' : '폴짝'} 추가하기`}
           button={[
             {
               text: '취소',
@@ -180,14 +255,18 @@ function ViewDetails() {
             },
             {
               text: '추가',
-              onClick: () => {
-                console.log('click');
+              onClick: async () => {
+                await onClickAdd();
                 closeModal();
               },
             },
           ]}
         >
-          <Radio data={radioList} />
+          <Radio
+            data={radioList}
+            setSelectFolder={setSelectFolder}
+            setSelectPolzzak={setSelectPolzzak}
+          />
         </SlideUpDialog>
       )}
       <Button variant={'float'}>
