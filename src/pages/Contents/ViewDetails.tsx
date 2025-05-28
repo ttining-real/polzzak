@@ -5,9 +5,8 @@ import { useGetDetailCommon } from '@/api/openAPI';
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import Details from '@/components/Contents/Details';
-import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
+import FavoriteDialog from '@/components/Dialog/FavoriteDialog';
 import Icon from '@/components/Icon/Icon';
-import { Radio } from '@/components/Input/RadioGroup';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
 import UserMenu, { MenuItemTypes } from '@/components/UserMenu/UserMenu';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -20,13 +19,10 @@ function ViewDetails() {
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
   >(null);
-  const [selectFolder, setSelectFolder] = useState<string | null>(null);
-  const [selectPolzzak, setSelectPolzzak] = useState<string | null>(null);
   const [isMyContent, setIsMyContent] = useState(false);
-  const [isSaveContent, setIsSaveContent] = useState(false);
   const { detailData } = useSearchStore();
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
-  const { isOpenId, openModal, closeModal } = useDialogStore();
+  const { isOpenId, openModal } = useDialogStore();
   const info = detailData.filter((item) => item.contentid === id);
   const rawData = useGetDetailCommon(id as string);
   const data = rawData ?? null;
@@ -71,42 +67,6 @@ function ViewDetails() {
       setContentsTitle(null);
     };
   }, [data, setContentsTitle]);
-
-  useEffect(() => {
-    if (!id || !userId) return;
-    const isMyFavorite = async () => {
-      const { data, error } = await supabase
-        .from('ex_favorite_folders')
-        .select('ex_favorite(content_id)')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const hasMyContent = data.some((folder) =>
-        folder.ex_favorite?.some((item) => item.content_id === id),
-      );
-      setIsMyContent(hasMyContent);
-    };
-    isMyFavorite();
-
-    const getContent = async () => {
-      const { data, error } = await supabase
-        .from('ex_content')
-        .select('contentid')
-        .eq('contentid', id);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-      const hasContent = data.some((content) => content.contentid === id);
-      setIsSaveContent(hasContent);
-    };
-    getContent();
-  }, [id, userId]);
 
   const onClickFavorite = async () => {
     if (!id || !userId) return;
@@ -175,41 +135,6 @@ function ViewDetails() {
     }
   };
 
-  const onClickAdd = async () => {
-    if (!selectFolder || !selectPolzzak) return;
-    try {
-      if (isOpenId === '즐겨찾기') {
-        if (isSaveContent) {
-          const { error } = await supabase
-            .from('ex_contents')
-            .insert([{ contentid: id, contenttypeid: info[0].contenttypeid }]);
-          if (error) throw error;
-        }
-
-        const { error } = await supabase
-          .from('ex_favorite')
-          .insert([{ folder_id: selectFolder?.slice(5), content_id: id }]);
-
-        if (error) throw error;
-      }
-      if (isOpenId === '폴짝추가') {
-        const { error } = await supabase.from('ex_polzzak_detail').insert([
-          {
-            schedule_id: selectFolder?.slice(5),
-            place: info[0].title,
-            memo: info[0].addr1,
-            content_id: id,
-            order: 99,
-          },
-        ]);
-        if (error) throw error;
-      }
-    } catch (err) {
-      console.error(err);
-      return;
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
@@ -243,31 +168,18 @@ function ViewDetails() {
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
-      {isOpenId && (
-        <SlideUpDialog
-          header={`${isOpenId === '즐겨찾기' ? '즐겨찾기' : '폴짝'} 추가하기`}
-          button={[
-            {
-              text: '취소',
-              onClick: () => {
-                closeModal();
-              },
-            },
-            {
-              text: '추가',
-              onClick: async () => {
-                await onClickAdd();
-                closeModal();
-              },
-            },
-          ]}
-        >
-          <Radio
-            data={radioList}
-            setSelectFolder={setSelectFolder}
-            setSelectPolzzak={setSelectPolzzak}
-          />
-        </SlideUpDialog>
+      {isOpenId && id && userId && (
+        <FavoriteDialog
+          radioList={radioList}
+          id={id}
+          userId={userId}
+          info={{
+            contenttypeid: info[0].contenttypeid,
+            title: info[0].title,
+            addr1: info[0].addr1,
+          }}
+          setIsMyContent={setIsMyContent}
+        />
       )}
       <Button variant={'float'}>
         <Icon id="arrow_top" />
