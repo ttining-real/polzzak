@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Select,
@@ -29,12 +29,28 @@ interface SelectMenuProps {
   data: PolzzakType | 'email';
   className?: string;
   onSelectedEmail?: (email: string) => void;
+  setSelectPolzzak?: (id: string) => void;
 }
 
-function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
-  const [daySelected, setDaySelected] = useState('Day 1');
-
+function SelectMenu({
+  data,
+  className,
+  onSelectedEmail,
+  setSelectPolzzak,
+}: SelectMenuProps) {
   const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
+  const [daySelected, setDaySelected] = useState<string>('');
+
+  useEffect(() => {
+    if (!data || data === 'email') return;
+
+    setDaySelected(`${data.storage[0].schedule_id}`);
+  }, [data]);
+
+  useEffect(() => {
+    if (!data || data === 'email') return;
+    setSelectPolzzak?.(daySelected);
+  }, [daySelected, setSelectPolzzak, data]);
 
   if (data === 'email') {
     return (
@@ -53,13 +69,13 @@ function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
     );
   } else {
     const selectItems = data?.storage?.map((item, idx) => (
-      <SelectItem key={item.schedule_id} value={`Day ${idx + 1}`}>
+      <SelectItem key={item.schedule_id} value={item.schedule_id}>
         Day {idx + 1} ({item.date})
       </SelectItem>
     ));
 
     return (
-      <Select value={daySelected} onValueChange={setDaySelected}>
+      <Select value={daySelected ?? ''} onValueChange={setDaySelected}>
         <SelectTrigger className={className}>
           <SelectValue placeholder="Select a day" />
         </SelectTrigger>

@@ -12,12 +12,33 @@ import { cn } from '@/lib/utils';
 interface RadioProps {
   data?: FavoirteType[] | PolzzakType[] | null;
   className?: string;
+  setSelectFolder: (id: string) => void;
+  setSelectPolzzak: (id: string) => void;
 }
 
-// data 기본값으로 더미데이타
-function Radio({ data, className }: RadioProps) {
-  const [selected, setSelected] = React.useState('radio0');
-  if (data === null) return;
+function Radio({
+  data,
+  className,
+  setSelectFolder,
+  setSelectPolzzak,
+}: RadioProps) {
+  const [selected, setSelected] = React.useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (data?.length) {
+      setSelected(`radio${data[0].id}`);
+    }
+  }, [data]);
+
+  React.useEffect(() => {
+    if (selected && data?.length) {
+      if (typeof data[0].storage[0] === 'string') {
+        setSelectFolder(selected);
+      }
+    }
+  }, [selected, data, setSelectFolder]);
+
+  if (!data) return;
 
   return (
     <RadioGroup value={selected} onValueChange={setSelected}>
@@ -52,7 +73,9 @@ function Radio({ data, className }: RadioProps) {
                   </p>
                 )}
               </div>
-              {isChecked && 'startDate' in item && <AddSchedule data={item} />}
+              {isChecked && 'startDate' in item && (
+                <AddSchedule data={item} setSelectPolzzak={setSelectPolzzak} />
+              )}
             </div>
           </div>
         );
@@ -63,9 +86,10 @@ function Radio({ data, className }: RadioProps) {
 
 export interface AddScheduleProps {
   data: PolzzakType;
+  setSelectPolzzak?: (id: string) => void;
 }
 
-function AddSchedule({ data }: AddScheduleProps) {
+function AddSchedule({ data, setSelectPolzzak }: AddScheduleProps) {
   const range = (date: string) => {
     const splitDate = date.split('-');
     return `${splitDate[0]}.${splitDate[1]}.${splitDate[2]}`;
@@ -79,7 +103,11 @@ function AddSchedule({ data }: AddScheduleProps) {
           : range(data.startDate)}
       </p>
 
-      <SelectMenu data={data} className="mx-0.5" />
+      <SelectMenu
+        data={data}
+        className="mx-0.5"
+        setSelectPolzzak={setSelectPolzzak}
+      />
     </div>
   );
 }
