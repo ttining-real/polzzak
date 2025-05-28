@@ -19,7 +19,8 @@ function ViewDetails() {
   const { id } = useParams();
   const { detailData } = useSearchStore();
   const info = detailData.filter((item) => item.contentid === id);
-  const data = useGetDetailCommon(id as string);
+  const rawData = useGetDetailCommon(id as string);
+  const data = rawData ?? null;
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
   const { isOpen, openModal, closeModal } = useDialogStore();
   const { user } = useAuthStore();
@@ -126,8 +127,8 @@ function ViewDetails() {
   };
 
   useEffect(() => {
-    if (data.length > 0) {
-      setContentsTitle(data[0].title);
+    if (data?.title) {
+      setContentsTitle(data.title);
     }
     return () => {
       setContentsTitle(null);
@@ -162,8 +163,8 @@ function ViewDetails() {
         )}
       </figure>
       <UserMenu menus={userMenu} />
-      {data[0] && info[0] ? (
-        <Details info={info[0]} data={data[0]} />
+      {data && info.length > 0 ? (
+        <Details info={info[0]} data={data} />
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}

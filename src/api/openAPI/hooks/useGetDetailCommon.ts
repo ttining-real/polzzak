@@ -30,7 +30,7 @@ interface detailsTypes {
 }
 
 function useGetDetailCommon(contentId: string) {
-  const [details, setDetails] = useState<detailsTypes[]>([]);
+  const [details, setDetails] = useState<detailsTypes | null>(null);
 
   useEffect(() => {
     const fetchDetailCommon = async () => {
