@@ -8,7 +8,10 @@ import { Outlet, useSearchParams } from 'react-router-dom';
 
 import { client } from '@/api/openAPI/client';
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
-import { fetchFavoriteItems } from '@/api/openAPI/utils/fetchFavoritesMarkers';
+import {
+  fetchFavoriteItems,
+  fetchPolzzakItems,
+} from '@/api/openAPI/utils/fetchMapFilterData';
 import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
 import Button from '@/components/Button/Button';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
@@ -157,11 +160,59 @@ function Map() {
               mapy: item.mapy,
             }));
 
-          console.log(markerData);
+          setMarkerData(markerData);
+        } catch (err) {
+          console.error('❌ 즐겨찾기 데이터 연결 중, 에러 발생!', err);
+        }
+      } else if (selectedFilter === '#polzzak') {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        try {
+          const polzzaks = await fetchPolzzakItems(userId);
+
+          // content_id만 뽑아오기
+          const contentIds = polzzaks.flatMap((polzzak) =>
+            polzzak.ex_polzzak_schedule.flatMap((schedule) =>
+              (schedule.ex_polzzak_detail || []).map(
+                (detail) => detail.content_id,
+              ),
+            ),
+          );
+
+          const detailResponses = await Promise.all(
+            contentIds.map((contentId) =>
+              client.get(`detailCommon1`, {
+                params: {
+                  pageNo: '1',
+                  numOfRows: '20',
+                  defaultYN: 'Y',
+                  firstImageYN: 'Y',
+                  areacodeYN: 'Y',
+                  catcodeYN: 'Y',
+                  addrinfoYN: 'Y',
+                  mapinfoYN: 'Y',
+                  overviewYN: 'Y',
+                  contentId,
+                },
+              }),
+            ),
+          );
+
+          const markerData = detailResponses
+            .map((res) => res.data?.response?.body?.items?.item[0])
+            .filter(Boolean)
+            .map((item) => ({
+              contentid: item.contentid,
+              contenttypeid: item.contenttypeid,
+              title: item.title,
+              mapx: item.mapx,
+              mapy: item.mapy,
+            }));
 
           setMarkerData(markerData);
         } catch (err) {
-          console.error('설마 에러?', err);
+          console.error('❌ 폴짝 데이터 연결 중, 에러 발생!', err);
         }
       } else {
         try {
@@ -291,8 +342,6 @@ function Map() {
   const fallbackContent = getFallbackContent();
 
   const searchWord = searchParams.get('search');
-
-  console.log('selectedFilter : ', selectedFilter);
 
   return (
     <main className="h-full w-full">
