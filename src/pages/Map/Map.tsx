@@ -6,7 +6,9 @@ import {
 } from 'react-kakao-maps-sdk';
 import { Outlet, useSearchParams } from 'react-router-dom';
 
+import { client } from '@/api/openAPI/client';
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
+import { fetchFavoriteItems } from '@/api/openAPI/utils/fetchFavoritesMarkers';
 import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
 import Button from '@/components/Button/Button';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
@@ -110,38 +112,89 @@ function Map() {
   }, [locationError]);
 
   useEffect(() => {
-    if (!myLocation) return;
+    if (!myLocation || !selectedFilter) return;
 
-    if (!selectedFilter) return;
+    const fetchMarkers = async () => {
+      if (selectedFilter === '#favorite') {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
 
-    fetchAroundList({
-      mapX: myLocation.lng,
-      mapY: myLocation.lat,
-      ...(selectedFilter && { contentTypeId: selectedFilter }),
-    })
-      .then((res) => {
-        const rawItem = res.data?.response?.body?.items?.item; // 🔍 불러온 주변 리스트 데이터
+        try {
+          const favorites = await fetchFavoriteItems(userId);
 
-        const itemArray = Array.isArray(rawItem)
-          ? rawItem
-          : rawItem
-            ? [rawItem]
-            : [];
+          // content_id만 뽑아오기
+          const contentIds = favorites.flatMap((folder) =>
+            folder.ex_favorite.map((fav) => fav.content_id),
+          );
 
-        // detailItem[] → MarkerDataTypes[] 매핑
-        const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
-          contentid: item.contentid,
-          contenttypeid: item.contenttypeid,
-          title: item.title,
-          mapx: item.mapx,
-          mapy: item.mapy,
-        }));
+          const detailResponses = await Promise.all(
+            contentIds.map((contentId) =>
+              client.get(`detailCommon1`, {
+                params: {
+                  pageNo: '1',
+                  numOfRows: '20',
+                  defaultYN: 'Y',
+                  firstImageYN: 'Y',
+                  areacodeYN: 'Y',
+                  catcodeYN: 'Y',
+                  addrinfoYN: 'Y',
+                  mapinfoYN: 'Y',
+                  overviewYN: 'Y',
+                  contentId,
+                },
+              }),
+            ),
+          );
 
-        setMarkerData(mappedArray);
-      })
-      .catch((err) => {
-        console.error('🚫 API 호출 실패: ', err);
-      });
+          const markerData = detailResponses
+            .map((res) => res.data?.response?.body?.items?.item[0])
+            .filter(Boolean)
+            .map((item) => ({
+              contentid: item.contentid,
+              contenttypeid: item.contenttypeid,
+              title: item.title,
+              mapx: item.mapx,
+              mapy: item.mapy,
+            }));
+
+          console.log(markerData);
+
+          setMarkerData(markerData);
+        } catch (err) {
+          console.error('설마 에러?', err);
+        }
+      } else {
+        try {
+          const res = await fetchAroundList({
+            mapX: myLocation.lng,
+            mapY: myLocation.lat,
+            ...(selectedFilter && { contentTypeId: selectedFilter }),
+          });
+
+          const rawItem = res.data?.response?.body?.items?.item;
+
+          const itemArray = Array.isArray(rawItem)
+            ? rawItem
+            : rawItem
+              ? [rawItem]
+              : [];
+
+          const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
+            contentid: item.contentid,
+            contenttypeid: item.contenttypeid,
+            title: item.title,
+            mapx: item.mapx,
+            mapy: item.mapy,
+          }));
+
+          setMarkerData(mappedArray);
+        } catch (err) {
+          console.error('설마 이것도 에러?', err);
+        }
+      }
+    };
+
+    fetchMarkers();
   }, [myLocation, selectedFilter]); // ✅ 의존성 배열 추가로 무한 루프 방지
 
   // 🗺️ 지도 이동 감지
@@ -239,6 +292,8 @@ function Map() {
 
   const searchWord = searchParams.get('search');
 
+  console.log('selectedFilter : ', selectedFilter);
+
   return (
     <main className="h-full w-full">
       {fallbackContent ? (
@@ -271,6 +326,7 @@ function Map() {
             {markerData.length > 0 && (
               <MapMarkerList
                 data={markerData}
+                selectedFilter={selectedFilter}
                 onMarkerClick={setSelectedMarker}
               />
             )}
