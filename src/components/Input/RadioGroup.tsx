@@ -57,19 +57,19 @@ function Radio({
               id={`radio${item.id}`}
               className="border-gray05 size-5 rounded-full border"
             />
-            <div>
-              <div className="flex">
+            <div className="w-full">
+              <div className="flex w-full">
                 <Label
                   htmlFor={`radio${item.id}`}
-                  className="ml-2 px-0 font-medium"
+                  className="ml-2 w-full px-0 font-medium"
                 >
                   {item?.name ?? '폴짝 이름 미정'}
+                  {typeof data[0].storage[0] === 'string' && (
+                    <p className="fs-14 lh text-primary font-semibold">
+                      {item.storage.length}
+                    </p>
+                  )}
                 </Label>
-                {'storage' in item && (
-                  <p className="fs-14 lh text-primary pl-1 font-semibold">
-                    {item.storage.length}
-                  </p>
-                )}
               </div>
               {isChecked && 'startDate' in item && (
                 <AddSchedule data={item} setSelectPolzzak={setSelectPolzzak} />
