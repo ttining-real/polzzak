@@ -15,7 +15,6 @@ import ModalContent from '@/components/Map/ModalContent';
 import ModalDetailContent from '@/components/Map/ModalDetailContent';
 import { useFetchMarkers } from '@/hooks/map/useFetchMarkers';
 import { useMapDialogEffect } from '@/hooks/map/useMapDialogEffect';
-import { useSearchQueryMarkers } from '@/hooks/map/useSearchQueryMarkers';
 import { useSyncFilterWithQuery } from '@/hooks/map/useSyncFilterWithQuery';
 import { useSyncLocation } from '@/hooks/map/useSyncLocation';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
@@ -56,6 +55,12 @@ function Map() {
 
   // 필터링 상태 추가
   const [selectedFilter, setSelectedFilter] = useState<FilterType | null>(null);
+
+  // 마커 데이터
+  // const { markerData } = useMapDataManager({
+  //   myLocation,
+  //   selectedFilter,
+  // });
 
   // URL 쿼리 파라미터
   const [searchParams, setSearchParams] = useSearchParams();
@@ -118,9 +123,6 @@ function Map() {
     setMapCenter(newCenter);
     setShowReSearchButton(false);
   };
-
-  // 🔍 검색 쿼리로 마커 패치
-  useSearchQueryMarkers(setMarkerData);
 
   // 🌻 다이얼로그 상태 연동
   useMapDialogEffect({
