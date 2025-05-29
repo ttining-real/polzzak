@@ -76,10 +76,17 @@ function Map() {
   useSyncLocation(location, locationError, setMyLocation, setMapCenter);
 
   // 🔁 필터 ↔ url 쿼리 파라미터 동기화
-  useSyncFilterWithQuery(selectedFilter, setSelectedFilter);
+  useSyncFilterWithQuery(
+    selectedFilter,
+    setSelectedFilter,
+    searchParams,
+    setSearchParams,
+  );
 
   // 🚩 마커 데이터 패칭
   useFetchMarkers({ myLocation, selectedFilter, setMarkerData });
+
+  const search = searchParams.get('search');
 
   // 🗺️ 지도 이동 감지
   const handleCenterChanged = () => {
@@ -97,7 +104,6 @@ function Map() {
     setShowReSearchButton(!!selectedFilter && moved);
 
     // url에 search가 있을 경우 버튼 보여주기
-    const search = searchParams.get('search');
     setShowReSearchButton(!!search && moved);
   };
 
@@ -149,8 +155,6 @@ function Map() {
 
   const fallbackContent = getFallbackContent();
 
-  const searchWord = searchParams.get('search');
-
   return (
     <main className="h-full w-full">
       {fallbackContent ? (
@@ -201,8 +205,8 @@ function Map() {
                 header={
                   selectedMarker
                     ? (selectedMarker.title ?? '상세 정보')
-                    : searchWord
-                      ? `${searchWord} 검색 결과`
+                    : search
+                      ? `${search} 검색 결과`
                       : selectedFilter
                         ? (formatMapDialogHeader(selectedFilter) ?? '필터 결과')
                         : '내 주변'
