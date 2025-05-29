@@ -22,7 +22,7 @@ function Radio({
   setSelectFolder,
   setSelectPolzzak,
 }: RadioProps) {
-  const [selected, setSelected] = React.useState<string | undefined>(undefined);
+  const [selected, setSelected] = React.useState('');
 
   React.useEffect(() => {
     if (data?.length) {
@@ -31,17 +31,15 @@ function Radio({
   }, [data]);
 
   React.useEffect(() => {
-    if (selected && data?.length) {
-      if (typeof data[0].storage[0] === 'string') {
-        setSelectFolder(selected);
-      }
+    if (selected && data?.length && typeof data[0].storage[0] === 'string') {
+      setSelectFolder(selected);
     }
   }, [selected, data, setSelectFolder]);
 
   if (!data) return;
 
   return (
-    <RadioGroup value={selected} onValueChange={setSelected}>
+    <RadioGroup value={selected ?? ''} onValueChange={setSelected}>
       {data?.map((item) => {
         const isChecked = selected === `radio${item.id}`;
         return (

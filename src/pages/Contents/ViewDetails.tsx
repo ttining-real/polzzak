@@ -8,6 +8,7 @@ import Details from '@/components/Contents/Details';
 import FavoriteDialog from '@/components/Dialog/FavoriteDialog';
 import Icon from '@/components/Icon/Icon';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
+import Loader from '@/components/Loader/Loader';
 import UserMenu, { MenuItemTypes } from '@/components/UserMenu/UserMenu';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
@@ -16,10 +17,12 @@ import { useSearchStore } from '@/store/useSearchStore';
 
 function ViewDetails() {
   const { id } = useParams();
+  const [isLoading, setIsLoading] = useState('');
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
   >(null);
   const [isMyContent, setIsMyContent] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const { detailData } = useSearchStore();
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
   const { isOpenId, openModal } = useDialogStore();
@@ -33,7 +36,9 @@ function ViewDetails() {
       label: '즐겨찾기',
       icon: isMyContent ? 'favorite_on' : 'favorite_off',
       onClick: () => {
-        openModal('즐겨찾기');
+        if (!isMyContent) {
+          openModal('즐겨찾기');
+        }
         onClickFavorite();
       },
     },
@@ -68,33 +73,68 @@ function ViewDetails() {
     };
   }, [data, setContentsTitle]);
 
-  const onClickFavorite = async () => {
+  useEffect(() => {
     if (!id || !userId) return;
-    try {
+    const checkIsMyContent = async () => {
       const { data, error } = await supabase
         .from('ex_favorite_folders')
-        .select('id, folder_name, ex_favorite(content_id)')
+        .select('ex_favorite(folder_id, content_id)')
         .eq('user_id', userId);
 
       if (error) {
-        throw error;
+        console.error(error);
+        return;
       }
-      setRadioList(
-        data.map((item) => ({
-          id: item.id,
-          name: item.folder_name,
-          storage: item.ex_favorite?.map((i) => i.content_id),
-        })),
+
+      const isFavorited = data.flatMap((folder) =>
+        folder.ex_favorite?.filter((item) => item.content_id === id),
       );
+      setSelectedFolderId(isFavorited[0]?.folder_id ?? null);
+      setIsMyContent(!!isFavorited.length);
+    };
+    checkIsMyContent();
+  }, [id, userId]);
+
+  const onClickFavorite = async () => {
+    if (!id || !userId) return;
+    try {
+      if (isMyContent && selectedFolderId) {
+        setIsLoading('즐겨찾기 삭제 중..');
+        const { error } = await supabase
+          .from('ex_favorite')
+          .delete()
+          .match({ folder_id: selectedFolderId, content_id: id });
+
+        if (error) throw error;
+        setIsMyContent(false);
+      } else {
+        setIsLoading('폴더 가져오는 중..');
+        const { data, error } = await supabase
+          .from('ex_favorite_folders')
+          .select('id, folder_name, ex_favorite(content_id)')
+          .eq('user_id', userId);
+
+        if (error) throw error;
+        setRadioList(
+          data.map((item) => ({
+            id: item.id,
+            name: item.folder_name,
+            storage: item.ex_favorite?.map((i) => i.content_id),
+          })),
+        );
+      }
     } catch (error) {
       console.error(error);
       return;
+    } finally {
+      setIsLoading('');
     }
   };
 
   const onClickPolzzak = async () => {
     if (!id || !userId) return;
     try {
+      setIsLoading('폴짝 가져오는 중...');
       const { data, error } = await supabase
         .from('ex_polzzak')
         .select(
@@ -120,6 +160,8 @@ function ViewDetails() {
     } catch (error) {
       console.error(error);
       return;
+    } finally {
+      setIsLoading('');
     }
   };
 
@@ -184,6 +226,7 @@ function ViewDetails() {
       <Button variant={'float'}>
         <Icon id="arrow_top" />
       </Button>
+      {isLoading && <Loader text={isLoading} />}
     </div>
   );
 }

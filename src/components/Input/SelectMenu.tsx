@@ -39,8 +39,8 @@ function SelectMenu({
   setSelectPolzzak,
 }: SelectMenuProps) {
   const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
-  const [daySelected, setDaySelected] = useState<string>('');
-
+  const [daySelected, setDaySelected] = useState('');
+  console.log(daySelected);
   useEffect(() => {
     if (!data || data === 'email') return;
 

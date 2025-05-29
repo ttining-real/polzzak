@@ -4,6 +4,7 @@ import supabase from '@/api/supabase';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
 import { Radio } from '@/components/Input/RadioGroup';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
+import { useToast } from '@/hooks/useToast';
 import { useDialogStore } from '@/store/useDialogStore';
 
 interface FavoriteDialogProps {
@@ -31,30 +32,14 @@ function FavoriteDialog({
   const [selectPolzzak, setSelectPolzzak] = useState<string | null>(null);
   const [isSaveContent, setIsSaveContent] = useState(false);
   const { isOpenId, closeModal } = useDialogStore();
+  const showToast = useToast();
 
   useEffect(() => {
     if (!id || !userId) return;
-    const isMyFavorite = async () => {
-      const { data, error } = await supabase
-        .from('ex_favorite_folders')
-        .select('ex_favorite(content_id)')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const hasMyContent = data.some((folder) =>
-        folder.ex_favorite?.some((item) => item.content_id === id),
-      );
-      setIsMyContent(hasMyContent);
-    };
-    isMyFavorite();
 
     const getContent = async () => {
       const { data, error } = await supabase
-        .from('ex_content')
+        .from('ex_contents')
         .select('contentid')
         .eq('contentid', id);
 
@@ -66,12 +51,11 @@ function FavoriteDialog({
       setIsSaveContent(hasContent);
     };
     getContent();
-  }, [id, userId, setIsMyContent]);
+  }, [id, userId]);
 
   const onClickAdd = async () => {
-    if (!selectFolder || !selectPolzzak) return;
     try {
-      if (isOpenId === '즐겨찾기') {
+      if (selectFolder && isOpenId === '즐겨찾기') {
         if (!isSaveContent) {
           const { error } = await supabase.from('ex_contents').insert([
             {
@@ -87,22 +71,35 @@ function FavoriteDialog({
           .insert([{ folder_id: selectFolder?.slice(5), content_id: id }]);
 
         if (error) throw error;
+        setIsMyContent(true);
       }
-      if (isOpenId === '폴짝추가' && info) {
-        const { error } = await supabase.from('ex_polzzak_detail').insert([
-          {
-            schedule_id: selectFolder?.slice(5),
-            place: info.title,
-            memo: info.addr1,
-            content_id: id,
-            order: 99,
-          },
-        ]);
+      if (selectPolzzak && isOpenId === '폴짝추가' && info) {
+        const { data, error } = await supabase
+          .from('ex_polzzak_detail')
+          .select('schedule_id')
+          .match({ schedule_id: selectPolzzak, content_id: id });
+
         if (error) throw error;
+
+        if (data.length) {
+          showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
+        } else {
+          const { error } = await supabase.from('ex_polzzak_detail').insert([
+            {
+              schedule_id: selectPolzzak,
+              place: info.title,
+              content_id: id,
+              order: 99,
+            },
+          ]);
+          if (error) throw error;
+        }
       }
     } catch (err) {
       console.error(err);
       return;
+    } finally {
+      closeModal();
     }
   };
 
@@ -120,7 +117,6 @@ function FavoriteDialog({
           text: '추가',
           onClick: async () => {
             await onClickAdd();
-            closeModal();
           },
         },
       ]}
