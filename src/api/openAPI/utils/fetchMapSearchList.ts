@@ -1,6 +1,7 @@
 import { AxiosResponse } from 'axios';
 
 import { client } from '@/api/openAPI/client';
+import { MarkerDataTypes } from '@/types/mapDataType';
 
 interface OpenAPIResponse<T> {
   response: {
@@ -16,19 +17,13 @@ interface detailItem {
   [key: string]: string;
 }
 
-interface DataTypes {
-  contentid: string;
-  title: string;
-  addr1: string;
-  firstimage: string;
-  mapx: string;
-  mapy: string;
-  contenttypeid: string;
+interface FetchMapSearchListParams {
+  keyword: string;
 }
 
-export async function fetchMapSearchList(
-  keyword: string,
-): Promise<DataTypes[]> {
+export async function fetchMapSearchList({
+  keyword,
+}: FetchMapSearchListParams): Promise<MarkerDataTypes[]> {
   if (!keyword) return [];
 
   try {

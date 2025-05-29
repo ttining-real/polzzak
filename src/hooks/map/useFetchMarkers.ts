@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { client } from '@/api/openAPI/client';
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
@@ -6,6 +7,7 @@ import {
   fetchFavoriteItems,
   fetchPolzzakItems,
 } from '@/api/openAPI/utils/fetchMapFilterData';
+import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LatLng } from '@/types/LatLng';
 import { FilterType, MarkerDataTypes } from '@/types/mapDataType';
@@ -21,6 +23,11 @@ export function useFetchMarkers({
   selectedFilter,
   setMarkerData,
 }: Props) {
+  const [searchParams] = useSearchParams();
+  const [categoryMarkers, setCategoryMarkers] = useState<MarkerDataTypes[]>([]);
+  const [searchMarkers, setSearchMarkers] = useState<MarkerDataTypes[]>([]);
+
+  // ✅ 필터링 마커
   useEffect(() => {
     if (!myLocation || !selectedFilter) return;
 
@@ -33,6 +40,8 @@ export function useFetchMarkers({
         return;
 
       try {
+        let markers: MarkerDataTypes[] = [];
+
         if (selectedFilter === '#favorite') {
           const favorites = await fetchFavoriteItems(userId!);
           const contentIds = favorites.flatMap((folder) =>
@@ -58,8 +67,8 @@ export function useFetchMarkers({
             ),
           );
 
-          const markerData = detailResponses
-            .map((res) => res.data?.response?.body?.items?.item[0])
+          markers = detailResponses
+            .map((res) => res.data?.response?.body?.items?.item?.[0])
             .filter(Boolean)
             .map((item) => ({
               contentid: item.contentid,
@@ -68,8 +77,6 @@ export function useFetchMarkers({
               mapx: item.mapx,
               mapy: item.mapy,
             }));
-
-          setMarkerData(markerData);
         } else if (selectedFilter === '#polzzak') {
           const polzzaks = await fetchPolzzakItems(userId!);
           const contentIds = polzzaks.flatMap((polzzak) =>
@@ -99,8 +106,8 @@ export function useFetchMarkers({
             ),
           );
 
-          const markerData = detailResponses
-            .map((res) => res.data?.response?.body?.items?.item[0])
+          markers = detailResponses
+            .map((res) => res.data?.response?.body?.items?.item?.[0])
             .filter(Boolean)
             .map((item) => ({
               contentid: item.contentid,
@@ -109,8 +116,6 @@ export function useFetchMarkers({
               mapx: item.mapx,
               mapy: item.mapy,
             }));
-
-          setMarkerData(markerData);
         } else {
           const res = await fetchAroundList({
             mapX: myLocation.lng,
@@ -119,23 +124,24 @@ export function useFetchMarkers({
           });
 
           const rawItem = res.data?.response?.body?.items?.item;
-
           const itemArray = Array.isArray(rawItem)
             ? rawItem
             : rawItem
               ? [rawItem]
               : [];
 
-          const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
+          markers = itemArray.map((item) => ({
             contentid: item.contentid,
             contenttypeid: item.contenttypeid,
             title: item.title,
             mapx: item.mapx,
             mapy: item.mapy,
           }));
-
-          setMarkerData(mappedArray);
         }
+
+        console.log(markers);
+
+        setCategoryMarkers(markers);
       } catch (err) {
         console.error('❌ 마커 데이터 패칭 중 에러 발생:', err);
       }
@@ -143,4 +149,50 @@ export function useFetchMarkers({
 
     fetchMarkers();
   }, [myLocation, selectedFilter]);
+
+  // 🔍 검색어 마커
+  useEffect(() => {
+    const word = searchParams.get('search');
+
+    if (!word) {
+      setSearchMarkers([]);
+      return;
+    }
+
+    fetchMapSearchList({
+      keyword: word,
+    }).then((result) => {
+      setSearchMarkers(result);
+    });
+  }, [searchParams]);
+
+  // ✅ 최종 결과 마커
+  useEffect(() => {
+    const hasSearch = !!searchParams.get('search');
+    const hasCategory = !!searchParams.get('category');
+
+    if (hasSearch && hasCategory) {
+      const intersected = categoryMarkers.filter((catItem) =>
+        searchMarkers.some(
+          (searchItem) =>
+            String(searchItem.contentid) === String(catItem.contentid),
+        ),
+      );
+      setMarkerData(intersected);
+    } else if (hasCategory) {
+      setMarkerData(categoryMarkers);
+    } else if (hasSearch) {
+      setMarkerData(searchMarkers);
+    } else {
+      setMarkerData([]);
+    }
+    console.log(
+      '🐰 categoryMarkers:',
+      categoryMarkers.map((m) => m.contentid),
+    );
+    console.log(
+      '🔍 searchMarkers:',
+      searchMarkers.map((m) => m.contentid),
+    );
+  }, [searchParams, categoryMarkers, searchMarkers]);
 }
