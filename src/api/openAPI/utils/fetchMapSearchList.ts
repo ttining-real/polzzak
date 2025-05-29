@@ -31,10 +31,6 @@ export async function fetchMapSearchList({
       '/searchKeyword1',
       {
         params: {
-          serviceKey: import.meta.env.VITE_OPEN_API_KEY,
-          MobileApp: 'polzzak',
-          MobileOS: 'ETC',
-          _type: 'json',
           pageNo: 1,
           numOfRows: 10,
           keyword,

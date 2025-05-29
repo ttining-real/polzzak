@@ -39,34 +39,47 @@ export function useMapDialogEffect({
   openModal,
   closeModal,
 }: UseMapDialogEffectProps) {
+  // ✅ 마커 데이터가 있을 때 모달 열기
   useEffect(() => {
     if (selectedFilter && markerData.length > 0) {
       openModal();
     }
   }, [selectedFilter, markerData]);
 
+  // ✅ 모달 닫힐 때 쿼리 초기화
   useEffect(() => {
     if (!isOpen && markerData.length === 0) return;
 
     if (!isOpen) {
+      const newParams = new URLSearchParams();
+      searchParams.forEach((value, key) => {
+        if (key !== 'category' && key !== 'search') {
+          newParams.set(key, value);
+        }
+      });
+
       setSelectedFilter(null);
       setSelectedMarker(null);
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      params.delete('search');
-      setSearchParams(params, { replace: true });
+      setSearchParams({}, { replace: true });
       setShowReSearchButton(false);
       resetSearchValue();
     }
   }, [isOpen]);
 
+  // ✅ 필터 선택 해제 시, 상태 및 쿼리 초기화
   useEffect(() => {
     if (selectedFilter === null) {
       closeModal();
       setMarkerData([]);
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      setSearchParams(params, { replace: true });
+
+      const newParams = new URLSearchParams();
+      searchParams.forEach((value, key) => {
+        if (key !== 'category') {
+          newParams.set(key, value);
+        }
+      });
+
+      setSearchParams({}, { replace: true });
     }
   }, [selectedFilter]);
 }
