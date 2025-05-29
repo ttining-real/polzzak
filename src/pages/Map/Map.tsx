@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Map as MapArea,
   MapMarker,
@@ -6,13 +6,6 @@ import {
 } from 'react-kakao-maps-sdk';
 import { Outlet, useSearchParams } from 'react-router-dom';
 
-import { client } from '@/api/openAPI/client';
-import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
-import {
-  fetchFavoriteItems,
-  fetchPolzzakItems,
-} from '@/api/openAPI/utils/fetchMapFilterData';
-import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
 import Button from '@/components/Button/Button';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
 import Loader from '@/components/Loader/Loader';
@@ -20,8 +13,12 @@ import MapHeader from '@/components/Map/MapHeader';
 import MapMarkerList from '@/components/Map/MapMarkerList';
 import ModalContent from '@/components/Map/ModalContent';
 import ModalDetailContent from '@/components/Map/ModalDetailContent';
+import { useFetchMarkers } from '@/hooks/map/useFetchMarkers';
+import { useMapDialogEffect } from '@/hooks/map/useMapDialogEffect';
+import { useSearchQueryMarkers } from '@/hooks/map/useSearchQueryMarkers';
+import { useSyncFilterWithQuery } from '@/hooks/map/useSyncFilterWithQuery';
+import { useSyncLocation } from '@/hooks/map/useSyncLocation';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
-import { filterNameToType, typeToFilterName } from '@/lib/filterMap';
 import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
@@ -75,178 +72,14 @@ function Map() {
   const [selectedMarker, setSelectedMarker] =
     useState<DetailCommonDataType | null>(null);
 
-  // 쿼리 → selectedFilter 세팅
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      const matchedType = filterNameToType(categoryParam);
-      if (matchedType) {
-        setSelectedFilter(matchedType);
-      }
-    }
-  }, [searchParams]);
+  // 🚩 위치 초기화
+  useSyncLocation(location, locationError, setMyLocation, setMapCenter);
 
-  // selectedFilter → 쿼리 반영
-  useEffect(() => {
-    if (!selectedFilter) return;
+  // 🔁 필터 ↔ url 쿼리 파라미터 동기화
+  useSyncFilterWithQuery(selectedFilter, setSelectedFilter);
 
-    const filterName = typeToFilterName(selectedFilter);
-
-    if (!filterName) return;
-
-    const params = new URLSearchParams(searchParams);
-    params.set('category', filterName);
-    setSearchParams(params, { replace: true });
-  }, [selectedFilter]);
-
-  // location이 업데이트되면 내 위치와 지도 중심을 설정
-  useEffect(() => {
-    if (location) {
-      setMyLocation(location);
-      setMapCenter(location);
-    }
-  }, [location]);
-
-  // 위치 정보 오류가 발생했을 경우 콘솔에 출력
-  useEffect(() => {
-    if (locationError) {
-      console.error('🚫 위치 정보를 가져올 수 없습니다. : ', locationError);
-    }
-  }, [locationError]);
-
-  useEffect(() => {
-    if (!myLocation || !selectedFilter) return;
-
-    const fetchMarkers = async () => {
-      if (selectedFilter === '#favorite') {
-        const userId = useAuthStore.getState().user?.id;
-        if (!userId) return;
-
-        try {
-          const favorites = await fetchFavoriteItems(userId);
-
-          // content_id만 뽑아오기
-          const contentIds = favorites.flatMap((folder) =>
-            folder.ex_favorite.map((fav) => fav.content_id),
-          );
-
-          const detailResponses = await Promise.all(
-            contentIds.map((contentId) =>
-              client.get(`detailCommon1`, {
-                params: {
-                  pageNo: '1',
-                  numOfRows: '20',
-                  defaultYN: 'Y',
-                  firstImageYN: 'Y',
-                  areacodeYN: 'Y',
-                  catcodeYN: 'Y',
-                  addrinfoYN: 'Y',
-                  mapinfoYN: 'Y',
-                  overviewYN: 'Y',
-                  contentId,
-                },
-              }),
-            ),
-          );
-
-          const markerData = detailResponses
-            .map((res) => res.data?.response?.body?.items?.item[0])
-            .filter(Boolean)
-            .map((item) => ({
-              contentid: item.contentid,
-              contenttypeid: item.contenttypeid,
-              title: item.title,
-              mapx: item.mapx,
-              mapy: item.mapy,
-            }));
-
-          setMarkerData(markerData);
-        } catch (err) {
-          console.error('❌ 즐겨찾기 데이터 연결 중, 에러 발생!', err);
-        }
-      } else if (selectedFilter === '#polzzak') {
-        const userId = useAuthStore.getState().user?.id;
-        if (!userId) return;
-
-        try {
-          const polzzaks = await fetchPolzzakItems(userId);
-
-          // content_id만 뽑아오기
-          const contentIds = polzzaks.flatMap((polzzak) =>
-            polzzak.ex_polzzak_schedule.flatMap((schedule) =>
-              (schedule.ex_polzzak_detail || []).map(
-                (detail) => detail.content_id,
-              ),
-            ),
-          );
-
-          const detailResponses = await Promise.all(
-            contentIds.map((contentId) =>
-              client.get(`detailCommon1`, {
-                params: {
-                  pageNo: '1',
-                  numOfRows: '20',
-                  defaultYN: 'Y',
-                  firstImageYN: 'Y',
-                  areacodeYN: 'Y',
-                  catcodeYN: 'Y',
-                  addrinfoYN: 'Y',
-                  mapinfoYN: 'Y',
-                  overviewYN: 'Y',
-                  contentId,
-                },
-              }),
-            ),
-          );
-
-          const markerData = detailResponses
-            .map((res) => res.data?.response?.body?.items?.item[0])
-            .filter(Boolean)
-            .map((item) => ({
-              contentid: item.contentid,
-              contenttypeid: item.contenttypeid,
-              title: item.title,
-              mapx: item.mapx,
-              mapy: item.mapy,
-            }));
-
-          setMarkerData(markerData);
-        } catch (err) {
-          console.error('❌ 폴짝 데이터 연결 중, 에러 발생!', err);
-        }
-      } else {
-        try {
-          const res = await fetchAroundList({
-            mapX: myLocation.lng,
-            mapY: myLocation.lat,
-            ...(selectedFilter && { contentTypeId: selectedFilter }),
-          });
-
-          const rawItem = res.data?.response?.body?.items?.item;
-
-          const itemArray = Array.isArray(rawItem)
-            ? rawItem
-            : rawItem
-              ? [rawItem]
-              : [];
-
-          const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
-            contentid: item.contentid,
-            contenttypeid: item.contenttypeid,
-            title: item.title,
-            mapx: item.mapx,
-            mapy: item.mapy,
-          }));
-
-          setMarkerData(mappedArray);
-        } catch (err) {
-          console.error('설마 이것도 에러?', err);
-        }
-      }
-    };
-
-    fetchMarkers();
-  }, [myLocation, selectedFilter]); // ✅ 의존성 배열 추가로 무한 루프 방지
+  // 🚩 마커 데이터 패칭
+  useFetchMarkers({ myLocation, selectedFilter, setMarkerData });
 
   // 🗺️ 지도 이동 감지
   const handleCenterChanged = () => {
@@ -280,49 +113,24 @@ function Map() {
     setShowReSearchButton(false);
   };
 
-  // 🔍 검색 쿼리에 반응하여 검색 API 호출
-  useEffect(() => {
-    const word = searchParams.get('search');
+  // 🔍 검색 쿼리로 마커 패치
+  useSearchQueryMarkers(setMarkerData);
 
-    if (!word) return;
-
-    fetchMapSearchList(word).then((result) => {
-      setMarkerData(result);
-    });
-  }, [searchParams, openModal]);
-
-  // 필터링 상태 && 마커 데이터가 존재할 때 다이얼로그 열기
-  useEffect(() => {
-    if (selectedFilter && markerData.length > 0) {
-      openModal();
-    }
-  }, [selectedFilter, markerData, openModal]);
-
-  // 다이얼로그 닫히면 필터 초기화
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedFilter(null);
-
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      params.delete('search');
-      setSearchParams(params, { replace: true });
-
-      setShowReSearchButton(false);
-      resetSearchValue();
-    }
-  }, [isOpen]);
-
-  // 필터 해제 시 쿼리 제거
-  useEffect(() => {
-    if (selectedFilter === null) {
-      closeModal();
-      setMarkerData([]);
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      setSearchParams(params, { replace: true });
-    }
-  }, [selectedFilter]);
+  // 🌻 다이얼로그 상태 연동
+  useMapDialogEffect({
+    selectedFilter,
+    markerData,
+    isOpen,
+    searchParams,
+    setSelectedFilter,
+    setSelectedMarker,
+    setMarkerData,
+    setSearchParams,
+    setShowReSearchButton,
+    resetSearchValue,
+    openModal,
+    closeModal,
+  });
 
   const getFallbackContent = () => {
     // ⌛ 카카오 맵 SDK 로딩 중인 상태
