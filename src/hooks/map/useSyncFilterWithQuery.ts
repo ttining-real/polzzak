@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { NavigateOptions, URLSearchParamsInit } from 'react-router-dom';
 
 import { filterNameToType, typeToFilterName } from '@/lib/filterMap';
 import { FilterType } from '@/types/mapDataType';
 
+type SetSearchParams = (
+  nextInit: URLSearchParamsInit,
+  navigateOpts?: NavigateOptions,
+) => void;
+
 export function useSyncFilterWithQuery(
   selectedFilter: FilterType | null,
   setSelectedFilter: (value: FilterType) => void,
+  searchParams: URLSearchParams,
+  setSearchParams: SetSearchParams,
 ) {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     if (categoryParam) {
@@ -24,8 +29,10 @@ export function useSyncFilterWithQuery(
     if (!selectedFilter) return;
     const filterName = typeToFilterName(selectedFilter);
     if (!filterName) return;
+
     const params = new URLSearchParams(searchParams);
     params.set('category', filterName);
-    setSearchParams(params, { replace: true });
+
+    setSearchParams(params);
   }, [selectedFilter]);
 }

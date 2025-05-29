@@ -46,6 +46,8 @@ export function useMapDialogEffect({
   }, [selectedFilter, markerData]);
 
   useEffect(() => {
+    if (!isOpen && markerData.length === 0) return;
+
     if (!isOpen) {
       setSelectedFilter(null);
       setSelectedMarker(null);
