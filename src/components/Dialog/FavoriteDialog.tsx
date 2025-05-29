@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import supabase from '@/api/supabase';
 import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
+import Input from '@/components/Input/Input';
 import { Radio } from '@/components/Input/RadioGroup';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
 import { useToast } from '@/hooks/useToast';
@@ -73,26 +74,42 @@ function FavoriteDialog({
         if (error) throw error;
         setIsMyContent(true);
       }
-      if (selectPolzzak && isOpenId === '폴짝추가' && info) {
-        const { data, error } = await supabase
-          .from('ex_polzzak_detail')
-          .select('schedule_id')
-          .match({ schedule_id: selectPolzzak, content_id: id });
+      if (selectPolzzak && info) {
+        if (isOpenId === '기존폴짝') {
+          const { data, error } = await supabase
+            .from('ex_polzzak')
+            .select('id')
+            .eq('user_id', userId);
 
-        if (error) throw error;
-
-        if (data.length) {
-          showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
-        } else {
-          const { error } = await supabase.from('ex_polzzak_detail').insert([
-            {
-              schedule_id: selectPolzzak,
-              place: info.title,
-              content_id: id,
-              order: 99,
-            },
-          ]);
           if (error) throw error;
+
+          if (data.length) {
+            const { data, error } = await supabase
+              .from('ex_polzzak_detail')
+              .select('schedule_id')
+              .match({ schedule_id: selectPolzzak, content_id: id });
+
+            if (error) throw error;
+
+            if (data.length) {
+              showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
+            } else {
+              const { error } = await supabase
+                .from('ex_polzzak_detail')
+                .insert([
+                  {
+                    schedule_id: selectPolzzak,
+                    place: info.title,
+                    content_id: id,
+                    order: 99,
+                  },
+                ]);
+              if (error) throw error;
+            }
+          }
+        } else {
+          // isOpenId === '신규폴짝'
+          console.log('hi');
         }
       }
     } catch (err) {
@@ -121,11 +138,20 @@ function FavoriteDialog({
         },
       ]}
     >
-      <Radio
-        data={radioList}
-        setSelectFolder={setSelectFolder}
-        setSelectPolzzak={setSelectPolzzak}
-      />
+      {isOpenId === '신규폴짝' ? (
+        // 수정 필요
+        <section>
+          <Input label="폴짝 이름" placeholder="폴짝 이름을 입력해 주세요." />
+          <Input label="폴짝 날짜" />
+          <Input label="폴짝 장소" value={info?.addr1} />
+        </section>
+      ) : (
+        <Radio
+          data={radioList}
+          setSelectFolder={setSelectFolder}
+          setSelectPolzzak={setSelectPolzzak}
+        />
+      )}
     </SlideUpDialog>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { useGetDetailCommon } from '@/api/openAPI';
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import Details from '@/components/Contents/Details';
+import AlertDialog from '@/components/Dialog/AlertDialog';
 import FavoriteDialog from '@/components/Dialog/FavoriteDialog';
 import Icon from '@/components/Icon/Icon';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
@@ -17,6 +18,7 @@ import { useSearchStore } from '@/store/useSearchStore';
 
 function ViewDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState('');
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
@@ -25,7 +27,7 @@ function ViewDetails() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const { detailData } = useSearchStore();
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
-  const { isOpenId, openModal } = useDialogStore();
+  const { isOpenId, openModal, closeModal } = useDialogStore();
   const info = detailData.filter((item) => item.contentid === id);
   const rawData = useGetDetailCommon(id as string);
   const data = rawData ?? null;
@@ -36,9 +38,6 @@ function ViewDetails() {
       label: '즐겨찾기',
       icon: isMyContent ? 'favorite_on' : 'favorite_off',
       onClick: () => {
-        if (!isMyContent) {
-          openModal('즐겨찾기');
-        }
         onClickFavorite();
       },
     },
@@ -46,7 +45,6 @@ function ViewDetails() {
       label: '폴짝추가',
       icon: 'calendar',
       onClick: () => {
-        openModal('폴짝추가');
         onClickPolzzak();
       },
     },
@@ -96,7 +94,13 @@ function ViewDetails() {
   }, [id, userId]);
 
   const onClickFavorite = async () => {
-    if (!id || !userId) return;
+    if (!id || !userId) {
+      navigate('/login');
+      return;
+    }
+    if (!isMyContent) {
+      openModal('즐겨찾기');
+    }
     try {
       if (isMyContent && selectedFolderId) {
         setIsLoading('즐겨찾기 삭제 중..');
@@ -132,7 +136,18 @@ function ViewDetails() {
   };
 
   const onClickPolzzak = async () => {
+    if (!id || !userId) {
+      navigate('/login');
+    } else {
+      openModal('폴짝선택');
+    }
+  };
+
+  const onClickExistingPolzzak = async () => {
+    closeModal();
     if (!id || !userId) return;
+
+    openModal('기존폴짝');
     try {
       setIsLoading('폴짝 가져오는 중...');
       const { data, error } = await supabase
@@ -162,6 +177,15 @@ function ViewDetails() {
       return;
     } finally {
       setIsLoading('');
+    }
+  };
+
+  const onClickNewPolzzak = () => {
+    closeModal();
+    if (!id || !userId) {
+      navigate('/login');
+    } else {
+      openModal('신규폴짝');
     }
   };
 
@@ -210,17 +234,42 @@ function ViewDetails() {
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
-      {isOpenId && id && userId && (
-        <FavoriteDialog
-          radioList={radioList}
-          id={id}
-          userId={userId}
-          info={{
-            contenttypeid: info[0].contenttypeid,
-            title: info[0].title,
-            addr1: info[0].addr1,
-          }}
-          setIsMyContent={setIsMyContent}
+      {(isOpenId === '즐겨찾기' ||
+        isOpenId === '신규폴짝' ||
+        isOpenId === '기존폴짝') &&
+        id &&
+        userId && (
+          <FavoriteDialog
+            radioList={radioList}
+            id={id}
+            userId={userId}
+            info={{
+              contenttypeid: info[0].contenttypeid,
+              title: info[0].title,
+              addr1: info[0].addr1,
+            }}
+            setIsMyContent={setIsMyContent}
+          />
+        )}
+      {isOpenId === '폴짝선택' && (
+        <AlertDialog
+          header="폴짝 추가하기"
+          description={['신규 또는 기존 폴짝을 ']}
+          buttonDirection="col"
+          button={[
+            {
+              text: '신규 폴짝 추가하기',
+              onClick: () => {
+                onClickNewPolzzak();
+              },
+            },
+            {
+              text: '기존 폴짝 추가하기',
+              onClick: () => {
+                onClickExistingPolzzak();
+              },
+            },
+          ]}
         />
       )}
       <Button variant={'float'}>
