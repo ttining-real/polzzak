@@ -55,13 +55,6 @@ async function fetchContentDetail(
     client.get(`/detailCommon2`, {
       params: {
         contentId,
-        contentTypeId,
-        defaultYN: 'Y',
-        firstImageYN: 'Y',
-        areacodeYN: 'Y',
-        catcodeYN: 'Y',
-        addrinfoYN: 'Y',
-        overviewYN: 'Y',
         pageNo: 1,
         numOfRows: 10,
       },
