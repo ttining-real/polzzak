@@ -2,14 +2,13 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { client } from '@/api/openAPI/client';
-import { getAreaCodesFromCoords } from '@/api/openAPI/utils/fetchAreaCodesFromCoords';
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
 import {
   fetchFavoriteItems,
   fetchPolzzakItems,
 } from '@/api/openAPI/utils/fetchMapFilterData';
 import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
-import { getDistance } from '@/lib/getDistance';
+import { getRegionCodeFromCoords } from '@/api/openAPI/utils/getAreaCodesFromCoords';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LatLng } from '@/types/LatLng';
 import { FilterType, MarkerDataTypes } from '@/types/mapDataType';
@@ -26,10 +25,10 @@ export function useFetchMarkers({
   setMarkerData,
 }: Props) {
   const [searchParams] = useSearchParams();
+  const searchWord = searchParams.get('search');
+  const category = searchParams.get('category');
 
   useEffect(() => {
-    const searchWord = searchParams.get('search') || '';
-
     if (!myLocation || (!selectedFilter && !searchWord)) {
       setMarkerData([]);
       return;
@@ -148,40 +147,33 @@ export function useFetchMarkers({
             markers = categoryMarkers;
           }
         } else if (searchWord) {
-          const { areaCode, sigunguCode } =
-            await getAreaCodesFromCoords(myLocation);
-          const searchResults = await fetchMapSearchList({
-            keyword: searchWord,
-            areaCode,
-            sigunguCode,
-          });
+          if (!myLocation) return;
 
-          markers = searchResults
-            .filter((item) => {
-              const mapx = parseFloat(item.mapx);
-              const mapy = parseFloat(item.mapy);
-              const isValidCoords = !isNaN(mapx) && !isNaN(mapy);
+          try {
+            const result = await getRegionCodeFromCoords(
+              myLocation.lng,
+              myLocation.lat,
+            );
+            const regionCode = result.regionCode;
+            const areaCode = regionCode.substring(0, 1); // "1"
 
-              if (!isValidCoords || !myLocation) return false;
+            const searchResults = await fetchMapSearchList({
+              keyword: searchWord,
+              areaCode,
+              // sigunguCode,
+            });
 
-              const distance = getDistance(
-                myLocation.lat,
-                myLocation.lng,
-                mapy,
-                mapx,
-              );
-
-              return distance <= 3000;
-            })
-            .map((item) => ({
+            markers = searchResults.map((item) => ({
               contentid: item.contentid,
               contenttypeid: item.contenttypeid,
               title: item.title,
               mapx: item.mapx,
               mapy: item.mapy,
             }));
+          } catch (err) {
+            console.error('지역 코드 조회 에러:', err);
+          }
         }
-        console.log(markers);
 
         setMarkerData(markers);
       } catch (err) {
@@ -191,10 +183,5 @@ export function useFetchMarkers({
     };
 
     fetchMarkers();
-  }, [
-    selectedFilter,
-    myLocation,
-    searchParams.get('search'),
-    searchParams.get('category'),
-  ]);
+  }, [selectedFilter, myLocation, searchWord, category]);
 }
