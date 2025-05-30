@@ -128,7 +128,7 @@ async function fetchSearchList({
       for (const selectedTheme of directThemes) {
         try {
           const contentTypeId = THEME_MAP[selectedTheme];
-          const themeResponse = await client.get(`/areaBasedList1`, {
+          const themeResponse = await client.get(`/areaBasedList2`, {
             params: {
               contentTypeId,
               pageNo,
