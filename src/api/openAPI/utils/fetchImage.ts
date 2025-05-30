@@ -5,7 +5,6 @@ async function fetchImage(contentIds: string[]) {
     client.get('/detailImage2', {
       params: {
         contentId,
-        subImageYN: 'Y',
         numOfRows: '1',
         pageNo: '1',
       },
