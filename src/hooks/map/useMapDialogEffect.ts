@@ -45,15 +45,12 @@ export function useMapDialogEffect({
   useEffect(() => {
     if (selectedFilter && markerData.length > 0) {
       openModal();
-    }
-  }, [selectedFilter, markerData]);
-
-  // ✅ 마커 선택 시
-  useEffect(() => {
-    if (selectedMarker) {
+    } else if (selectedMarker) {
+      openModal();
+    } else if (markerData.length > 0) {
       openModal();
     }
-  }, [selectedMarker]);
+  }, [selectedFilter, markerData]);
 
   // ✅ 모달 닫힐 때 쿼리 초기화
   useEffect(() => {
