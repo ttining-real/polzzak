@@ -16,7 +16,10 @@ function My() {
     sessionStorage.getItem('user') || localStorage.getItem('user');
 
   const { openModal } = useModalStore();
-  const { user, fetchUserInfo, isLoading, error } = useUserStore();
+  const user = useUserStore((state) => state.user);
+  const fetchUserInfo = useUserStore((state) => state.fetchUserInfo);
+  const isLoading = useUserStore((state) => state.isLoading);
+  const error = useUserStore((state) => state.error);
 
   const handleLogoutClick = () => {
     openModal('logout');
