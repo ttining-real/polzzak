@@ -13,8 +13,9 @@ export interface ModalActionParams {
 
 export function useModalActions() {
   const navigate = useNavigate();
-  const { closeModal } = useModalStore();
-  const { phoneNumber, nickname } = useRegisterStore();
+  const closeModal = useModalStore((state) => state.closeModal);
+  const phoneNumber = useRegisterStore((state) => state.phoneNumber);
+  const nickname = useRegisterStore((state) => state.nickname);
   const { userUpdate } = useUserUpdate(phoneNumber);
   const setDate = useSearchStore((state) => state.setDate);
 
@@ -50,7 +51,7 @@ export function useModalActions() {
     },
     변경: () => console.log('변경 버튼에 맞는 함수'),
     로그아웃: () => {
-      navigate('/login', {
+      navigate('/', {
         state: { toastMessage: '로그아웃이 완료되었습니다.' },
       });
       // > 아이디 저장일 경우, 아닌 경우로 나누어서 수정
@@ -66,7 +67,7 @@ export function useModalActions() {
         .delete()
         .eq('user_id', LOGINED_USER);
 
-      navigate('/login', {
+      navigate('/', {
         state: { toastMessage: '회원 탈퇴가 완료되었습니다.' },
       });
       localStorage.clear();
