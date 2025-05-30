@@ -6,13 +6,15 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import Button from '@/components/Button/Button';
 import Icon from '@/components/Icon/Icon';
 import { useDialogDrag } from '@/hooks/map/useDialogDrag';
-import { DialogProps } from '@/store/useDialogStore';
+import { useMapDialogStore } from '@/store/map/useMapDialogStore';
+import { DialogProps } from '@/store/map/useMapDialogStore';
 
 export default function MapDialog({
   header,
   children,
   className,
 }: DialogProps) {
+  const { closeModal } = useMapDialogStore();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
 
   const { height, startDrag, moveDrag, endDrag } = useDialogDrag([
@@ -113,9 +115,7 @@ export default function MapDialog({
           size="md"
           variant={'tertiary'}
           aria-label="모달 닫기"
-          onClick={() => {
-            console.log('모달 닫기 버튼 클릭');
-          }}
+          onClick={closeModal}
         >
           <Icon id="close" />
         </Button>

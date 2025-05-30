@@ -7,7 +7,7 @@ import {
 import { Outlet, useSearchParams } from 'react-router-dom';
 
 import Button from '@/components/Button/Button';
-import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
+import MapDialog from '@/components/Dialog/MapDialog';
 import Loader from '@/components/Loader/Loader';
 import MapHeader from '@/components/Map/MapHeader';
 import MapMarkerList from '@/components/Map/MapMarkerList';
@@ -19,8 +19,8 @@ import { useSyncFilterWithQuery } from '@/hooks/map/useSyncFilterWithQuery';
 import { useSyncLocation } from '@/hooks/map/useSyncLocation';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
+import { useMapDialogStore } from '@/store/map/useMapDialogStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useDialogStore } from '@/store/useDialogStore';
 import { useMapSearchStore } from '@/store/useMapSearchStore';
 import { DetailCommonDataType } from '@/types/detailCommonDataType';
 import { LatLng } from '@/types/LatLng';
@@ -56,17 +56,11 @@ function Map() {
   // 필터링 상태 추가
   const [selectedFilter, setSelectedFilter] = useState<FilterType | null>(null);
 
-  // 마커 데이터
-  // const { markerData } = useMapDataManager({
-  //   myLocation,
-  //   selectedFilter,
-  // });
-
   // URL 쿼리 파라미터
   const [searchParams, setSearchParams] = useSearchParams();
 
   // 다이얼로그 상태
-  const { isOpen, openModal, closeModal } = useDialogStore();
+  const { isOpen, openModal, closeModal } = useMapDialogStore();
 
   // 재검색 버튼 상태
   const [showReSearchButton, setShowReSearchButton] = useState(false);
@@ -203,7 +197,7 @@ function Map() {
             )}
             <Outlet />
             {isOpen && markerData.length > 0 && (
-              <SlideUpDialog
+              <MapDialog
                 header={
                   selectedMarker
                     ? (selectedMarker.title ?? '상세 정보')
@@ -213,9 +207,6 @@ function Map() {
                         ? (formatMapDialogHeader(selectedFilter) ?? '필터 결과')
                         : '내 주변'
                 }
-                dimd={false}
-                dragIcon={true}
-                className="shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
               >
                 {selectedMarker ? (
                   <ModalDetailContent
@@ -225,7 +216,7 @@ function Map() {
                 ) : (
                   markerData.length > 0 && <ModalContent data={markerData} />
                 )}
-              </SlideUpDialog>
+              </MapDialog>
             )}
           </MapArea>
         </>
