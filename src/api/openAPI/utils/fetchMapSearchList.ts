@@ -19,10 +19,14 @@ interface detailItem {
 
 interface FetchMapSearchListParams {
   keyword: string;
+  areaCode?: string;
+  sigunguCode?: string;
 }
 
 export async function fetchMapSearchList({
   keyword,
+  areaCode,
+  sigunguCode,
 }: FetchMapSearchListParams): Promise<MarkerDataTypes[]> {
   if (!keyword) return [];
 
@@ -34,6 +38,8 @@ export async function fetchMapSearchList({
           pageNo: 1,
           numOfRows: 10,
           keyword,
+          ...(areaCode ? { areaCode } : {}),
+          ...(sigunguCode ? { sigunguCode } : {}),
         },
       },
     );

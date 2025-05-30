@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { client } from '@/api/openAPI/client';
+import { getAreaCodesFromCoords } from '@/api/openAPI/utils/fetchAreaCodesFromCoords';
 import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
 import {
   fetchFavoriteItems,
@@ -28,7 +29,6 @@ export function useFetchMarkers({
 
   useEffect(() => {
     const searchWord = searchParams.get('search') || '';
-    // const category = searchParams.get('category') || '';
 
     if (!myLocation || (!selectedFilter && !searchWord)) {
       setMarkerData([]);
@@ -119,7 +119,6 @@ export function useFetchMarkers({
               mapy: item.mapy,
             }));
         } else if (selectedFilter) {
-          // 일반 카테고리
           const categoryRes = await fetchAroundList({
             mapX: myLocation.lng,
             mapY: myLocation.lat,
@@ -149,19 +148,29 @@ export function useFetchMarkers({
             markers = categoryMarkers;
           }
         } else if (searchWord) {
-          // ✅ searchWord만 있는 경우
+          const { areaCode, sigunguCode } =
+            await getAreaCodesFromCoords(myLocation);
           const searchResults = await fetchMapSearchList({
             keyword: searchWord,
+            areaCode,
+            sigunguCode,
           });
 
           markers = searchResults
-            .filter((marker) => {
+            .filter((item) => {
+              const mapx = parseFloat(item.mapx);
+              const mapy = parseFloat(item.mapy);
+              const isValidCoords = !isNaN(mapx) && !isNaN(mapy);
+
+              if (!isValidCoords || !myLocation) return false;
+
               const distance = getDistance(
                 myLocation.lat,
                 myLocation.lng,
-                parseFloat(marker.mapy),
-                parseFloat(marker.mapx),
+                mapy,
+                mapx,
               );
+
               return distance <= 3000;
             })
             .map((item) => ({
@@ -172,6 +181,7 @@ export function useFetchMarkers({
               mapy: item.mapy,
             }));
         }
+        console.log(markers);
 
         setMarkerData(markers);
       } catch (err) {
