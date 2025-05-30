@@ -35,7 +35,7 @@ function useGetDetailCommon(contentId: string) {
   useEffect(() => {
     const fetchDetailCommon = async () => {
       try {
-        const res = await client.get('/detailCommon1', {
+        const res = await client.get('/detailCommon2', {
           params: {
             pageNo: '1',
             numOfRows: '20',

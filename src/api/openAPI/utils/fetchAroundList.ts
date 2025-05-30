@@ -29,7 +29,7 @@ export async function fetchAroundList({
   contentTypeId,
   radius = 3000,
 }: FetchAroundListParams): Promise<AxiosResponse<OpenAPIResponse<detailItem>>> {
-  const response = await client.get(`/locationBasedList1`, {
+  const response = await client.get(`/locationBasedList2`, {
     params: {
       mapX,
       mapY,
