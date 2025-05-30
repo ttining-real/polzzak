@@ -8,24 +8,24 @@ import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useSearchStore } from '@/store/useSearchStore';
 
 export interface ListItemProps {
-  contentid: string;
-  contenttypeid: string;
-  title: string;
-  addr1: string;
-  image: string;
-  eventstartdate: string;
-  eventenddate: string;
-  opentimefood: string;
-  usetime: string;
-  usetimeleports: string;
-  usetimeculture: string;
-  opentime: string;
-  checkintime: string;
-  checkouttime: string;
-  restdate: string;
-  reviews: number;
-  likes: number;
-  createdtime: string;
+  [key: string]: string;
+  // contentid: string;
+  // contenttypeid: string;
+  // title: string;
+  // addr1: string;
+  // image: string;
+  // eventstartdate: string;
+  // eventenddate: string;
+  // opentimefood: string;
+  // usetime: string;
+  // usetimeleports: string;
+  // usetimeculture: string;
+  // opentime: string;
+  // checkintime: string;
+  // checkouttime: string;
+  // restdate: string;
+  // reviews: number;
+  // likes: number;
 }
 
 interface ListItemData {
@@ -46,11 +46,11 @@ function ListItem({ data }: ListItemData) {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      const results = await Promise.all(
+      const results: ListItemProps[] = await Promise.all(
         data.map(async (item) => {
           const detail = await fetchContentDetail(
-            item.contentid,
-            item.contenttypeid,
+            item.contentid!,
+            item.contenttypeid!,
             true,
           );
           return {
@@ -179,14 +179,16 @@ function ListItem({ data }: ListItemData) {
                       <Icon id="favorite_off" size={16} />
                     </dt>
                     <dd className="align-top">
-                      {item.likes >= 999 ? '999+' : item.likes}
+                      {/* {item.likes >= 999 ? '999+' : item.likes} */}
                     </dd>
                   </div>
                   <div className="flex items-center gap-1" aria-label="리뷰 수">
                     <dt>
                       <Icon id="review" size={16} />
                     </dt>
-                    <dd>{item.reviews >= 999 ? '999+' : item.reviews}</dd>
+                    <dd>
+                      {/* {item.reviews >= 999 ? '999+' : item.reviews} */}
+                    </dd>
                   </div>
                 </dl>
               </div>

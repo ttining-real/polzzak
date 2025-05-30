@@ -2,41 +2,45 @@ import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
 import { CircleIcon } from 'lucide-react';
 import * as React from 'react';
 
-import SelectMenu from '@/components/Input/SelectMenu';
+import SelectMenu, {
+  FavoirteType,
+  PolzzakType,
+} from '@/components/Input/SelectMenu';
 import { Label } from '@/components/Label';
-import { getTripDays } from '@/lib/dateUtils';
 import { cn } from '@/lib/utils';
-import { ScheduleDummyData } from '@/mockData/ScheduleDummyData';
-
-// 임시로 타입 정의함
-interface BaseSchedule {
-  id: number;
-  name: string;
-}
-
-interface ScheduleWithDate extends BaseSchedule {
-  startDate: Date;
-  endDate: Date;
-  area?: string[];
-  img?: string;
-}
-
-interface ScheduleWithoutDate extends BaseSchedule {
-  storage: string[];
-}
 
 interface RadioProps {
-  data?: ScheduleWithDate[] | ScheduleWithoutDate[];
+  data?: FavoirteType[] | PolzzakType[] | null;
   className?: string;
+  setSelectFolder: (id: string) => void;
+  setSelectPolzzak: (id: string) => void;
 }
 
-// data 기본값으로 더미데이타
-function Radio({ data = ScheduleDummyData, className }: RadioProps) {
-  const [selected, setSelected] = React.useState('radio0');
+function Radio({
+  data,
+  className,
+  setSelectFolder,
+  setSelectPolzzak,
+}: RadioProps) {
+  const [selected, setSelected] = React.useState('');
+
+  React.useEffect(() => {
+    if (data?.length) {
+      setSelected(`radio${data[0].id}`);
+    }
+  }, [data]);
+
+  React.useEffect(() => {
+    if (selected && data?.length && typeof data[0].storage[0] === 'string') {
+      setSelectFolder(selected);
+    }
+  }, [selected, data, setSelectFolder]);
+
+  if (!data) return;
 
   return (
-    <RadioGroup value={selected} onValueChange={setSelected}>
-      {data.map((item) => {
+    <RadioGroup value={selected ?? ''} onValueChange={setSelected}>
+      {data?.map((item) => {
         const isChecked = selected === `radio${item.id}`;
         return (
           <div
@@ -53,21 +57,24 @@ function Radio({ data = ScheduleDummyData, className }: RadioProps) {
               id={`radio${item.id}`}
               className="border-gray05 size-5 rounded-full border"
             />
-            {isChecked && 'startDate' in item && 'endDate' in item ? (
-              <AddSchedule data={item} />
-            ) : (
-              <Label
-                htmlFor={`radio${item.id}`}
-                className="ml-2 px-0 font-medium"
-              >
-                {item.name}
-              </Label>
-            )}
-            {'storage' in item && (
-              <p className="fs-14 lh text-primary pl-1 font-semibold">
-                {item.storage.length}
-              </p>
-            )}
+            <div className="w-full">
+              <div className="flex w-full">
+                <Label
+                  htmlFor={`radio${item.id}`}
+                  className="ml-2 w-full px-0 font-medium"
+                >
+                  {item?.name ?? '폴짝 이름 미정'}
+                  {typeof data[0].storage[0] === 'string' && (
+                    <p className="fs-14 lh text-primary font-semibold">
+                      {item.storage.length}
+                    </p>
+                  )}
+                </Label>
+              </div>
+              {isChecked && 'startDate' in item && (
+                <AddSchedule data={item} setSelectPolzzak={setSelectPolzzak} />
+              )}
+            </div>
           </div>
         );
       })}
@@ -75,22 +82,30 @@ function Radio({ data = ScheduleDummyData, className }: RadioProps) {
   );
 }
 
-type AddScheduleProps = {
-  data: ScheduleWithDate;
-};
+export interface AddScheduleProps {
+  data: PolzzakType;
+  setSelectPolzzak?: (id: string) => void;
+}
 
-function AddSchedule({ data }: AddScheduleProps) {
-  const { range } = getTripDays(data);
+function AddSchedule({ data, setSelectPolzzak }: AddScheduleProps) {
+  const range = (date: string) => {
+    const splitDate = date.split('-');
+    return `${splitDate[0]}.${splitDate[1]}.${splitDate[2]}`;
+  };
 
   return (
     <div className="ml-2 w-full">
-      <div>
-        <Label htmlFor={`radio${data.id}`} className="px-0 font-medium">
-          {data.name}
-        </Label>
-        <p className="fs-14 text-gray06 lh">{range}</p>
-      </div>
-      <SelectMenu data={data} className="mx-0.5" />
+      <p className="fs-14 text-gray06 lh">
+        {data.endDate
+          ? `${range(data.startDate)} ~ ${range(data.endDate)}`
+          : range(data.startDate)}
+      </p>
+
+      <SelectMenu
+        data={data}
+        className="mx-0.5"
+        setSelectPolzzak={setSelectPolzzak}
+      />
     </div>
   );
 }

@@ -63,13 +63,13 @@ async function fetchContentDetail(
         addrinfoYN: 'Y',
         overviewYN: 'Y',
         pageNo: 1,
-        numOfRows: 20,
+        numOfRows: 10,
       },
     }),
     client.get(`/detailIntro1`, {
       params: {
         pageNo: 1,
-        numOfRows: 20,
+        numOfRows: 10,
         contentId,
         contentTypeId,
       },

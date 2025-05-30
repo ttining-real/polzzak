@@ -8,10 +8,8 @@ import Button from '@/components/Button/Button';
 import Calendar from '@/components/Calendar/Calendar';
 import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
-import { Radio } from '@/components/Input/RadioGroup';
 import { Textarea } from '@/components/Input/Textarea';
 import ListItem from '@/components/ListItem/ListItem';
-import { ScheduleDummyData } from '@/mockData/ScheduleDummyData';
 import { useModalStore } from '@/store/useModalStore';
 import { useSearchStore } from '@/store/useSearchStore';
 
@@ -88,7 +86,7 @@ const MODAL_DATA = [
     id: 6,
     title: '폴짝 추가하기',
     type: 'polzzak_add-exist',
-    content: <Radio data={ScheduleDummyData} />,
+    content: '',
     prevBtn: '취소',
     nextBtn: '추가',
   },
