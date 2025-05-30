@@ -122,6 +122,7 @@ function Map() {
   useMapDialogEffect({
     selectedFilter,
     markerData,
+    selectedMarker,
     isOpen,
     searchParams,
     setSelectedFilter,

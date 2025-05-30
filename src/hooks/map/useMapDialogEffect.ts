@@ -8,6 +8,7 @@ import { FilterType } from '@/types/mapDataType';
 type UseMapDialogEffectProps = {
   selectedFilter: FilterType | null;
   markerData: MarkerDataTypes[];
+  selectedMarker: DetailCommonDataType | null;
   isOpen: boolean;
   searchParams: URLSearchParams;
 
@@ -28,6 +29,7 @@ type UseMapDialogEffectProps = {
 export function useMapDialogEffect({
   selectedFilter,
   markerData,
+  selectedMarker,
   isOpen,
   searchParams,
   setSelectedFilter,
@@ -45,6 +47,13 @@ export function useMapDialogEffect({
       openModal();
     }
   }, [selectedFilter, markerData]);
+
+  // ✅ 마커 선택 시
+  useEffect(() => {
+    if (selectedMarker) {
+      openModal();
+    }
+  }, [selectedMarker]);
 
   // ✅ 모달 닫힐 때 쿼리 초기화
   useEffect(() => {
