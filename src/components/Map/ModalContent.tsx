@@ -19,6 +19,7 @@ export default function ModalContent({ data, contentId }: ModalContentProps) {
                   key={item.contentid}
                   contentId={item.contentid}
                   contentTypeId={item.contenttypeid}
+                  currentTitle={item.title}
                 />
               ),
           )}

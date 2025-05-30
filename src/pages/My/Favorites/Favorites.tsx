@@ -67,19 +67,49 @@ function Favorites() {
       return;
     }
 
+    const folderName = currentFolder.folder_name.trim();
+    const checkName = async () => {
+      const { data, error } = await supabase
+        .from('ex_favorite_folders')
+        .select('folder_name')
+        .match({ user_id: userId, folder_name: folderName })
+        .single();
+
+      if (error) {
+        showToast(
+          '폴더를 추가하지 못했어요. 잠시 후 다시 시도해 주세요.',
+          'bottom-[220px]',
+          5000,
+        );
+        console.log(error);
+        return;
+      }
+
+      return data;
+    };
     try {
       if (type === 'add') {
-        await addFolder(userId!, currentFolder.folder_name.trim(), () => {
-          failToast('폴더를 추가하지 못했어요. 잠시 후 다시 시도해 주세요.');
-        });
+        const isExistingName = await checkName();
+
+        if (isExistingName?.folder_name) {
+          showToast('이미 같은 이름의 폴더가 있어요!', 'bottom-[220px]', 2500);
+          return;
+        } else {
+          await addFolder(userId!, folderName, () => {
+            failToast('폴더를 추가하지 못했어요. 잠시 후 다시 시도해 주세요.');
+          });
+        }
       } else {
-        await editFolder(
-          currentFolder.id,
-          currentFolder.folder_name.trim(),
-          () => {
+        const isExistingName = await checkName();
+
+        if (isExistingName?.folder_name) {
+          showToast('이미 같은 이름의 폴더가 있어요!', 'bottom-[220px]', 2500);
+          return;
+        } else {
+          await editFolder(currentFolder.id, folderName, () => {
             failToast('이름을 변경하지 못했어요. 잠시 후 다시 시도해 주세요.');
-          },
-        );
+          });
+        }
       }
       await queryClient.invalidateQueries({ queryKey: ['folders', userId] });
       closeModal();
@@ -212,12 +242,12 @@ const addFolder = async (
   folderName: string,
   showToast: () => void,
 ) => {
-  const { error } = await supabase
+  const { error: insertErr } = await supabase
     .from('ex_favorite_folders')
     .insert([{ user_id: userId, folder_name: folderName }]);
-  if (error) {
+  if (insertErr) {
     showToast();
-    console.log(error);
+    console.log(insertErr);
     return;
   }
 };

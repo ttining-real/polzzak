@@ -1,31 +1,48 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchContentDetail } from '@/api/openAPI/utils/fetchContentDetail';
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
+import FavoriteDialog from '@/components/Dialog/FavoriteDialog';
 import Icon from '@/components/Icon/Icon';
+import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
+import Loader from '@/components/Loader/Loader';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useFavoriteCheck } from '@/hooks/useFavoriteCheck';
-import { useFavoriteFolderId } from '@/hooks/useFavoriteFolderId';
 import { useToast } from '@/hooks/useToast';
 import { addFavoriteWithContentCheck } from '@/lib/favorite';
+import { getFavoriteFolderId } from '@/lib/getFavoriteFolderId';
 import { removeFavorite } from '@/lib/removeFavorite';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 
 function ListItemCardById({
   contentId,
   contentTypeId,
+  currentTitle,
 }: {
   contentId: string;
   contentTypeId: string;
+  currentTitle?: string;
 }) {
-  const { isAuthenticated, user } = useAuthStore();
-  const [isCheck, setIsCheck] = useFavoriteCheck(contentId);
-  const folderId = useFavoriteFolderId();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isFavoritePath = useLocation().pathname.startsWith('/my/favorites');
+  const { user } = useAuthStore();
+  const userId = user?.id;
+  const [isCheck, setIsCheck] = useFavoriteCheck(contentId, userId);
   const [item, setItem] = useState<Record<string, string | undefined>>({});
   const [likeAndReview, setLikeAndReview] = useState({ likes: 0, reviews: 0 });
   const showToast = useToast();
+
+  // 리스트아이템 필요
+  const [radioList, setRadioList] = useState<
+    FavoirteType[] | PolzzakType[] | null
+  >(null);
+  const [isLoading, setIsLoading] = useState('');
+  const [clickFavorite, setClickFavorite] = useState(false);
+  const { openModal } = useDialogStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,7 +57,7 @@ function ListItemCardById({
     const getLikesAndReviews = async () => {
       const { data, error } = await supabase
         .from('ex_contents')
-        .select('likes, reviews, ex_favorite(folder_id)')
+        .select('likes, reviews')
         .eq('contentid', contentId)
         .maybeSingle();
 
@@ -62,63 +79,99 @@ function ListItemCardById({
   if (!item.title) return <p>불러오는 중...</p>; // 추후 스켈레톤으로 변경
 
   /* 🕹️ 찜 기능 - 실행 */
-  const handleFavoriteClick = async (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const onClickFavorite = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
-    if (!user) {
-      setIsCheck((prev) => {
-        const next = !prev;
-        // 비로그인: sessionStorage 업데이트
-        const stored = sessionStorage.getItem('favorites');
-        const parsed: string[] = stored ? JSON.parse(stored) : [];
-        const updated = next
-          ? [...parsed, contentId]
-          : parsed.filter((id) => id !== contentId);
-        sessionStorage.setItem('favorites', JSON.stringify(updated));
-        return next;
-      });
-      return;
+    if (!userId) {
+      return navigate('/login');
     }
+    if (isFavoritePath) {
+      const folderId = await getFavoriteFolderId({ userId: userId, name: id });
+      if (!id || !folderId) return;
+      if (isCheck) {
+        try {
+          const { error } = await removeFavorite(folderId, contentId);
 
-    if (!folderId) {
-      console.error('❌ 폴더 ID가 없습니다.');
-      return;
-    }
+          if (error) throw error;
 
-    if (isCheck) {
-      const { error } = await removeFavorite(folderId, contentId);
+          setIsCheck(false);
+          setLikeAndReview((prev) => ({
+            likes: Math.max((prev.likes ?? 0) - 1, 0),
+            reviews: prev.reviews,
+          }));
+        } catch (err) {
+          showToast('🚫 즐겨찾기 삭제에 실패했어요.', 'top-[64px]', 4000);
+          console.error('🚫 즐겨찾기 삭제:', err);
+          setIsCheck(true);
+        }
+      } else {
+        try {
+          const { error } = await addFavoriteWithContentCheck(
+            folderId,
+            contentId,
+            contentTypeId,
+          );
 
-      if (error) {
-        showToast('🚫 즐겨찾기 삭제에 실패했어요.', 'top-[64px]', 4000);
-        return;
+          if (error) throw error;
+          setIsCheck(true);
+          setLikeAndReview((prev) => ({
+            likes: (prev.likes ?? 0) + 1,
+            reviews: prev.reviews,
+          }));
+        } catch (err) {
+          showToast('💔 즐겨찾기를 추가하지 못했어요.', 'top-[64px]', 4000);
+          console.error('💔 즐겨찾기 추가 실패:', err);
+          setIsCheck(false);
+        }
       }
-
-      showToast('🗑️ 즐겨찾기를 삭제했어요.', 'top-[64px]', 4000);
-      setIsCheck(false);
-
-      setLikeAndReview((prev) => ({
-        likes: Math.max((prev.likes ?? 0) - 1, 0),
-        reviews: prev.reviews,
-      }));
     } else {
-      const { error } = await addFavoriteWithContentCheck(
-        folderId,
-        contentId,
-        contentTypeId,
-      );
-      if (error) {
-        showToast('💔 즐겨찾기를 추가하지 못했어요.', 'top-[64px]', 4000);
-        return;
-      }
-      showToast('🧡 즐겨찾기를 추가했어요!', 'top-[64px]', 4000);
-      setIsCheck(true);
+      try {
+        if (isCheck) {
+          const folderId = await getFavoriteFolderId({
+            userId: userId,
+            contentId: contentId,
+          });
+          setIsLoading('즐겨찾기 삭제 중..');
+          const { error } = await supabase
+            .from('ex_favorite')
+            .delete()
+            .match({ folder_id: folderId, content_id: contentId });
 
-      setLikeAndReview((prev) => ({
-        likes: (prev.likes ?? 0) + 1,
-        reviews: prev.reviews,
-      }));
+          if (error) {
+            showToast('🚫 즐겨찾기 삭제에 실패했어요.', 'top-[64px]', 4000);
+            throw error;
+          }
+          setLikeAndReview((prev) => ({
+            likes: Math.max((prev.likes ?? 0) - 1, 0),
+            reviews: prev.reviews,
+          }));
+          setIsCheck(false);
+        } else {
+          setClickFavorite(true);
+          openModal('즐겨찾기');
+          setIsLoading('폴더 가져오는 중..');
+          const { data, error } = await supabase
+            .from('ex_favorite_folders')
+            .select('id, folder_name, ex_favorite(content_id)')
+            .eq('user_id', userId);
+
+          if (error) {
+            showToast('💔 즐겨찾기를 추가하지 못했어요.', 'top-[64px]', 4000);
+            throw error;
+          }
+          setRadioList(
+            data.map((item) => ({
+              id: item.id,
+              name: item.folder_name,
+              storage: item.ex_favorite?.map((i) => i.content_id),
+            })),
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        return;
+      } finally {
+        setIsLoading('');
+      }
     }
   };
 
@@ -192,10 +245,9 @@ function ListItemCardById({
               variant="tertiary"
               size="md"
               className='m-0.5 h-6 w-6 [&_svg:not([class*="size-"])]:size-5'
-              onClick={handleFavoriteClick}
+              onClick={onClickFavorite}
               aria-label={isCheck ? '즐겨찾기 취소' : '즐겨찾기 추가'}
               aria-live="polite"
-              disabled={isAuthenticated && !folderId}
             >
               <Icon
                 id={isCheck ? 'favorite_on' : 'favorite_off'}
@@ -237,6 +289,17 @@ function ListItemCardById({
           </dl>
         </div>
       </Link>
+
+      {clickFavorite && userId && currentTitle && (
+        <FavoriteDialog
+          radioList={radioList}
+          id={contentId}
+          userId={userId}
+          info={{ contenttypeid: contentTypeId, title: currentTitle }}
+          setIsMyContent={setIsCheck}
+        />
+      )}
+      {isLoading && <Loader text={isLoading} />}
     </li>
   );
 }
