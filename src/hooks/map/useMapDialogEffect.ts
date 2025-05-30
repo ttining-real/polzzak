@@ -41,21 +41,27 @@ export function useMapDialogEffect({
   openModal,
   closeModal,
 }: UseMapDialogEffectProps) {
-  // ✅ 마커 데이터가 있을 때 모달 열기
+  // console.log('1️⃣ 선택된 필터', selectedFilter);
+  // console.log('2️⃣ 마커 데이터', markerData);
+  // console.log('3️⃣ 선택된 마커', selectedMarker);
+  // console.log('4️⃣ 다이얼로그 상태', isOpen);
+  // console.log('5️⃣ 검색어 url', searchParams);
+
+  // 모달 열기: searchParams에 search가 있거나 selectedFilter가 있거나 markerData가 있을 경우
   useEffect(() => {
-    if (selectedFilter && markerData.length > 0) {
-      openModal();
-    } else if (selectedMarker) {
-      openModal();
-    } else if (markerData.length > 0) {
+    const hasSearchParam = searchParams.has('search');
+    if (
+      selectedFilter !== null ||
+      markerData.length > 0 ||
+      hasSearchParam ||
+      selectedMarker !== null
+    ) {
       openModal();
     }
-  }, [selectedFilter, markerData]);
+  }, [selectedFilter, markerData, selectedMarker, searchParams]);
 
-  // ✅ 모달 닫힐 때 쿼리 초기화
+  // 모달 닫기 및 상태 초기화: isOpen이 false일 때
   useEffect(() => {
-    if (!isOpen && markerData.length === 0) return;
-
     if (!isOpen) {
       const newParams = new URLSearchParams();
       searchParams.forEach((value, key) => {
@@ -66,15 +72,19 @@ export function useMapDialogEffect({
 
       setSelectedFilter(null);
       setSelectedMarker(null);
+      setMarkerData([]);
       setSearchParams({}, { replace: true });
       setShowReSearchButton(false);
       resetSearchValue();
     }
   }, [isOpen]);
 
-  // ✅ 필터 선택 해제 시, 상태 및 쿼리 초기화
+  // selectedFilter가 null이고, searchParams에 category나 search가 없을 때 상태 초기화
   useEffect(() => {
-    if (selectedFilter === null) {
+    const hasCategoryOrSearch =
+      searchParams.has('category') || searchParams.has('search');
+
+    if (selectedFilter === null && !hasCategoryOrSearch) {
       closeModal();
       setMarkerData([]);
 
@@ -87,5 +97,10 @@ export function useMapDialogEffect({
 
       setSearchParams({}, { replace: true });
     }
-  }, [selectedFilter]);
+
+    if (!hasCategoryOrSearch) {
+      closeModal();
+      setMarkerData([]);
+    }
+  }, [selectedFilter, searchParams]);
 }
