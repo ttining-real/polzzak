@@ -5,10 +5,14 @@ import { MarkerDataTypes } from '@/types/mapDataType';
 
 interface MapMarkerListProps {
   data: MarkerDataTypes[];
+  selectedFilter?: string | null;
   onMarkerClick?: (marker: MarkerDataTypes) => void;
 }
 
-const getMarkerSrc = (contentTypeId: string) => {
+const getMarkerSrc = (contentTypeId: string, selectedFilter?: string) => {
+  if (selectedFilter === '#favorite') return '/marker/map_favorite.svg';
+  if (selectedFilter === '#polzzak') return '/marker/map_polzzak.svg';
+
   switch (contentTypeId) {
     case '39':
       return '/marker/map_food.svg';
@@ -32,6 +36,7 @@ const getMarkerSrc = (contentTypeId: string) => {
 export default function MapMarkerList({
   data,
   onMarkerClick,
+  selectedFilter,
 }: MapMarkerListProps) {
   // 다이얼로그 상태
   const { openModal } = useDialogStore();
@@ -48,7 +53,10 @@ export default function MapMarkerList({
           key={marker.contentid}
           position={{ lat: Number(marker.mapy), lng: Number(marker.mapx) }}
           image={{
-            src: getMarkerSrc(marker.contenttypeid ?? ''),
+            src: getMarkerSrc(
+              marker.contenttypeid?.toString() ?? '',
+              selectedFilter ?? '',
+            ) as string,
             size: { width: 28, height: 28 },
             options: { offset: { x: 14, y: 14 } },
           }}
