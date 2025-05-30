@@ -5,6 +5,7 @@ import { ClickedChipItem } from '@/components/Chip/Chip';
 import { useSearchStore } from '@/store/useSearchStore';
 
 function ThemeSelection() {
+  const theme = useSearchStore((state) => state.theme);
   const setTheme = useSearchStore((state) => state.setTheme);
 
   const handleTheme = useCallback(
