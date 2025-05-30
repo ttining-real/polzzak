@@ -13,7 +13,8 @@ export default function MapDialog({
   header,
   children,
   className,
-}: DialogProps) {
+  onBack,
+}: DialogProps & { onBack?: () => void }) {
   const { closeModal } = useMapDialogStore();
   const dialogRef = useRef<HTMLDialogElement | null>(null);
 
@@ -110,10 +111,22 @@ export default function MapDialog({
       </div>
 
       <header className="flex items-center justify-between">
-        <h3 className="fs-18 ls lh font-semibold text-black">{header}</h3>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <Button
+              size="md"
+              variant="tertiary"
+              aria-label="뒤로 가기"
+              onClick={onBack}
+            >
+              <Icon id="arrow_left" />
+            </Button>
+          )}
+          <h3 className="fs-18 ls lh font-semibold text-black">{header}</h3>
+        </div>
         <Button
           size="md"
-          variant={'tertiary'}
+          variant="tertiary"
           aria-label="모달 닫기"
           onClick={closeModal}
         >

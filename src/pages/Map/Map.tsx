@@ -151,6 +151,11 @@ function Map() {
 
   const fallbackContent = getFallbackContent();
 
+  // 다이얼로그 목록 보기로 변경 (뒤로 가기)
+  const handleBack = () => {
+    setSelectedMarker(null);
+  };
+
   return (
     <main className="h-full w-full">
       {fallbackContent ? (
@@ -207,6 +212,7 @@ function Map() {
                         ? (formatMapDialogHeader(selectedFilter) ?? '필터 결과')
                         : '내 주변'
                 }
+                onBack={selectedMarker ? handleBack : undefined}
               >
                 {selectedMarker ? (
                   <ModalDetailContent
