@@ -6,7 +6,7 @@ interface HomeThemes extends ThemeItem {
 }
 async function fetchRecommendTour(keyword: string) {
   try {
-    const res = await client.get('/searchKeyword1', {
+    const res = await client.get('/searchKeyword2', {
       params: {
         keyword: keyword,
         numOfRows: '70',
@@ -39,7 +39,7 @@ async function fetchGetFestival() {
   const eventStartDate = getPreviousMonthStart();
 
   try {
-    const res = await client.get('/searchFestival1', {
+    const res = await client.get('/searchFestival2', {
       params: {
         pageNo: '1',
         numOfRows: '70',

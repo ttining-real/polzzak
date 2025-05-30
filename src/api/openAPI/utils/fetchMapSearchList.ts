@@ -32,7 +32,7 @@ export async function fetchMapSearchList({
 
   try {
     const res: AxiosResponse<OpenAPIResponse<detailItem>> = await client.get(
-      '/searchKeyword1',
+      '/searchKeyword2',
       {
         params: {
           pageNo: 1,
