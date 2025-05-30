@@ -16,7 +16,6 @@ interface FavoriteDialogProps {
   info?: {
     contenttypeid: string;
     title: string;
-    addr1: string;
   };
   setIsMyContent: (arg: boolean) => void;
 }
@@ -143,7 +142,7 @@ function FavoriteDialog({
         <section>
           <Input label="폴짝 이름" placeholder="폴짝 이름을 입력해 주세요." />
           <Input label="폴짝 날짜" />
-          <Input label="폴짝 장소" value={info?.addr1} />
+          {/* <Input label="폴짝 장소" value={info?.addr1} /> */}
         </section>
       ) : (
         <Radio

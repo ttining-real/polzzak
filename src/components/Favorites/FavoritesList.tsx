@@ -65,8 +65,7 @@ function FavoritesList({
         const { data: images = [], isLoading } = fetchImagesQueries[idx];
         return (
           <FavoritesCards
-            key={folder.id}
-            id={folder.id}
+            key={folder.folder_name}
             name={folder.folder_name}
             images={isLoading ? [] : images}
             onClickDelete={() => onClickDelete(folder.id, folder.folder_name)}

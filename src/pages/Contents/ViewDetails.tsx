@@ -246,7 +246,6 @@ function ViewDetails() {
             info={{
               contenttypeid: info[0].contenttypeid,
               title: info[0].title,
-              addr1: info[0].addr1,
             }}
             setIsMyContent={setIsMyContent}
           />
