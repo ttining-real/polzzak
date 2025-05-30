@@ -61,7 +61,7 @@ async function fetchSearchList({
   try {
     if (keyword) {
       try {
-        const keywordResponse = await client.get(`/searchKeyword1`, {
+        const keywordResponse = await client.get(`/searchKeyword2`, {
           params: {
             keyword,
             pageNo: 1,
@@ -81,7 +81,7 @@ async function fetchSearchList({
 
     if (startDate) {
       try {
-        const festivalResponse = await client.get(`/searchFestival1`, {
+        const festivalResponse = await client.get(`/searchFestival2`, {
           params: {
             eventStartDate: startDate,
             ...(endDate ? { eventEndDate: endDate } : {}),
@@ -103,7 +103,7 @@ async function fetchSearchList({
 
     if (region) {
       try {
-        const regionResponse = await client.get(`/areaBasedList1`, {
+        const regionResponse = await client.get(`/areaBasedList2`, {
           params: {
             areaCode: regionCode,
             pageNo: 1,

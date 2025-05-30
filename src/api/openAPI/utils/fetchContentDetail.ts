@@ -52,7 +52,7 @@ async function fetchContentDetail(
     AxiosResponse<OpenAPIResponse<detailItem>>,
     AxiosResponse<OpenAPIResponse<detailItem>>,
   ] = await Promise.all([
-    client.get(`/detailCommon1`, {
+    client.get(`/detailCommon2`, {
       params: {
         contentId,
         contentTypeId,
@@ -66,7 +66,7 @@ async function fetchContentDetail(
         numOfRows: 10,
       },
     }),
-    client.get(`/detailIntro1`, {
+    client.get(`/detailIntro2`, {
       params: {
         pageNo: 1,
         numOfRows: 10,

@@ -33,7 +33,7 @@ export async function fetchMapSearchList(
 
   try {
     const res: AxiosResponse<OpenAPIResponse<detailItem>> = await client.get(
-      '/searchKeyword1',
+      '/searchKeyword2',
       {
         params: {
           serviceKey: import.meta.env.VITE_OPEN_API_KEY,
