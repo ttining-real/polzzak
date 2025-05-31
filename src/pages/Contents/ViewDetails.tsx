@@ -25,10 +25,10 @@ function ViewDetails() {
   >(null);
   const [isMyContent, setIsMyContent] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const { detailData } = useSearchStore();
+  const detailData = useSearchStore((state) => state.detailData);
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
   const { isOpenId, openModal, closeModal } = useDialogStore();
-  const info = detailData.filter((item) => item.contentid === id);
+  const info = detailData?.filter((item) => item.contentid.toString() === id);
   const rawData = useGetDetailCommon(id as string);
   const data = rawData ?? null;
   const { user } = useAuthStore();
@@ -244,7 +244,7 @@ function ViewDetails() {
             id={id}
             userId={userId}
             info={{
-              contenttypeid: info[0].contenttypeid,
+              contenttypeid: data?.contenttypeid,
               title: info[0].title,
               addr1: info[0].addr1,
             }}
