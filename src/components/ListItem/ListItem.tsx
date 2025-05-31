@@ -76,8 +76,6 @@ function ListItem({ data }: ListItemData) {
     navigate(`/contents/${id}`);
   };
 
-  console.log(data);
-
   return (
     <ul className="flex flex-col gap-6">
       {detailData.map((item, index) => {
