@@ -212,7 +212,7 @@ async function fetchSearchList({
 
         for (const searchKeyword of combinedKeywords) {
           try {
-            const keywordResponse = await client.get(`/searchKeyword1`, {
+            const keywordResponse = await client.get(`/searchKeyword2`, {
               params: {
                 keyword: searchKeyword,
                 pageNo,
@@ -237,13 +237,13 @@ async function fetchSearchList({
             for (const contentType of contentTypes) {
               try {
                 const typeKeywordResponse = await client.get(
-                  `/searchKeyword1`,
+                  `/searchKeyword2`,
                   {
                     params: {
                       keyword: searchKeyword,
                       contentTypeId: contentType.id,
                       pageNo,
-                      numOfRows: 2,
+                      numOfRows: 10,
                       ...(regionCode ? { areaCode: regionCode } : {}),
                     },
                   },
