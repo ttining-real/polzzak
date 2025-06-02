@@ -23,7 +23,7 @@ export function useSyncFilterWithQuery(
         setSelectedFilter(matchedType);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, setSelectedFilter]);
 
   useEffect(() => {
     if (!selectedFilter) return;
@@ -34,5 +34,5 @@ export function useSyncFilterWithQuery(
     params.set('category', filterName);
 
     setSearchParams(params);
-  }, [selectedFilter]);
+  }, [searchParams, selectedFilter, setSearchParams]);
 }

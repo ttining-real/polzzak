@@ -183,5 +183,5 @@ export function useFetchMarkers({
     };
 
     fetchMarkers();
-  }, [selectedFilter, myLocation, searchWord, category]);
+  }, [selectedFilter, myLocation, searchWord, category, setMarkerData]);
 }
