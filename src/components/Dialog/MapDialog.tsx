@@ -77,12 +77,15 @@ export default function MapDialog({
   );
 
   useEffect(() => {
+    const moveHandler = moveRef.current;
+    const upHandler = upRef.current;
+
     return () => {
-      if (moveRef.current) {
-        window.removeEventListener('pointermove', moveRef.current);
+      if (moveHandler) {
+        window.removeEventListener('pointermove', moveHandler);
       }
-      if (upRef.current) {
-        window.removeEventListener('pointerup', upRef.current);
+      if (upHandler) {
+        window.removeEventListener('pointerup', upHandler);
       }
     };
   }, []);
