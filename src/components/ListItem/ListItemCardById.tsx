@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchContentDetail } from '@/api/openAPI/utils/fetchContentDetail';
@@ -16,6 +16,7 @@ import { getFavoriteFolderId } from '@/lib/getFavoriteFolderId';
 import { removeFavorite } from '@/lib/removeFavorite';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
+import { useReturnPathStore } from '@/store/useReturnPathStore';
 
 function ListItemCardById({
   contentId,
@@ -28,13 +29,17 @@ function ListItemCardById({
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isFavoritePath = useLocation().pathname.startsWith('/my/favorites');
+  const location = useLocation();
+  const isFavoritePath = location.pathname.startsWith('/my/favorites');
   const { user } = useAuthStore();
   const userId = user?.id;
   const [isCheck, setIsCheck] = useFavoriteCheck(contentId, userId);
   const [item, setItem] = useState<Record<string, string | undefined>>({});
   const [likeAndReview, setLikeAndReview] = useState({ likes: 0, reviews: 0 });
   const showToast = useToast();
+  const fromPath = useReturnPathStore((state) => state.fromPath);
+  const isSelectPolzzak = fromPath;
+  const Wrapper = isSelectPolzzak ? 'div' : Fragment;
 
   // 리스트아이템 필요
   const [radioList, setRadioList] = useState<
@@ -42,7 +47,7 @@ function ListItemCardById({
   >(null);
   const [isLoading, setIsLoading] = useState('');
   const [clickFavorite, setClickFavorite] = useState(false);
-  const { openModal } = useDialogStore();
+  const { isOpenId, openModal } = useDialogStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -234,71 +239,111 @@ function ListItemCardById({
           )}
         </div>
         <div className="flex w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between">
-            <h3
-              className="fs-14 ls lh w-full truncate font-semibold text-black"
-              aria-label={item.title}
-            >
-              {item.title}
-            </h3>
-            <Button
-              variant="tertiary"
-              size="md"
-              className='m-0.5 h-6 w-6 [&_svg:not([class*="size-"])]:size-5'
-              onClick={onClickFavorite}
-              aria-label={isCheck ? '즐겨찾기 취소' : '즐겨찾기 추가'}
-              aria-live="polite"
-            >
-              <Icon
-                id={isCheck ? 'favorite_on' : 'favorite_off'}
-                className="text-primary"
-              />
-            </Button>
-          </div>
-          <span className="fs-14 ls lh font-regular text-gray07">
-            {periodInfo}
-          </span>
-          <span className="fs-14 ls lh font-regular text-gray07 inline-flex items-center">
-            {item.region}
-            <Icon id="chevron_right" size={16} className="text-gray07" />
-            {item.district}
-          </span>
-          <dl className="fs-14 ls lh font-regular text-gray07 flex items-center gap-2">
-            <div className="flex items-center gap-1" aria-label="즐겨찾기 수">
-              <dt>
-                <Icon id="favorite_off" size={16} />
-              </dt>
-              {likeAndReview.likes !== undefined && (
-                <dd className="align-top">
-                  {likeAndReview.likes >= 999 ? '999+' : likeAndReview.likes}
-                </dd>
-              )}
-            </div>
-            <div className="flex items-center gap-1" aria-label="리뷰 수">
-              <dt>
-                <Icon id="review" size={16} />
-              </dt>
-              {likeAndReview.reviews !== undefined && (
-                <dd className="align-top">
-                  {likeAndReview.reviews >= 999
-                    ? '999+'
-                    : likeAndReview.reviews}
-                </dd>
-              )}
-            </div>
-          </dl>
+          <Wrapper
+            {...(isSelectPolzzak ? { className: 'flex items-center' } : null)}
+          >
+            <Wrapper {...(isSelectPolzzak ? { className: 'flex-1' } : null)}>
+              <div className="flex items-center justify-between">
+                <h3
+                  className="fs-14 ls lh w-full truncate font-semibold text-black"
+                  aria-label={item.title}
+                >
+                  {item.title}
+                </h3>
+                {!isSelectPolzzak && (
+                  <Button
+                    variant="tertiary"
+                    size="md"
+                    className='m-0.5 h-6 w-6 [&_svg:not([class*="size-"])]:size-5'
+                    onClick={onClickFavorite}
+                    aria-label={isCheck ? '즐겨찾기 취소' : '즐겨찾기 추가'}
+                    aria-live="polite"
+                  >
+                    <Icon
+                      id={isCheck ? 'favorite_on' : 'favorite_off'}
+                      className="text-primary"
+                    />
+                  </Button>
+                )}
+              </div>
+              <Wrapper
+                {...(isSelectPolzzak ? { className: 'flex flex-col' } : null)}
+              >
+                <span className="fs-14 ls lh font-regular text-gray07">
+                  {periodInfo}
+                </span>
+                <span className="fs-14 ls lh font-regular text-gray07 inline-flex items-center">
+                  {item.region}
+                  <Icon id="chevron_right" size={16} className="text-gray07" />
+                  {item.district}
+                </span>
+              </Wrapper>
+              <dl className="fs-14 ls lh font-regular text-gray07 flex items-center gap-2">
+                <div
+                  className="flex items-center gap-1"
+                  aria-label="즐겨찾기 수"
+                >
+                  <dt>
+                    <Icon id="favorite_off" size={16} />
+                  </dt>
+                  {likeAndReview.likes !== undefined && (
+                    <dd className="align-top">
+                      {likeAndReview.likes >= 999
+                        ? '999+'
+                        : likeAndReview.likes}
+                    </dd>
+                  )}
+                </div>
+                <div className="flex items-center gap-1" aria-label="리뷰 수">
+                  <dt>
+                    <Icon id="review" size={16} />
+                  </dt>
+                  {likeAndReview.reviews !== undefined && (
+                    <dd className="align-top">
+                      {likeAndReview.reviews >= 999
+                        ? '999+'
+                        : likeAndReview.reviews}
+                    </dd>
+                  )}
+                </div>
+              </dl>
+            </Wrapper>
+            {isSelectPolzzak && (
+              <Button
+                variant={'tertiary'}
+                size={'sm'}
+                className="text-primary fs-14 bg-primary/10 rounded-full px-4 py-3 font-semibold"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(fromPath ?? '/polzzak', {
+                    state: {
+                      contentId: contentId,
+                      place: item.title,
+                    },
+                    replace: true,
+                  });
+                }}
+              >
+                선택
+              </Button>
+            )}
+          </Wrapper>
         </div>
       </Link>
 
-      {clickFavorite && userId && currentTitle && (
-        <FavoriteDialog
-          radioList={radioList}
-          id={contentId}
-          userId={userId}
-          info={{ contenttypeid: contentTypeId, title: currentTitle }}
-          setIsMyContent={setIsCheck}
-        />
-      )}
+      {isOpenId === '즐겨찾기' &&
+        clickFavorite &&
+        userId &&
+        currentTitle &&
+        !isSelectPolzzak && (
+          <FavoriteDialog
+            radioList={radioList}
+            id={contentId}
+            userId={userId}
+            info={{ contenttypeid: contentTypeId, title: currentTitle }}
+            setIsMyContent={setIsCheck}
+          />
+        )}
       {isLoading && <Loader text={isLoading} />}
     </li>
   );
