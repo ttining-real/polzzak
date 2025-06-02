@@ -14,7 +14,7 @@ export function useSyncLocation(
       setMyLocation(location);
       setMapCenter(location);
     }
-  }, [location]);
+  }, [location, setMapCenter, setMyLocation]);
 
   // 위치 정보 오류가 발생했을 경우 콘솔에 출력
   useEffect(() => {

@@ -58,7 +58,7 @@ export function useMapDialogEffect({
     ) {
       openModal();
     }
-  }, [selectedFilter, markerData, selectedMarker, searchParams]);
+  }, [selectedFilter, markerData, selectedMarker, searchParams, openModal]);
 
   // 모달 닫기 및 상태 초기화: isOpen이 false일 때
   useEffect(() => {
@@ -77,7 +77,16 @@ export function useMapDialogEffect({
       setShowReSearchButton(false);
       resetSearchValue();
     }
-  }, [isOpen]);
+  }, [
+    isOpen,
+    resetSearchValue,
+    searchParams,
+    setMarkerData,
+    setSearchParams,
+    setSelectedFilter,
+    setSelectedMarker,
+    setShowReSearchButton,
+  ]);
 
   // selectedFilter가 null이고, searchParams에 category나 search가 없을 때 상태 초기화
   useEffect(() => {
@@ -102,5 +111,11 @@ export function useMapDialogEffect({
       closeModal();
       setMarkerData([]);
     }
-  }, [selectedFilter, searchParams]);
+  }, [
+    selectedFilter,
+    searchParams,
+    closeModal,
+    setMarkerData,
+    setSearchParams,
+  ]);
 }
