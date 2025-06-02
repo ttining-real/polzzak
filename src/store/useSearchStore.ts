@@ -5,6 +5,7 @@ import { shallow } from 'zustand/shallow';
 import { ListItemProps } from '@/components/ListItem/ListItem';
 
 interface SearchState {
+  isLoading: boolean;
   keyword: string;
   date: { startDate: Date | null; endDate: Date | null } | null;
   month: string;
@@ -15,6 +16,7 @@ interface SearchState {
   pageNo: number;
 }
 interface SearchActions {
+  setIsLoading: (loading: boolean) => void;
   setKeyWord: (keyword: string) => void;
   setDate: (date: { startDate: Date | null; endDate: Date | null }) => void;
   setMonth: (month: string) => void;
@@ -32,6 +34,7 @@ interface SearchActions {
 }
 
 const initialState: SearchState = {
+  isLoading: false,
   keyword: '',
   date: { startDate: null, endDate: null },
   month: '',
@@ -48,6 +51,7 @@ export const useSearchStore = create<SearchState & SearchActions>()(
       (set, get) => ({
         ...initialState,
 
+        setIsLoading: (loading) => set({ isLoading: loading }),
         setKeyWord: (keyword) => {
           const trimKeyword = typeof keyword === 'string' ? keyword.trim() : '';
           if (get().keyword === trimKeyword) return;
