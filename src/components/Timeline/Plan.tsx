@@ -202,7 +202,11 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
           <Button
             variant={'input'}
             onClick={() => {
-              useReturnPathStore.getState().setFromPath(location.pathname);
+              useReturnPathStore
+                .getState()
+                .setFromPath(
+                  `${location.pathname}${location.search ? location.search : ''}`,
+                );
               navigate('/map');
             }}
           >
