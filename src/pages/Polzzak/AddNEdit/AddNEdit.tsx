@@ -98,8 +98,8 @@ function AddNEdit() {
   const { isOpen, openModal, closeModal } = useDialogStore();
   const [state, dispatch] = useReducer(polzzakReducer, initialPolzzakState);
   const inputRef = useRef<HTMLInputElement>(null);
-  const getUserId = useAuthStore((state) => state.user);
-  const userId = getUserId?.id;
+  const { user } = useAuthStore();
+  const userId = user?.id;
   const showToast = useToast();
   const {
     name,
@@ -281,6 +281,8 @@ function AddNEdit() {
   const saveAddPolzzak = async () => {
     setIsSaving(true);
 
+    if (!name) return;
+
     let finalThumbnailPath = null;
     if (thumbnailBlob) {
       finalThumbnailPath = await uploadFileToStorage(thumbnailBlob);
@@ -291,7 +293,7 @@ function AddNEdit() {
       .insert([
         {
           user_id: userId,
-          name: name || null,
+          name: name,
           startDate:
             dateRange?.from &&
             format(dateRange.from, 'yyyy-MM-dd', { locale: ko }),
@@ -388,7 +390,7 @@ function AddNEdit() {
 
   const saveEditPolzzak = async () => {
     setIsSaving(true);
-
+    if (!name) return;
     try {
       let finalThumbnailPath = thumbnail;
       if ((thumbnailBlob || !thumbnail) && editFile) {
@@ -415,7 +417,7 @@ function AddNEdit() {
         .update([
           {
             user_id: userId,
-            name: name || null,
+            name: name,
             startDate:
               dateRange?.from &&
               format(dateRange.from, 'yyyy-MM-dd', { locale: ko }),
@@ -547,6 +549,10 @@ function AddNEdit() {
             }
             maxLength={20}
           />
+
+          {!name && (
+            <Validation status={false} message="필수 입력 항목입니다." />
+          )}
         </div>
         <div>
           <Input
@@ -633,7 +639,7 @@ function AddNEdit() {
         )}
       </div>
       <Button
-        disabled={isSaving || !dateRange?.from}
+        disabled={isSaving || !dateRange?.from || !name}
         onClick={async () => {
           if (!userId) {
             navigate('/polzzak', { replace: true });
