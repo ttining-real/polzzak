@@ -1,6 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
@@ -8,6 +13,7 @@ import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
 import { Textarea } from '@/components/Input/Textarea';
 import { useToast } from '@/hooks/useToast';
+import { useReturnPathStore } from '@/store/useReturnPathStore';
 
 interface PlanProps {
   cardId?: string;
@@ -22,6 +28,8 @@ interface PlanProps {
 function Plan({ cardId, onUpdatePlan }: PlanProps) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { place, contentId } = location.state || {};
   const [searchParams] = useSearchParams();
   const date = cardId ? '' : searchParams.get('date');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,16 +40,15 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
     time: '',
     memo: '',
   });
+  const [isSelectMap, setIsSelectMap] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const showToast = useToast();
   const queryClient = useQueryClient();
 
   /* add */
   useEffect(() => {
-    if (!date) {
-      navigate(`/polzzak/${id}`);
-    } else if (!id) {
-      navigate('/polzzak');
+    if (!date || !id) {
+      navigate(`/polzzak/${id ?? ''}`);
     }
   }, [date, id, navigate]);
 
@@ -115,14 +122,37 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
     navigate(`/polzzak/${id}`);
   };
 
-  /* edit */
-
+  /* 맵에서 선택한 장소가 있는지 먼저 확인 */
   useEffect(() => {
-    if (cardId && onUpdatePlan) onUpdatePlan(plan);
-  }, [cardId, onUpdatePlan, plan]);
+    if (place) {
+      setIsSelectMap(true);
+    }
+  }, [place]);
 
+  /* 맵에서 선택한 장소 처리 */
+  useEffect(() => {
+    if (!place) return;
+
+    setPlan((prev) => ({ ...prev, place, content_id: contentId }));
+  }, [place, contentId]);
+
+  /* plan 상태가 변경될 때마다 부모에게 알림 */
+  useEffect(() => {
+    if (!onUpdatePlan) return;
+
+    onUpdatePlan({
+      place: plan.place,
+      time: plan.time,
+      memo: plan.memo,
+      content_id: plan.content_id,
+    });
+  }, [plan, onUpdatePlan]);
+
+  /* 편집 모드일 때 기존 데이터 가져오기 */
   const getEditPlan = useCallback(
     async (cardId: string) => {
+      if (place || isSelectMap) return;
+
       const { data, error } = await supabase
         .from('ex_polzzak_detail')
         .select('place, time, memo, content_id, order')
@@ -138,14 +168,17 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
         return;
       }
 
-      setPlan({
+      const editData = {
         place: data[0].place,
         time: data[0]?.time?.slice(0, 5) ?? '',
         memo: data[0]?.memo ?? '',
         content_id: data[0]?.content_id ?? '',
-      });
+      };
+
+      console.log('DB에서 가져온 편집 데이터:', editData);
+      setPlan(editData);
     },
-    [showToast],
+    [showToast, place, isSelectMap],
   );
 
   useEffect(() => {
@@ -162,16 +195,17 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
           placeholder="폴짝 장소를 선택해 주세요."
           value={plan.place}
           onChange={(e) =>
-            setPlan({
-              place: e.target.value,
-              time: plan.time,
-              memo: plan.memo,
-              content_id: plan.content_id,
-            })
+            setPlan((prev) => ({ ...prev, place: e.target.value }))
           }
           maxLength={20}
         >
-          <Button variant={'input'} onClick={() => navigate('/map')}>
+          <Button
+            variant={'input'}
+            onClick={() => {
+              useReturnPathStore.getState().setFromPath(location.pathname);
+              navigate('/map');
+            }}
+          >
             <Icon id="map_search" className="text-gray05" />
           </Button>
         </Input>
@@ -214,12 +248,10 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
           placeholder="폴짝 메모를 작성해 주세요."
           value={plan.memo}
           onChange={(e) =>
-            setPlan({
-              place: plan.place,
-              time: plan.time,
+            setPlan((prev) => ({
+              ...prev,
               memo: e.target.value,
-              content_id: plan.content_id,
-            })
+            }))
           }
         />
       </section>
