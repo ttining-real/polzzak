@@ -182,7 +182,7 @@ function PolzzakListItem({
         </div>
       ) : (
         <Link
-          to={`/polzzak/${item.id}`}
+          to={`/polzzak/${item.name && encodeURIComponent(item.name)}`}
           className="flex flex-row items-center gap-4"
         >
           {renderContent()}
