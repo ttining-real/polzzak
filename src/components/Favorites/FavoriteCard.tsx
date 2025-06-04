@@ -59,7 +59,7 @@ function FavoriteCard({
     return (
       <>
         <img
-          src={images[0] === 'rabbit' ? '/images/rabbit_face.png' : images[0]}
+          src={images[0] ? images[0] : '/images/rabbit_face.png'}
           alt={`${name} 폴더의 1번`}
           className={`${commonImgClass} w-3/5`}
         />
