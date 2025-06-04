@@ -92,6 +92,7 @@ async function fetchContentDetail(
     addr1: commonItem.addr1,
     addr2: commonItem.addr2,
     tel: introItem.tel,
+    overview: commonItem.overview,
   };
   const baseCard = {
     title: commonItem.title,
@@ -148,7 +149,6 @@ async function fetchContentDetail(
             ...baseDetail,
             eventstartdate: introItem.eventstartdate,
             eventenddate: introItem.eventenddate,
-            overview: commonItem.overview,
             eventhomepage: commonItem.eventhomepage,
             eventplace: commonItem.eventplace,
             placeinfo: commonItem.placeinfo,
@@ -156,6 +156,7 @@ async function fetchContentDetail(
             program: commonItem.program,
             subevent: commonItem.subevent,
             usetimefestival: commonItem.usetimefestival,
+            sponsor1tel: commonItem.sponsor1tel,
           }
         : {
             ...baseCard,
@@ -178,6 +179,8 @@ async function fetchContentDetail(
             reservation: introItem.reservation,
             restdateleports: introItem.restdateleports,
             usetimeleports: introItem.usetimeleports,
+            sponsor1tel: commonItem.sponsor1tel,
+            usetimefestival: commonItem.usetimefestival,
           }
         : {
             ...baseCard,
@@ -230,6 +233,8 @@ async function fetchContentDetail(
             restdateshopping: introItem.restdateshopping,
             restroom: introItem.restroom,
             shopguide: introItem.shopguide,
+            telname: introItem.telname,
+            saleitem: introItem.saleitem,
           }
         : {
             ...baseCard,
