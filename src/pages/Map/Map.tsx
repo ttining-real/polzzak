@@ -99,11 +99,9 @@ function Map() {
       Math.abs(mapCenter.lat - newCenter.lat) > 0.005 ||
       Math.abs(mapCenter.lng - newCenter.lng) > 0.005;
 
-    // 필터링된 상태에서만 버튼 보여주기
-    setShowReSearchButton(!!selectedFilter && moved);
-
-    // url에 search가 있을 경우 버튼 보여주기
-    setShowReSearchButton(!!search && moved);
+    // 필터링 된 상태 or 검색어가 있을 경우 재검색 버튼 노출
+    const shouldShow = moved && (!!selectedFilter || !!search);
+    setShowReSearchButton(shouldShow);
   };
 
   // 📍 현재 위치에서 재검색 클릭
@@ -115,6 +113,7 @@ function Map() {
     const newCenter = { lat: center.getLat(), lng: center.getLng() };
 
     setMapCenter(newCenter);
+    setMyLocation(newCenter); // 마커 재패칭 트리거
     setShowReSearchButton(false);
   };
 
