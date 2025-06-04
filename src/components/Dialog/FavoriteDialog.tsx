@@ -5,6 +5,7 @@ import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
 import { Radio } from '@/components/Input/RadioGroup';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
 import { useToast } from '@/hooks/useToast';
+import { transAddress } from '@/lib/transAddress';
 import { useDialogStore } from '@/store/useDialogStore';
 
 interface FavoriteDialogProps {
@@ -78,32 +79,40 @@ function FavoriteDialog({
       }
       if (selectPolzzak && info && isOpenId === '기존폴짝') {
         const { data, error } = await supabase
-          .from('ex_polzzak')
-          .select('id')
-          .eq('user_id', userId);
+          .from('ex_polzzak_detail')
+          .select('schedule_id')
+          .match({ schedule_id: selectPolzzak, content_id: id });
 
         if (error) throw error;
 
         if (data.length) {
-          const { data, error } = await supabase
-            .from('ex_polzzak_detail')
-            .select('schedule_id')
-            .match({ schedule_id: selectPolzzak, content_id: id });
-
+          showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
+        } else {
+          const { error } = await supabase.from('ex_polzzak_detail').insert([
+            {
+              schedule_id: selectPolzzak,
+              place: info.title,
+              content_id: id,
+              order: 99,
+            },
+          ]);
           if (error) throw error;
 
-          if (data.length) {
-            showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
-          } else {
-            const { error } = await supabase.from('ex_polzzak_detail').insert([
-              {
-                schedule_id: selectPolzzak,
-                place: info.title,
-                content_id: id,
-                order: 99,
-              },
-            ]);
+          if (info.addr1) {
+            const addr = transAddress(info.addr1);
+            const { data, error } = await supabase
+              .from('ex_polzzak_schedule')
+              .select('polzzak_id')
+              .eq('schedule_id', selectPolzzak)
+              .single();
             if (error) throw error;
+
+            const { error: regionErr } = await supabase
+              .from('ex_polzzak_region')
+              .upsert([{ polzzak_id: data?.polzzak_id, region: addr }], {
+                onConflict: 'polzzak_id,region',
+              });
+            if (regionErr) throw regionErr;
           }
         }
       }

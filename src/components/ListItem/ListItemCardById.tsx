@@ -319,6 +319,7 @@ function ListItemCardById({
                     state: {
                       contentId: contentId,
                       place: item.title,
+                      region: item.region,
                     },
                     replace: true,
                   });
