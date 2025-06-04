@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useGetDetailCommon } from '@/api/openAPI';
 import supabase from '@/api/supabase';
@@ -19,6 +19,7 @@ import { useSearchStore } from '@/store/useSearchStore';
 function ViewDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState('');
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
@@ -185,7 +186,7 @@ function ViewDetails() {
     if (!id || !userId) {
       navigate('/login');
     } else {
-      openModal('신규폴짝');
+      navigate('/polzzak/add', { state: { from: location.pathname } });
     }
   };
 
@@ -234,11 +235,10 @@ function ViewDetails() {
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
-      {(isOpenId === '즐겨찾기' ||
-        isOpenId === '신규폴짝' ||
-        isOpenId === '기존폴짝') &&
+      {(isOpenId === '즐겨찾기' || isOpenId === '기존폴짝') &&
         id &&
-        userId && (
+        userId &&
+        data && (
           <FavoriteDialog
             radioList={radioList}
             id={id}
@@ -246,6 +246,7 @@ function ViewDetails() {
             info={{
               contenttypeid: data?.contenttypeid,
               title: info[0].title,
+              addr1: info[0].addr1,
             }}
             setIsMyContent={setIsMyContent}
           />

@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DateRange } from 'react-day-picker';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
@@ -86,6 +86,7 @@ function polzzakReducer(
 
 function AddNEdit() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isEditPage = Boolean(id);
   const isAddPage = !isEditPage;
@@ -112,9 +113,10 @@ function AddNEdit() {
 
   useEffect(() => {
     if (!userId) {
+      showToast('로그인 후 이용할 수 있어요!', 'top-[64px]', 2000);
       navigate('/polzzak', { replace: true });
     }
-  }, [userId, navigate]);
+  }, [userId, navigate, showToast]);
 
   /* 편집 정보 가져오기 */
   const getEditInfo = useCallback(async () => {
@@ -359,7 +361,12 @@ function AddNEdit() {
         if (regionErr) throw regionErr;
       }
 
-      navigate(`/polzzak/${polzzakId}`, { replace: true });
+      const fromPath = location.state?.from;
+      if (fromPath) {
+        navigate(fromPath, { replace: true });
+      } else {
+        navigate(`/polzzak/${polzzakId}`, { replace: true });
+      }
     } catch (err) {
       errToast('추가');
       console.error('데이터 저장 실패 : ', err);
@@ -467,7 +474,7 @@ function AddNEdit() {
             .eq('polzzak_id', id);
           if (deleteScheduleErr) throw deleteScheduleErr;
         }
-        // // 추가: 새로 생긴 날짜는 schedule만 insert
+        // 추가: 새로 생긴 날짜는 schedule만 insert
         if (toInsert.length > 0) {
           const { error: insertScheduleErr } = await supabase
             .from('ex_polzzak_schedule')
