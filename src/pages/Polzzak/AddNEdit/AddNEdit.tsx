@@ -290,6 +290,25 @@ function AddNEdit() {
     /* 폴짝 이름 저장 */
     const { data, error } = await supabase
       .from('ex_polzzak')
+      .select('name')
+      .match({ user_id: userId, name: name });
+    console.log(data);
+
+    if (data?.length) {
+      showToast('같은 이름이 존재합니다.', 'bottom-[64px]', 2000);
+      setIsSaving(false);
+      return;
+    }
+
+    if (error) {
+      errToast('추가');
+      console.error(error);
+      return;
+    }
+    console.log('1 통과!!');
+
+    const { data: insertData, error: insertErr } = await supabase
+      .from('ex_polzzak')
       .insert([
         {
           user_id: userId,
@@ -305,19 +324,24 @@ function AddNEdit() {
       ])
       .select();
 
-    if (error) {
+    if (insertErr) {
       errToast('추가');
-      console.error(error);
+      console.error(insertErr);
       return;
     }
 
-    if (!data || data.length === 0) {
+    if (!insertData || insertData.length === 0) {
       errToast('추가');
-      console.error(error);
+      console.error(insertData);
       return;
     }
+    console.log(insertData);
+    console.log('2 통과!!');
 
-    const polzzakId = data[0].id;
+    const polzzakId = insertData[0].id;
+
+    console.log(polzzakId);
+    console.log('3 통과!!');
     try {
       /* 폴짝 날짜 저장 */
       if (dateRange?.from && !dateRange.to) {
@@ -364,11 +388,16 @@ function AddNEdit() {
       }
 
       const fromPath = location.state?.from;
+
+      console.log('4 통과!!');
+      console.log(fromPath);
       if (fromPath) {
         navigate(fromPath, { replace: true });
       } else {
-        navigate(`/polzzak/${polzzakId}`, { replace: true });
+        navigate(`/polzzak/${encodeURIComponent(name)}`, { replace: true });
       }
+
+      console.log('5 통과!!');
     } catch (err) {
       errToast('추가');
       console.error('데이터 저장 실패 : ', err);
@@ -378,6 +407,7 @@ function AddNEdit() {
     } finally {
       setIsSaving(false);
       dispatch({ type: 'RESET' });
+      console.log('6 통과!!');
     }
   };
 
@@ -391,6 +421,24 @@ function AddNEdit() {
   const saveEditPolzzak = async () => {
     setIsSaving(true);
     if (!name) return;
+    const { data, error } = await supabase
+      .from('ex_polzzak')
+      .select('name')
+      .match({ user_id: userId, name: name });
+    console.log(data);
+
+    if (data?.length) {
+      showToast('같은 이름이 존재합니다.', 'bottom-[64px]', 2000);
+      setIsSaving(false);
+      return;
+    }
+
+    if (error) {
+      errToast('추가');
+      console.error(error);
+      return;
+    }
+
     try {
       let finalThumbnailPath = thumbnail;
       if ((thumbnailBlob || !thumbnail) && editFile) {
