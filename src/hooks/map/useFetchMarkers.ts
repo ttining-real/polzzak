@@ -49,17 +49,10 @@ export function useFetchMarkers({
 
           const detailResponses = await Promise.all(
             contentIds.map((contentId) =>
-              client.get(`detailCommon1`, {
+              client.get(`detailCommon2`, {
                 params: {
                   pageNo: '1',
                   numOfRows: '20',
-                  defaultYN: 'Y',
-                  firstImageYN: 'Y',
-                  areacodeYN: 'Y',
-                  catcodeYN: 'Y',
-                  addrinfoYN: 'Y',
-                  mapinfoYN: 'Y',
-                  overviewYN: 'Y',
                   contentId,
                 },
               }),
@@ -90,17 +83,10 @@ export function useFetchMarkers({
 
           const detailResponses = await Promise.all(
             contentIds.map((contentId) =>
-              client.get(`detailCommon1`, {
+              client.get(`detailCommon2`, {
                 params: {
                   pageNo: '1',
                   numOfRows: '20',
-                  defaultYN: 'Y',
-                  firstImageYN: 'Y',
-                  areacodeYN: 'Y',
-                  catcodeYN: 'Y',
-                  addrinfoYN: 'Y',
-                  mapinfoYN: 'Y',
-                  overviewYN: 'Y',
                   contentId,
                 },
               }),
@@ -176,6 +162,7 @@ export function useFetchMarkers({
         }
 
         setMarkerData(markers);
+        console.log(markers);
       } catch (err) {
         console.error('❌ 마커 데이터 패칭 중 에러 발생:', err);
         setMarkerData([]);
