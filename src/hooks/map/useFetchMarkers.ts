@@ -44,7 +44,7 @@ export function useFetchMarkers({
 
           const favorites = await fetchFavoriteItems(userId);
           const contentIds = favorites.flatMap((folder) =>
-            folder.ex_favorite.map((fav) => fav.content_id),
+            folder.favorite.map((fav) => fav.content_id),
           );
 
           const detailResponses = await Promise.all(

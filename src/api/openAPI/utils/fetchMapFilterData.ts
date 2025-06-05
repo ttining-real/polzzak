@@ -3,8 +3,8 @@ import supabase from '@/api/supabase';
 // 🧡 즐겨찾기
 export const fetchFavoriteItems = async (userId: string) => {
   const { data, error } = await supabase
-    .from('ex_favorite_folders')
-    .select(`id, folder_name, ex_favorite(content_id)`)
+    .from('favorite_folders')
+    .select(`id, folder_name, favorite(content_id)`)
     .eq('user_id', userId);
 
   if (error) {

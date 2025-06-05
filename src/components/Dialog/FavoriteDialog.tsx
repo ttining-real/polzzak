@@ -71,7 +71,7 @@ function FavoriteDialog({
         }
 
         const { error } = await supabase
-          .from('ex_favorite')
+          .from('favorite')
           .insert([{ folder_id: selectFolder?.slice(5), content_id: id }]);
 
         if (error) throw error;

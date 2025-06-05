@@ -12,10 +12,10 @@ export const useFavoriteCheck = (
   useEffect(() => {
     const checkFavorite = async () => {
       const { data, error } = await supabase
-        .from('ex_favorite')
-        .select('content_id, ex_favorite_folders!inner(user_id)')
+        .from('favorite')
+        .select('content_id, favorite_folders!inner(user_id)')
         .eq('content_id', contentId)
-        .eq('ex_favorite_folders.user_id', userId)
+        .eq('favorite_folders.user_id', userId)
         .maybeSingle();
 
       if (!error && data) {

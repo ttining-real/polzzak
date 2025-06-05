@@ -22,7 +22,7 @@ function FavoritesDetails() {
   // 🕹️ 즐겨찾기 리스트 fetch
   const checkFolderExists = useCallback(async () => {
     const { data, error } = await supabase
-      .from('ex_favorite_folders')
+      .from('favorite_folders')
       .select('id')
       .match({ user_id: userId, folder_name: id })
       .single();
@@ -38,7 +38,7 @@ function FavoritesDetails() {
   const fetchFavoriteList = useCallback(
     async (folderId: string) => {
       const { data, error } = await supabase
-        .from('ex_favorite')
+        .from('favorite')
         .select('ex_contents(contentid, contenttypeid)')
         .eq('folder_id', folderId)
         .order('created_at', { ascending: false });

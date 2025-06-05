@@ -30,8 +30,8 @@ export const addFavoriteWithContentCheck = async (
     }
   }
 
-  // ❤️ 3. ex_favorite에 찜 정보 삽입
-  return await supabase.from('ex_favorite').insert([
+  // ❤️ 3. favorite에 찜 정보 삽입
+  return await supabase.from('favorite').insert([
     {
       folder_id: folderId,
       content_id: contentId,
