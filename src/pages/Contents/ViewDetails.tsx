@@ -27,7 +27,6 @@ function ViewDetails() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const contentTypeName = searchParams.get('category');
-  const contentTypeId = filterNameToType(contentTypeName ?? '');
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState('');
@@ -75,10 +74,6 @@ function ViewDetails() {
   ];
 
   useEffect(() => {
-    if (!id || !contentTypeId) navigate('/', { replace: true });
-  }, [id, contentTypeId, navigate]);
-
-  useEffect(() => {
     if (data?.title) {
       setContentsTitle(data.title);
     }
@@ -88,18 +83,21 @@ function ViewDetails() {
   }, [data, setContentsTitle]);
 
   useEffect(() => {
-    if (!id || !contentTypeId) return;
+    if (!id) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    const contentTypeId = filterNameToType(contentTypeName ?? '');
+    if (!contentTypeId) return;
 
     const getContentDetail = async () => {
       const data = await fetchContentDetail(id, contentTypeId, true);
-      console.log(data);
       setInfo(data);
     };
-    getContentDetail();
-  }, [id, contentTypeId]);
-
-  useEffect(() => {
     if (!id || !userId) return;
+    getContentDetail();
+
     const checkIsMyContent = async () => {
       const { data, error } = await supabase
         .from('ex_favorite_folders')
@@ -118,7 +116,7 @@ function ViewDetails() {
       setIsMyContent(!!isFavorited.length);
     };
     checkIsMyContent();
-  }, [id, userId]);
+  }, [id, userId, contentTypeName, navigate]);
 
   const onClickFavorite = async () => {
     if (!id || !userId) {
