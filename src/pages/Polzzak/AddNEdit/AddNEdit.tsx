@@ -121,7 +121,7 @@ function AddNEdit() {
   /* 편집 정보 가져오기 */
   const getEditInfo = useCallback(async () => {
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .select('*')
       .eq('id', id);
 
@@ -137,7 +137,7 @@ function AddNEdit() {
 
     const getEditRegion = async () => {
       const { data: regionData, error: regionErr } = await supabase
-        .from('ex_polzzak_region')
+        .from('polzzak_region')
         .select('region')
         .eq('polzzak_id', id);
 
@@ -289,7 +289,7 @@ function AddNEdit() {
     }
     /* 폴짝 이름 저장 */
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .select('name')
       .match({ user_id: userId, name: name });
     console.log(data);
@@ -308,7 +308,7 @@ function AddNEdit() {
     console.log('1 통과!!');
 
     const { data: insertData, error: insertErr } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .insert([
         {
           user_id: userId,
@@ -346,7 +346,7 @@ function AddNEdit() {
       /* 폴짝 날짜 저장 */
       if (dateRange?.from && !dateRange.to) {
         const { error: oneScheduleErr } = await supabase
-          .from('ex_polzzak_schedule')
+          .from('polzzak_schedule')
           .insert([
             {
               polzzak_id: polzzakId,
@@ -362,7 +362,7 @@ function AddNEdit() {
         );
 
         const { error: scheduleErr } = await supabase
-          .from('ex_polzzak_schedule')
+          .from('polzzak_schedule')
           .insert(
             dateList.map((date) => ({
               polzzak_id: polzzakId,
@@ -376,7 +376,7 @@ function AddNEdit() {
       /* 폴짝 지역 저장 */
       if (region) {
         const { error: regionErr } = await supabase
-          .from('ex_polzzak_region')
+          .from('polzzak_region')
           .insert(
             region.map((item) => ({
               polzzak_id: polzzakId,
@@ -402,7 +402,7 @@ function AddNEdit() {
       errToast('추가');
       console.error('데이터 저장 실패 : ', err);
       if (polzzakId) {
-        await supabase.from('ex_polzzak').delete().eq('id', polzzakId);
+        await supabase.from('polzzak').delete().eq('id', polzzakId);
       }
     } finally {
       setIsSaving(false);
@@ -422,7 +422,7 @@ function AddNEdit() {
     setIsSaving(true);
     if (!name) return;
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .select('name')
       .match({ user_id: userId, name: name });
     console.log(data);
@@ -461,7 +461,7 @@ function AddNEdit() {
       }
 
       const { error } = await supabase
-        .from('ex_polzzak')
+        .from('polzzak')
         .update([
           {
             user_id: userId,
@@ -518,7 +518,7 @@ function AddNEdit() {
 
         if (toDelete.length > 0) {
           const { error: deleteScheduleErr } = await supabase
-            .from('ex_polzzak_schedule')
+            .from('polzzak_schedule')
             .delete()
             .in('date', toDelete)
             .eq('polzzak_id', id);
@@ -527,7 +527,7 @@ function AddNEdit() {
         // 추가: 새로 생긴 날짜는 schedule만 insert
         if (toInsert.length > 0) {
           const { error: insertScheduleErr } = await supabase
-            .from('ex_polzzak_schedule')
+            .from('polzzak_schedule')
             .insert(
               toInsert.map((date) => ({
                 polzzak_id: id,
@@ -545,7 +545,7 @@ function AddNEdit() {
         }
         if (changeRegion) {
           const { error: deleteErr } = await supabase
-            .from('ex_polzzak_region')
+            .from('polzzak_region')
             .delete()
             .eq('polzzak_id', id);
 
@@ -553,7 +553,7 @@ function AddNEdit() {
         }
 
         const { error: insertErr } = await supabase
-          .from('ex_polzzak_region')
+          .from('polzzak_region')
           .insert(
             region.map((item) => ({
               polzzak_id: id,
@@ -565,7 +565,7 @@ function AddNEdit() {
       } else {
         if (editRegion?.length) {
           const { error: deleteErr } = await supabase
-            .from('ex_polzzak_region')
+            .from('polzzak_region')
             .delete()
             .eq('polzzak_id', id);
 

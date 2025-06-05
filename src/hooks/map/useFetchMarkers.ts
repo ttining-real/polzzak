@@ -44,7 +44,7 @@ export function useFetchMarkers({
 
           const favorites = await fetchFavoriteItems(userId);
           const contentIds = favorites.flatMap((folder) =>
-            folder.ex_favorite.map((fav) => fav.content_id),
+            folder.favorite.map((fav) => fav.content_id),
           );
 
           const detailResponses = await Promise.all(
@@ -74,8 +74,8 @@ export function useFetchMarkers({
 
           const polzzaks = await fetchPolzzakItems(userId);
           const contentIds = polzzaks.flatMap((polzzak) =>
-            polzzak.ex_polzzak_schedule.flatMap((schedule) =>
-              (schedule.ex_polzzak_detail || []).map(
+            polzzak.polzzak_schedule.flatMap((schedule) =>
+              (schedule.polzzak_detail || []).map(
                 (detail) => detail.content_id,
               ),
             ),

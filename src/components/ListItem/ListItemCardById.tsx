@@ -138,7 +138,7 @@ function ListItemCardById({
           });
           setIsLoading('즐겨찾기 삭제 중..');
           const { error } = await supabase
-            .from('ex_favorite')
+            .from('favorite')
             .delete()
             .match({ folder_id: folderId, content_id: contentId });
 
@@ -156,8 +156,8 @@ function ListItemCardById({
           openModal('즐겨찾기');
           setIsLoading('폴더 가져오는 중..');
           const { data, error } = await supabase
-            .from('ex_favorite_folders')
-            .select('id, folder_name, ex_favorite(content_id)')
+            .from('favorite_folders')
+            .select('id, folder_name, favorite(content_id)')
             .eq('user_id', userId);
 
           if (error) {
@@ -168,7 +168,7 @@ function ListItemCardById({
             data.map((item) => ({
               id: item.id,
               name: item.folder_name,
-              storage: item.ex_favorite?.map((i) => i.content_id),
+              storage: item.favorite?.map((i) => i.content_id),
             })),
           );
         }

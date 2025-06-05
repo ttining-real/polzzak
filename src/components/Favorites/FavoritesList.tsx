@@ -32,7 +32,7 @@ function FavoritesList({
       queryKey: ['favorite=images', folder.id],
       queryFn: async () => {
         const { data, error } = await supabase
-          .from('ex_favorite')
+          .from('favorite')
           .select('content_id')
           .eq('folder_id', folder.id)
           .limit(3)

@@ -49,7 +49,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
         if (!isOpenId) return;
 
         const { error } = await supabase
-          .from('ex_polzzak_detail')
+          .from('polzzak_detail')
           .delete()
           .eq('id', isOpenId);
 
@@ -77,7 +77,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
         if (!editPlanData) return;
 
         const { error } = await supabase
-          .from('ex_polzzak_detail')
+          .from('polzzak_detail')
           .update({
             place: editPlanData.place.trim(),
             time: editPlanData.time || null,
@@ -98,7 +98,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
 
         if (editPlanData.region) {
           const { data, error: scheduleErr } = await supabase
-            .from('ex_polzzak_schedule')
+            .from('polzzak_schedule')
             .select('polzzak_id')
             .eq('schedule_id', isOpenId)
             .single();
@@ -109,7 +109,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
           }
 
           const { error } = await supabase
-            .from('ex_polzzak_region')
+            .from('polzzak_region')
             .upsert(
               [{ polzzak_id: data.polzzak_id, region: editPlanData.region }],
               {
@@ -140,7 +140,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
       await Promise.all(
         changeCards.map(async (card, idx) => {
           const { error } = await supabase
-            .from('ex_polzzak_detail')
+            .from('polzzak_detail')
             .update({ order: idx })
             .eq('id', card.id);
 

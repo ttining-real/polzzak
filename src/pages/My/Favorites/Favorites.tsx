@@ -70,7 +70,7 @@ function Favorites() {
     const folderName = currentFolder.folder_name.trim();
     const checkName = async () => {
       const { data, error } = await supabase
-        .from('ex_favorite_folders')
+        .from('favorite_folders')
         .select('folder_name')
         .match({ user_id: userId, folder_name: folderName })
         .single();
@@ -225,7 +225,7 @@ export default Favorites;
 // API 함수
 const getFolders = async (userId: string, showToast: () => void) => {
   const { data, error } = await supabase
-    .from('ex_favorite_folders')
+    .from('favorite_folders')
     .select('id, folder_name')
     .eq('user_id', userId)
     .order('created_at', { ascending: true });
@@ -243,7 +243,7 @@ const addFolder = async (
   showToast: () => void,
 ) => {
   const { error: insertErr } = await supabase
-    .from('ex_favorite_folders')
+    .from('favorite_folders')
     .insert([{ user_id: userId, folder_name: folderName }]);
   if (insertErr) {
     showToast();
@@ -258,7 +258,7 @@ const editFolder = async (
   showToast: () => void,
 ) => {
   const { error } = await supabase
-    .from('ex_favorite_folders')
+    .from('favorite_folders')
     .update({ folder_name: folderName })
     .eq('id', folderId);
   if (error) {
@@ -270,7 +270,7 @@ const editFolder = async (
 
 const deleteFolder = async (folderId: string, showToast: () => void) => {
   const { error } = await supabase
-    .from('ex_favorite_folders')
+    .from('favorite_folders')
     .delete()
     .eq('id', folderId);
   if (error) {

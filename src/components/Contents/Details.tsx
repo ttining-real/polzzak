@@ -1,6 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Button from '@/components/Button/Button';
+import { Review, reviewData } from '@/components/Contents/Review';
+import Input from '@/components/Input/Input';
+
+const DUMMY_DATA = [
+  {
+    id: '000',
+    userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
+    userName: '홀딱벗은래빗',
+    review: '여기 찐 맛집 인정ㅋㅋ',
+  },
+  {
+    id: '111',
+    userId: 'aaaaaaa',
+    userName: '나는야거북거북이',
+    review:
+      '좀 비싸긴 함.. 근데 인사에 올리기 좋음ㅎㅎ 커플끼리 오기 딱 좋아잉잉잉잉잉잉잉잉잉잉잉',
+  },
+];
 
 interface DetailsTypes {
   info: {
@@ -53,10 +71,14 @@ interface DetailsTypes {
     telname?: string;
     tel?: string;
   };
+  reviewRef?: React.RefObject<HTMLDivElement | null>;
+  userId?: string;
 }
 
-function Details({ info, data }: DetailsTypes) {
+function Details({ info, data, reviewRef, userId }: DetailsTypes) {
+  const [reviewList, setReviewList] = useState<reviewData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState<string>('');
   const toggleMoreButton = () => {
     setIsOpen(!isOpen);
   };
@@ -67,6 +89,11 @@ function Details({ info, data }: DetailsTypes) {
     const dd = date.slice(6, 8);
     return `${yy}.${mm}.${dd}`;
   };
+
+  useEffect(() => {
+    setReviewList(DUMMY_DATA);
+    // 서버 연결 필요
+  }, []);
 
   const renderByContentTypeId = () => {
     if (!data.contenttypeid) return;
@@ -295,9 +322,23 @@ function Details({ info, data }: DetailsTypes) {
   };
 
   const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
+  const handleAddReview = () => {
+    // 서버 연결 필요
+    setInputValue('');
+    setReviewList((prev) => [
+      ...prev,
+      {
+        id: '222',
+        userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
+        userName: '홀딱벗은래빗',
+        review: inputValue.trim(),
+      },
+    ]);
+  };
 
   return (
     <section className="flex flex-col gap-6">
+      {/* 홈 */}
       <div className="flex flex-col gap-2">
         <h3 className="fs-14 border-b-gray03 w-full border-b border-solid p-2 font-bold text-black">
           이용안내
@@ -319,6 +360,8 @@ function Details({ info, data }: DetailsTypes) {
             ))}
         </dl>
       </div>
+
+      {/* 추가정보 */}
       {overview.map((item, index) => (
         <div className="flex flex-col gap-2" key={index}>
           <h3 className="fs-14 border-b-gray03 w-full border-b border-solid p-2 font-bold text-black">
@@ -339,9 +382,56 @@ function Details({ info, data }: DetailsTypes) {
           </Button>
         </div>
       ))}
-      <cite className="text-gray04 fs-13 ls lh font-light">
-        ※ 한국관광공사 TourAPI 4.0을 통해 제공받은 데이터 입니다.
-      </cite>
+
+      {/* 리뷰 */}
+      <div className="flex flex-col gap-4">
+        <h3
+          ref={reviewRef}
+          className="fs-14 border-b-gray03 flex w-full gap-2 border-b border-solid p-2 font-bold text-black"
+        >
+          리뷰
+          <span className="fs-13 text-primary font-semibold">
+            {reviewList.length}
+          </span>
+        </h3>
+        <div className="relative flex items-center justify-center gap-2">
+          <Input
+            label="리뷰 작성"
+            hideLabel={true}
+            placeholder={
+              userId ? '리뷰를 작성해 주세요!' : '로그인 후 이용해 주세요!'
+            }
+            value={inputValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInputValue(value);
+            }}
+            disabled={!userId}
+          />
+          <Button
+            disabled={!userId || inputValue.trim() === ''}
+            onClick={handleAddReview}
+          >
+            등록
+          </Button>
+        </div>
+        <div className="flex flex-col gap-2">
+          {reviewList.length ? (
+            reviewList.map((data) => (
+              <Review
+                reviewId={data.id}
+                userId={data.userId}
+                userName={data.userName}
+                review={data.review}
+                currentUser={userId}
+                setReviewList={setReviewList}
+              />
+            ))
+          ) : (
+            <Review />
+          )}
+        </div>
+      </div>
     </section>
   );
 }

@@ -25,7 +25,7 @@ export type ListItemType = {
 const fetchSearchData = async (inputValue: string) => {
   if (!inputValue) return [];
   const { data, error } = await supabase
-    .from('ex_polzzak_search_view')
+    .from('polzzak_search_view')
     .select('*')
     .or(
       `name.ilike.%${inputValue}%,region.ilike.%${inputValue}%,place.ilike.%${inputValue}%,memo.ilike.%${inputValue}%`,
@@ -56,7 +56,7 @@ function Polzzak() {
 
   const fetchMyPolzzak = useCallback(async () => {
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .select('*')
       .eq('user_id', userId);
 
