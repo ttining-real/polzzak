@@ -1,113 +1,143 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
-import { useGetTable } from '@/api/supabase/hooks';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
+import { validateId } from '@/lib/validationId';
 
-interface ItemTypes {
-  user_id: string;
-}
+// import { REGISTER_STEP } from './REGISTER_STEP';
 
 function Step1() {
+  const [idValue, setIdValue] = useState('');
+  const [idMessage, setIdMessage] = useState('');
+  const [idValid, setIdValid] = useState<boolean | null>(null);
+  const [isChecked, setIsChecked] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const step = searchParams.get('step');
   const navigate = useNavigate();
-  const [inputId, setInputId] = useState('');
-  const [validationStatus, setValidationStatus] = useState({
-    status: false,
-    message: '',
-  });
-  const message = {
-    success: '사용 가능한 아이디 입니다.',
-    error: '6~20자의 영문, 숫자로 입력하세요. (대소문자 구분 없음)',
-    errorGap: '공백은 사용할 수 없습니다.',
-    errorDup: '이미 사용된 아이디입니다.',
+
+  // ref
+  const duplicateCheckRef = useRef<HTMLButtonElement>(null);
+
+  const onChangeIDInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setIdValue(value);
+
+    const { isValid, message } = validateId(value);
+    setIdValid(isValid);
+    setIdMessage(isValid ? '' : message);
+    setIsChecked(false);
   };
-  const userData = useGetTable<ItemTypes>('ex_users');
 
-  function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
-    setInputId(e.target.value);
-  }
-  function handleIdCheck() {
-    const isDuplicate = userData?.tableData?.some(
-      (item) => item.user_id === inputId,
-    );
-
-    if (isDuplicate) {
-      setValidationStatus({ status: false, message: message.errorDup });
-    } else {
-      setValidationStatus({ status: true, message: message.success });
-    }
-    if (inputId.length > 20 || inputId.length < 6) {
-      setValidationStatus({ status: false, message: message.error });
-      return;
-    }
-    if (inputId.includes(' ')) {
-      setValidationStatus({ status: false, message: message.errorGap });
-      return;
-    }
-  }
-  async function handleNextButton() {
-    if (validationStatus.status) {
-      localStorage.setItem('ex_users', inputId);
-
-      await supabase.from('ex_users').upsert({
-        user_id: inputId,
-      });
-
-      navigate(`/register/2`);
-    }
-  }
-
-  useEffect(() => {
-    const USERS_ID = localStorage.getItem('ex_users');
-
-    const handleUnload = async () => {
-      const headerBack = sessionStorage.getItem('registerNavigation');
-
-      if (!headerBack && USERS_ID) {
-        await supabase.from('ex_users').delete().eq('user_id', USERS_ID);
-        localStorage.removeItem('ex_users');
+  const onIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (idValid) {
+        duplicateCheckRef.current?.focus();
+        handleIdDuplicateCheck();
       }
-      sessionStorage.removeItem('registerNavigation');
-    };
+    }
+  };
 
-    window.addEventListener('beforeunload', handleUnload);
+  // 중복 확인
+  const handleIdDuplicateCheck = async () => {
+    if (!idValid) {
+      setIdMessage('아이디 형식을 먼저 확인해 주세요.');
+      return;
+    }
 
-    return () => {
-      handleUnload();
-      window.removeEventListener('beforeunload', handleUnload);
-    };
-  }, []);
+    setChecking(true);
+
+    const { data, error } = await supabase
+      .from('ex_users')
+      .select('user_id')
+      .eq('user_id', idValue)
+      .maybeSingle(); // ← 존재하지 않으면 null 반환
+
+    setChecking(false);
+
+    if (error) {
+      console.error(error);
+      setIdValid(false);
+      setIdMessage('중복 확인 중 오류가 발생했습니다.');
+      setIsChecked(false);
+      return;
+    }
+
+    if (data) {
+      setIdValid(false);
+      setIdMessage('이미 사용 중인 아이디입니다.');
+      setIsChecked(false);
+    } else {
+      setIdValid(true);
+      setIdMessage('사용 가능한 아이디입니다.');
+      setIsChecked(true);
+    }
+  };
+
+  const handleNextButton = async () => {
+    // 서버에서 다시 한 번 중복 확인
+    const { data, error: checkError } = await supabase
+      .from('ex_users')
+      .select('user_id')
+      .eq('user_id', idValue)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('중복 확인 중 오류 발생', checkError);
+      setIdValid(false);
+      setIdMessage('중복 확인 중 오류가 발생했습니다.');
+      return;
+    }
+
+    if (data) {
+      setIdValid(false);
+      setIdMessage('이미 사용된 아이디입니다.');
+      return;
+    }
+
+    // 중복이 아니면 저장
+    localStorage.setItem('register_id', idValue);
+
+    const currentStep = Number(step ?? '1');
+    const nextStep = currentStep + 1;
+
+    navigate(`/register?step=${nextStep}`);
+  };
 
   return (
     <>
-      <div className="flex flex-col">
-        <div className="flex items-end gap-1">
-          <div className="flex-1">
+      <div>
+        <div className="flex items-end gap-2">
+          <div className="w-full">
             <Input
               label="아이디"
-              placeholder="아이디를 입력해 주세요."
-              onChange={handleInput}
-              value={inputId}
+              value={idValue}
+              placeholder="아이디"
+              onChange={onChangeIDInput}
+              onKeyDown={onIdKeyDown}
+              aria-label="아이디를 입력해 주세요."
             />
           </div>
           <Button
+            ref={duplicateCheckRef}
             variant={'secondary'}
             onClick={() => {
-              handleIdCheck();
+              handleIdDuplicateCheck();
             }}
           >
-            중복확인
+            {checking ? '확인 중...' : '중복확인'}
           </Button>
         </div>
-        <Validation
-          status={validationStatus.status}
-          message={validationStatus.message}
-        />
+        {idValid !== null && (
+          <Validation status={idValid} message={idMessage} />
+        )}
       </div>
-      <Button disabled={inputId.length === 0} onClick={handleNextButton}>
+      <Button disabled={!idValid || !isChecked} onClick={handleNextButton}>
         다음
       </Button>
     </>
