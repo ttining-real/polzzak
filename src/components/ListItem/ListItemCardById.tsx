@@ -12,6 +12,7 @@ import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useFavoriteCheck } from '@/hooks/useFavoriteCheck';
 import { useToast } from '@/hooks/useToast';
 import { addFavoriteWithContentCheck } from '@/lib/favorite';
+import { typeToFilterName } from '@/lib/filterMap';
 import { getFavoriteFolderId } from '@/lib/getFavoriteFolderId';
 import { removeFavorite } from '@/lib/removeFavorite';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -228,7 +229,7 @@ function ListItemCardById({
   return (
     <li>
       <Link
-        to={`/contents/${contentId}`}
+        to={`/contents/${contentId}?category=${typeToFilterName(contentTypeId)}`}
         className="flex-start relative flex w-full items-center gap-4"
       >
         <div className="bg-primary/10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl object-cover">
