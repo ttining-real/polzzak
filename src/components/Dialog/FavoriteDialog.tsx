@@ -79,7 +79,7 @@ function FavoriteDialog({
       }
       if (selectPolzzak && info && isOpenId === '기존폴짝') {
         const { data, error } = await supabase
-          .from('ex_polzzak_detail')
+          .from('polzzak_detail')
           .select('schedule_id')
           .match({ schedule_id: selectPolzzak, content_id: id });
 
@@ -88,7 +88,7 @@ function FavoriteDialog({
         if (data.length) {
           showToast('이미 폴짝에 저장되어 있어요!', 'bottom-[64px]', 3000);
         } else {
-          const { error } = await supabase.from('ex_polzzak_detail').insert([
+          const { error } = await supabase.from('polzzak_detail').insert([
             {
               schedule_id: selectPolzzak,
               place: info.title,
@@ -101,14 +101,14 @@ function FavoriteDialog({
           if (info.addr1) {
             const addr = transAddress(info.addr1);
             const { data, error } = await supabase
-              .from('ex_polzzak_schedule')
+              .from('polzzak_schedule')
               .select('polzzak_id')
               .eq('schedule_id', selectPolzzak)
               .single();
             if (error) throw error;
 
             const { error: regionErr } = await supabase
-              .from('ex_polzzak_region')
+              .from('polzzak_region')
               .upsert([{ polzzak_id: data?.polzzak_id, region: addr }], {
                 onConflict: 'polzzak_id,region',
               });

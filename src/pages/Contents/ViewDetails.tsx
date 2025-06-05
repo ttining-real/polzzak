@@ -191,9 +191,9 @@ function ViewDetails() {
     try {
       setIsLoading('폴짝 가져오는 중...');
       const { data, error } = await supabase
-        .from('ex_polzzak')
+        .from('polzzak')
         .select(
-          'id, name, startDate, endDate, ex_polzzak_schedule(schedule_id, date)',
+          'id, name, startDate, endDate, polzzak_schedule(schedule_id, date)',
         )
         .eq('user_id', userId);
 
@@ -206,7 +206,7 @@ function ViewDetails() {
           name: item.name,
           startDate: item.startDate,
           endDate: item.endDate,
-          storage: item.ex_polzzak_schedule?.map((i) => ({
+          storage: item.polzzak_schedule?.map((i) => ({
             schedule_id: i.schedule_id,
             date: i.date,
           })),

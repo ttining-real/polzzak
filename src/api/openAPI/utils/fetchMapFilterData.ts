@@ -18,12 +18,12 @@ export const fetchFavoriteItems = async (userId: string) => {
 // 🐰 폴짝
 export const fetchPolzzakItems = async (userId: string) => {
   const { data, error } = await supabase
-    .from('ex_polzzak')
+    .from('polzzak')
     .select(
       `
-      ex_polzzak_schedule(
+      polzzak_schedule(
         schedule_id,
-        ex_polzzak_detail(
+        polzzak_detail(
           content_id
         )
       )

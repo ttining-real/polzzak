@@ -71,18 +71,18 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
 
     try {
       const { data, error: scheduleIdErr } = await supabase
-        .from('ex_polzzak')
-        .select('id, ex_polzzak_schedule(schedule_id)')
+        .from('polzzak')
+        .select('id, polzzak_schedule(schedule_id)')
         .match({ user_id: userId, name: id })
-        .eq('ex_polzzak_schedule.date', date)
+        .eq('polzzak_schedule.date', date)
         .single();
 
       if (scheduleIdErr) throw scheduleIdErr;
       if (!data) return;
 
-      const scheduleId = data.ex_polzzak_schedule[0].schedule_id;
+      const scheduleId = data.polzzak_schedule[0].schedule_id;
       const { data: orderData, error: orderErr } = await supabase
-        .from('ex_polzzak_detail')
+        .from('polzzak_detail')
         .select('order')
         .eq('schedule_id', scheduleId)
         .order('order', { ascending: true });
@@ -93,7 +93,7 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
       const orderMap = orderData?.map((num) => num.order);
       const myOrderNumber = orderMap.length ? Math.max(...orderMap) + 1 : 0;
 
-      const { error } = await supabase.from('ex_polzzak_detail').insert([
+      const { error } = await supabase.from('polzzak_detail').insert([
         {
           schedule_id: scheduleId,
           place: plan!.place.trim(),
@@ -108,7 +108,7 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
 
       if (transRegion) {
         const { error } = await supabase
-          .from('ex_polzzak_region')
+          .from('polzzak_region')
           .upsert([{ polzzak_id: data.id, region: transRegion }], {
             onConflict: 'polzzak_id,region',
           });
@@ -175,7 +175,7 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
       if (place || isSelectMap) return;
 
       const { data, error } = await supabase
-        .from('ex_polzzak_detail')
+        .from('polzzak_detail')
         .select('place, time, memo, content_id, order')
         .eq('id', cardId);
 

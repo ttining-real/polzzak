@@ -74,8 +74,8 @@ export function useFetchMarkers({
 
           const polzzaks = await fetchPolzzakItems(userId);
           const contentIds = polzzaks.flatMap((polzzak) =>
-            polzzak.ex_polzzak_schedule.flatMap((schedule) =>
-              (schedule.ex_polzzak_detail || []).map(
+            polzzak.polzzak_schedule.flatMap((schedule) =>
+              (schedule.polzzak_detail || []).map(
                 (detail) => detail.content_id,
               ),
             ),

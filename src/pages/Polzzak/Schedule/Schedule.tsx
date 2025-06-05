@@ -42,7 +42,7 @@ function Schedule() {
     queryKey: ['polzzak', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak')
+        .from('polzzak')
         .select('*')
         .match({ user_id: userId, name: id })
         .single();
@@ -73,7 +73,7 @@ function Schedule() {
     queryKey: ['schedule', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak_schedule')
+        .from('polzzak_schedule')
         .select('date, schedule_id')
         .eq('polzzak_id', polzzakData.id)
         .order('date', { ascending: true });
@@ -93,7 +93,7 @@ function Schedule() {
     queryKey: ['schedule-details'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak_detail')
+        .from('polzzak_detail')
         .select('*')
         .in('schedule_id', scheduleIds)
         .order('order', { ascending: true });

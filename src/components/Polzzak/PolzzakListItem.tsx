@@ -33,7 +33,7 @@ function PolzzakListItem({
   useEffect(() => {
     const getMyRegion = async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak_region')
+        .from('polzzak_region')
         .select('region')
         .eq('polzzak_id', item.id);
 
@@ -62,10 +62,7 @@ function PolzzakListItem({
       return;
     }
 
-    const { error } = await supabase
-      .from('ex_polzzak')
-      .delete()
-      .eq('id', item.id);
+    const { error } = await supabase.from('polzzak').delete().eq('id', item.id);
 
     if (error) {
       showToast(
