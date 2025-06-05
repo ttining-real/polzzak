@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 
 import RootLayout from '@/layouts/RootLayout';
 import {
@@ -26,7 +26,6 @@ import {
 } from '@/pages/My/Edit';
 import { Favorites, FavoritesDetails } from '@/pages/My/Favorites';
 import { AddNEdit, AddPlan, Schedule } from '@/pages/Polzzak';
-import { StepPage } from '@/pages/Register';
 import SearchResult from '@/pages/Search/SearchResult';
 
 export const routes = [
@@ -54,10 +53,6 @@ export const routes = [
       {
         path: '/register',
         element: <Register />,
-        children: [
-          { index: true, element: <Navigate to="1" replace /> },
-          { path: ':step', element: <StepPage /> },
-        ],
       },
       {
         path: '/search',

@@ -10,7 +10,7 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useToast } from '@/hooks/useToast';
-import { validatePassword } from '@/lib/validatePassword';
+import { validatePassword } from '@/lib/validationPassword';
 import { validateId } from '@/lib/validationId';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
@@ -239,7 +239,7 @@ function Login() {
         </Link>
         <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <div className="relative">
-          <Link to="/register" className="px-1">
+          <Link to="/register?step=1" className="px-1">
             회원가입
           </Link>
           <span className="heartbeat-ring bg-primary absolute top-8 right-2 rounded-3xl px-3 py-1 whitespace-nowrap text-white">

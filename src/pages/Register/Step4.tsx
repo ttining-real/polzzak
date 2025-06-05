@@ -1,142 +1,160 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import supabase from '@/api/supabase';
 import { useGetTable } from '@/api/supabase/hooks';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
 import SelectMenu from '@/components/Input/SelectMenu';
 import Validation from '@/components/Input/Validation';
 import { Label } from '@/components/Label';
+import { validEmail } from '@/lib/validationEmail';
 
 interface ItemTypes {
   email: string;
 }
 
 function Step4() {
-  const navigate = useNavigate();
-  const userData = useGetTable<ItemTypes>('ex_users');
-  const [inputEmail, setInputEmail] = useState('');
-  const [inputDomain, setInputDomain] = useState('');
-  const [validationStatus, setValidationStatus] = useState({
+  const [idValue, setIdValue] = useState('');
+  const [domainValue, setDomainValue] = useState('');
+  const [isValid, setIsValid] = useState({
     status: false,
     message: '',
   });
-  const fullEmail = `${inputEmail}@${inputDomain}`;
-  // const pattern = /^[A-Za-z0-9_\.\-]+@[A-Za-z0-9\-]+\.[A-za-z0-9\-]+/;
-  const pattern = /^[A-Za-z0-9_.-]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
 
-  const message = {
-    success: '사용 가능한 이메일 입니다.',
-    errorGap: '공백은 사용할 수 없습니다.',
-    errorDup: '이미 사용된 이메일입니다.',
+  const [searchParams] = useSearchParams();
+  const step = searchParams.get('step');
+  const navigate = useNavigate();
+
+  const userData = useGetTable<ItemTypes>('ex_users');
+
+  const domainRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  function handleidValue(e: React.ChangeEvent<HTMLInputElement>) {
+    setIdValue(e.target.value);
+    setIsValid({ status: false, message: '' });
+  }
+
+  const onIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isValid) {
+        domainRef.current?.focus();
+      }
+    }
   };
 
-  function handleInputEmail(e: React.ChangeEvent<HTMLInputElement>) {
-    setInputEmail(e.target.value);
-    console.log('inputEmail', inputEmail);
+  function handledomainValue(e: React.ChangeEvent<HTMLInputElement>) {
+    setDomainValue(e.target.value);
+    setIsValid({ status: false, message: '' });
   }
-  function handleInputDomain(e: React.ChangeEvent<HTMLInputElement>) {
-    setInputDomain(e.target.value);
-    console.log('input', inputDomain);
-  }
+
+  const onDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isValid) {
+        buttonRef.current?.focus();
+      }
+    }
+  };
+
   function handleSelectedEmail(selected: string) {
     if (selected === '직접 입력') {
-      setInputDomain('');
+      setDomainValue('');
     } else {
-      setInputDomain(selected);
+      setDomainValue(selected);
     }
+    setIsValid({ status: false, message: '' });
   }
-  function handleCheckButton() {
-    const isDuplicate = userData.tableData.some(
-      (item) => item.email === fullEmail,
-    );
 
-    if (!pattern.test(fullEmail)) {
-      setValidationStatus({
+  function handleDuplicateCheck() {
+    const email = `${idValue}@${domainValue}`;
+
+    // 아이디에 공백 및 영문+숫자 외 문자 체크
+    if (/\s/.test(idValue)) {
+      setIsValid({ status: false, message: '공백은 사용할 수 없습니다.' });
+      return;
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(idValue)) {
+      setIsValid({
+        status: false,
+        message: '이메일 아이디는 영문과 숫자만 가능합니다.',
+      });
+      return;
+    }
+
+    if (!validEmail(email)) {
+      setIsValid({
         status: false,
         message: '유효하지 않은 이메일 형식입니다.',
       });
       return;
     }
-    if (inputEmail.includes(' ')) {
-      setValidationStatus({ status: false, message: message.errorGap });
-      return;
-    }
+
+    const isDuplicate = userData.tableData.some((item) => item.email === email);
+
     if (isDuplicate) {
-      setValidationStatus({ status: false, message: message.errorDup });
+      setIsValid({ status: false, message: '이미 사용된 이메일입니다.' });
     } else {
-      setValidationStatus({ status: true, message: message.success });
+      setIsValid({ status: true, message: '사용 가능한 이메일입니다.' });
     }
   }
-  async function handleNextButton() {
-    const PREV_USER_ID = localStorage.getItem('ex_users');
-    if (!PREV_USER_ID) {
-      console.error('해당 USER의 ID가 존재하지 않습니다.');
-      return;
-    }
-    const { data: USER_DATA, error: fetchError } = await supabase
-      .from('ex_users')
-      .select('*')
-      .eq('user_id', PREV_USER_ID)
-      .single();
 
-    if (!USER_DATA || fetchError) {
-      console.error(fetchError, '사용자 정보를 가져오는 데 실패했습니다.');
-      return;
-    }
+  const handleNextButton = () => {
+    const currentStep = Number(step ?? '1');
+    const nextStep = currentStep + 1;
 
-    if (USER_DATA.email === null) {
-      const { error: UpdateError } = await supabase
-        .from('ex_users')
-        .update({ email: fullEmail })
-        .eq('user_id', PREV_USER_ID);
+    const email = `${idValue}@${domainValue}`;
+    localStorage.setItem('register_email', email);
 
-      navigate(`/register/5`);
-
-      if (UpdateError) {
-        console.error(UpdateError, '이메일을 저장하는 데 실패했습니다.');
-      }
-    }
-  }
+    navigate(`/register?step=${nextStep}`);
+  };
 
   return (
     <>
       <div>
         <Label>이메일</Label>
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex items-center gap-2">
           <div className="flex-1">
             <Input
               label="이메일 아이디"
               hideLabel={true}
               type="text"
               placeholder="email"
-              value={inputEmail}
-              onChange={handleInputEmail}
+              value={idValue}
+              onChange={handleidValue}
+              onKeyDown={onIdKeyDown}
             />
           </div>
           <span className="fs-14 text-gray06">@</span>
           <div className="flex-1">
             <Input
+              ref={domainRef}
               label="이메일 도메인"
               hideLabel={true}
               type="text"
               placeholder="직접 입력"
-              value={inputDomain}
-              onChange={handleInputDomain}
+              value={domainValue}
+              onChange={handledomainValue}
+              onKeyDown={onDomainKeyDown}
             />
           </div>
         </div>
-        <Validation
-          status={validationStatus.status}
-          message={validationStatus.message}
-        />
+        {isValid.message && (
+          <Validation status={isValid.status} message={isValid.message} />
+        )}
       </div>
       <SelectMenu data={'email'} onSelectedEmail={handleSelectedEmail} />
-      {validationStatus.status ? (
+      {isValid.status ? (
         <Button onClick={handleNextButton}>다음</Button>
       ) : (
-        <Button onClick={handleCheckButton}>확인</Button>
+        <Button
+          ref={buttonRef}
+          disabled={!idValue || !domainValue}
+          onClick={handleDuplicateCheck}
+        >
+          확인
+        </Button>
       )}
     </>
   );
