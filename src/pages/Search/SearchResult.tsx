@@ -4,8 +4,9 @@ import { useLocation } from 'react-router-dom';
 
 import { fetchSearchList } from '@/api/openAPI/utils/fetchSearchList';
 import Button from '@/components/Button/Button';
-import ListItem from '@/components/ListItem/ListItem';
+// import ListItem from '@/components/ListItem/ListItem';
 import { ListItemProps } from '@/components/ListItem/ListItem';
+import ListItemCardById from '@/components/ListItem/ListItemCardById';
 import Loader from '@/components/Loader/Loader';
 import DropdownCustom from '@/components/SortDropdown/DropdownCustom';
 import { useSearchStore } from '@/store/useSearchStore';
@@ -138,7 +139,21 @@ function SearchResult() {
           </div>
           {searchResults.length > 0 ? (
             <section className="no-scrollbar flex flex-col gap-4 overflow-y-scroll">
-              <ListItem data={filteredResults} />
+              {/* <ListItem data={filteredResults} /> */}
+              <ul className="flex flex-col gap-4">
+                {filteredResults?.map(
+                  (item) =>
+                    item.contentid &&
+                    item.contenttypeid && (
+                      <ListItemCardById
+                        key={item.contentid}
+                        contentId={item.contentid}
+                        contentTypeId={item.contenttypeid}
+                        currentTitle={item.title}
+                      />
+                    ),
+                )}
+              </ul>
               <Button variant={'secondary'} onClick={handleLoadMore}>
                 더보기
               </Button>

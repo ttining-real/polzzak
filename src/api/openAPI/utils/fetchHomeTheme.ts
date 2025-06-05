@@ -23,6 +23,7 @@ async function fetchRecommendTour(keyword: string) {
       .splice(0, 7);
     return randomTour.map((item: HomeThemes) => ({
       contentid: item.contentid,
+      contenttypeid: item.contenttypeid,
       title: item.title,
       firstimage: item.firstimage,
       addr1: item.addr1,

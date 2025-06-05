@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 import { useGetDetailCommon } from '@/api/openAPI';
+import { fetchContentDetail } from '@/api/openAPI/utils/fetchContentDetail';
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import Details from '@/components/Contents/Details';
@@ -11,25 +17,29 @@ import Icon from '@/components/Icon/Icon';
 import { FavoirteType, PolzzakType } from '@/components/Input/SelectMenu';
 import Loader from '@/components/Loader/Loader';
 import UserMenu, { MenuItemTypes } from '@/components/UserMenu/UserMenu';
+import { filterNameToType } from '@/lib/filterMap';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 import { useHeaderStore } from '@/store/useHeaderStore';
-import { useSearchStore } from '@/store/useSearchStore';
+// import { useSearchStore } from '@/store/useSearchStore';
 
 function ViewDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const contentTypeName = searchParams.get('category');
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState('');
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
   >(null);
+  const [info, setInfo] = useState<Record<string, string | undefined>>({});
   const [isMyContent, setIsMyContent] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const detailData = useSearchStore((state) => state.detailData);
+  // const detailData = useSearchStore((state) => state.detailData);
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
   const { isOpenId, openModal, closeModal } = useDialogStore();
-  const info = detailData?.filter((item) => item.contentid.toString() === id);
+  // const info = detailData?.filter((item) => item.contentid.toString() === id);
   const rawData = useGetDetailCommon(id as string);
   const data = rawData ?? null;
   const { user } = useAuthStore();
@@ -73,7 +83,21 @@ function ViewDetails() {
   }, [data, setContentsTitle]);
 
   useEffect(() => {
+    if (!id) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    const contentTypeId = filterNameToType(contentTypeName ?? '');
+    if (!contentTypeId) return;
+
+    const getContentDetail = async () => {
+      const data = await fetchContentDetail(id, contentTypeId, true);
+      setInfo(data);
+    };
     if (!id || !userId) return;
+    getContentDetail();
+
     const checkIsMyContent = async () => {
       const { data, error } = await supabase
         .from('ex_favorite_folders')
@@ -92,7 +116,7 @@ function ViewDetails() {
       setIsMyContent(!!isFavorited.length);
     };
     checkIsMyContent();
-  }, [id, userId]);
+  }, [id, userId, contentTypeName, navigate]);
 
   const onClickFavorite = async () => {
     if (!id || !userId) {
@@ -205,15 +229,15 @@ function ViewDetails() {
   return (
     <div className="flex flex-col gap-4">
       <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
-        {info.length > 0 ? (
-          info[0].image ? (
+        {info ? (
+          info.image ? (
             <>
               <img
-                src={info[0].image}
+                src={info.image}
                 alt=""
                 className="h-full w-full rounded-2xl"
               />
-              <figcaption className="sr-only">{info[0].title}</figcaption>
+              <figcaption className="sr-only">{info.title}</figcaption>
             </>
           ) : (
             <>
@@ -230,8 +254,8 @@ function ViewDetails() {
         )}
       </figure>
       <UserMenu menus={userMenu} />
-      {data && info.length > 0 ? (
-        <Details info={info[0]} data={data} />
+      {data && info ? (
+        <Details info={info} data={data} />
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
@@ -245,8 +269,8 @@ function ViewDetails() {
             userId={userId}
             info={{
               contenttypeid: data?.contenttypeid,
-              title: info[0].title,
-              addr1: info[0].addr1,
+              title: info?.title ?? '타이틀이 없어요.',
+              addr1: info.addr1,
             }}
             setIsMyContent={setIsMyContent}
           />

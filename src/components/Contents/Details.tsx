@@ -294,6 +294,8 @@ function Details({ info, data }: DetailsTypes) {
     overview: [],
   };
 
+  const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
+
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -311,7 +313,7 @@ function Details({ info, data }: DetailsTypes) {
                   {item.label}
                 </dt>
                 <dd className="fs-13 lh ls whitespace-pre-line">
-                  {item.value}
+                  {deleteBr(item.value)}
                 </dd>
               </div>
             ))}
