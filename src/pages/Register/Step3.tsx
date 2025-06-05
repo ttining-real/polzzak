@@ -1,63 +1,115 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import Button from '@/components/Button/Button';
+import AlertDialog from '@/components/Dialog/AlertDialog';
 import Input from '@/components/Input/Input';
-import Modal from '@/components/Modal/Modal';
-import { useModalStore } from '@/store/useModalStore';
-import { useRegisterStore } from '@/store/useRegisterStore';
+import { validationPhone } from '@/lib/validationPhone';
+import { useDialogStore } from '@/store/useDialogStore';
 
 function Step3() {
-  const { openModal } = useModalStore();
-  // > 휴대폰 번호 입력
-  const { phoneNumber, setPhoneNumber } = useRegisterStore();
-  // > 인증 번호 입력
-  const [inputConfirm, setInputConfirm] = useState('');
+  const [phoneValue, setPhoneValue] = useState('');
+  const [confirmValue, setConfirmValue] = useState('');
+  const [isValid, setIsValid] = useState(false);
+  const [showConfirmInput, setShowConfirmInput] = useState(false);
+  const [isConfirmValid, setIsConfirmValid] = useState(false);
+  const [nextStep, setNextStep] = useState<number | null>(null);
 
-  const [confirmBtn, setConfirmBtn] = useState(false); // 인증번호 받았는지?
-  const [confirm] = useState(true); // 인증번호 일치? 일단 true로 만들어서 다음 페이지 넘어가도록 함
-  // > 모달 타입 지정
-  const [modalType, setModalType] = useState<
-    'certify_success' | 'certify_fail' | null
-  >(null);
+  const { isOpen, openModal, closeModal } = useDialogStore();
+  const [dialogHeader, setDialogHeader] = useState('');
+  const [dialogDescription, setDialogDescription] = useState<string[]>([]);
 
-  function handlePhoneNumber(e: React.ChangeEvent<HTMLInputElement>) {
-    let value = e.target.value.replace(/\D/g, '');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
 
-    // > 000-0000-0000 형태
-    if (value.length <= 3) {
-      // value = value;
-    } else if (value.length <= 7) {
-      // 4~7자리
-      value = `${value.slice(0, 3)}-${value.slice(3)}`;
-    } else if (value.length <= 11) {
-      // 8자리 이상
-      value = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
-    } else {
-      // 11자리 초과 입력 방지
-      value = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7, 11)}`;
+  const [searchParams] = useSearchParams();
+  const step = searchParams.get('step');
+  const navigate = useNavigate();
+
+  // 휴대폰 번호
+  const onChangePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = validationPhone(e.target.value);
+    setPhoneValue(value);
+
+    const valid = /^(010|011|016|017|018|019)-\d{4}-\d{4}$/.test(value);
+    setIsValid(valid);
+
+    if (!valid) {
+      setShowConfirmInput(false);
+      setConfirmValue('');
+      setIsConfirmValid(false);
     }
-
-    setPhoneNumber(value);
-  }
-
-  function handleConfirm(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
-    setInputConfirm(value);
-  }
-
-  const getAuthNum = () => {
-    setConfirmBtn(true);
   };
 
-  function handleAuthButton() {
-    if (confirm) {
-      setModalType('certify_success');
-      openModal('certify_success');
-    } else {
-      setModalType('certify_fail');
-      openModal('certify_fail');
+  const onPhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isValid) {
+        buttonRef.current?.focus();
+        handleButtonClick();
+      }
     }
-  }
+  };
+
+  // 인증번호 확인
+  const onChangeConfirmInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setConfirmValue(value);
+
+    // 인증번호가 6자리일 때 유효한 것으로 판단
+    setIsConfirmValid(value.length === 6);
+  };
+
+  const onConfirmKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isConfirmValid) {
+        buttonRef.current?.focus();
+      }
+    }
+  };
+
+  const handleResendButton = () => {
+    console.log('재전송 버튼 클릭');
+  };
+
+  // 버튼 조건 분기
+  const handleButtonClick = () => {
+    if (showConfirmInput) {
+      if (!isConfirmValid) return; // 인증번호가 6자리 아닐 땐 동작하지 않도록
+
+      // TODO: 인증번호 확인 API 호출
+      const isAuthSuccess = true; // 임시
+
+      if (isAuthSuccess) {
+        const currentStep = Number(step ?? '1');
+        const calculatedNextStep = currentStep + 1;
+
+        localStorage.setItem('register_phone', phoneValue);
+        setNextStep(calculatedNextStep);
+
+        setDialogHeader('인증에 성공하였습니다.');
+        setDialogDescription(['다음 버튼을 눌러 진행해 주세요.']);
+      } else {
+        setDialogHeader('인증에 실패하였습니다.');
+        setDialogDescription(['인증 번호를 확인해 주세요.']);
+      }
+
+      openModal();
+    } else {
+      setShowConfirmInput(true);
+
+      // TODO: 인증번호 발송 API 호출
+    }
+  };
+
+  useEffect(() => {
+    if (showConfirmInput) {
+      confirmInputRef.current?.focus();
+      setConfirmValue('');
+      setIsConfirmValid(false);
+    }
+  }, [showConfirmInput]);
 
   return (
     <>
@@ -67,38 +119,65 @@ function Step3() {
           inputMode="numeric"
           pattern="[0-9]*"
           placeholder="000-0000-0000"
-          value={phoneNumber}
-          onChange={handlePhoneNumber}
+          value={phoneValue}
+          onChange={onChangePhoneInput}
+          onKeyDown={onPhoneKeyDown}
           maxLength={13}
         />
       </div>
-      {confirmBtn && (
+
+      {showConfirmInput && (
         <div className="flex items-end gap-2">
           <div className="flex-grow">
             <Input
+              ref={confirmInputRef}
               label="인증번호 확인"
               inputMode="numeric"
               pattern="[0-9]*"
               placeholder="인증번호 6자리를 입력해 주세요."
               maxLength={6}
-              value={inputConfirm}
-              onChange={handleConfirm}
+              value={confirmValue}
+              onChange={onChangeConfirmInput}
+              onKeyDown={onConfirmKeyDown}
             />
           </div>
-          <Button variant={'secondary'}>재전송</Button>
+          <Button variant="secondary" onClick={handleResendButton}>
+            재전송
+          </Button>
         </div>
       )}
-      {confirmBtn ? (
-        <Button disabled={inputConfirm.length !== 6} onClick={handleAuthButton}>
-          인증하기
-        </Button>
-      ) : (
-        <Button disabled={phoneNumber.length !== 13} onClick={getAuthNum}>
-          인증번호 받기
-        </Button>
-      )}
 
-      {modalType && <Modal mode="alert" type={modalType} />}
+      <Button
+        ref={buttonRef}
+        onClick={handleButtonClick}
+        disabled={showConfirmInput ? !isConfirmValid : !isValid}
+      >
+        {showConfirmInput ? '인증하기' : '인증번호 받기'}
+      </Button>
+
+      {isOpen && (
+        <AlertDialog
+          header={dialogHeader}
+          description={dialogDescription}
+          button={[
+            {
+              text: '취소',
+              onClick: () => {
+                closeModal();
+              },
+            },
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                if (nextStep) {
+                  navigate(`/register?step=${nextStep}`);
+                }
+              },
+            },
+          ]}
+        />
+      )}
     </>
   );
 }
