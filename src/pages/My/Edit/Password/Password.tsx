@@ -6,7 +6,7 @@ import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import { useToast } from '@/hooks/useToast';
-import { validatePassword } from '@/lib/validatePassword';
+import { validatePassword } from '@/lib/validationPassword';
 import { usePasswordStore } from '@/store/usePasswordStore';
 
 function Password() {

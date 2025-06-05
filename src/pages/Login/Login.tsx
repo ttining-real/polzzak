@@ -10,7 +10,7 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useToast } from '@/hooks/useToast';
-import { validatePassword } from '@/lib/validatePassword';
+import { validatePassword } from '@/lib/validationPassword';
 import { validateId } from '@/lib/validationId';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
