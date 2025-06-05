@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   useLocation,
   useNavigate,
@@ -44,25 +44,36 @@ function ViewDetails() {
   const data = rawData ?? null;
   const { user } = useAuthStore();
   const userId = user?.id;
+  const reviewRef = useRef<HTMLDivElement>(null);
   const userMenu: MenuItemTypes[] = [
     {
       label: '즐겨찾기',
       icon: isMyContent ? 'favorite_on' : 'favorite_off',
       onClick: () => {
-        onClickFavorite();
+        if (userId) {
+          onClickFavorite();
+        } else {
+          navigate('/login');
+        }
       },
     },
     {
       label: '폴짝추가',
       icon: 'calendar',
       onClick: () => {
-        onClickPolzzak();
+        if (userId) {
+          onClickPolzzak();
+        } else {
+          navigate('/login');
+        }
       },
     },
     {
       label: '리뷰작성',
       icon: 'review',
-      path: '/',
+      onClick: () => {
+        scrollToReview();
+      },
     },
     {
       label: '공유하기',
@@ -72,6 +83,10 @@ function ViewDetails() {
       },
     },
   ];
+
+  const scrollToReview = () => {
+    reviewRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (data?.title) {
@@ -100,8 +115,8 @@ function ViewDetails() {
 
     const checkIsMyContent = async () => {
       const { data, error } = await supabase
-        .from('ex_favorite_folders')
-        .select('ex_favorite(folder_id, content_id)')
+        .from('favorite_folders')
+        .select('favorite(folder_id, content_id)')
         .eq('user_id', userId);
 
       if (error) {
@@ -110,7 +125,7 @@ function ViewDetails() {
       }
 
       const isFavorited = data.flatMap((folder) =>
-        folder.ex_favorite?.filter((item) => item.content_id === id),
+        folder.favorite?.filter((item) => item.content_id === id),
       );
       setSelectedFolderId(isFavorited[0]?.folder_id ?? null);
       setIsMyContent(!!isFavorited.length);
@@ -130,7 +145,7 @@ function ViewDetails() {
       if (isMyContent && selectedFolderId) {
         setIsLoading('즐겨찾기 삭제 중..');
         const { error } = await supabase
-          .from('ex_favorite')
+          .from('favorite')
           .delete()
           .match({ folder_id: selectedFolderId, content_id: id });
 
@@ -139,8 +154,8 @@ function ViewDetails() {
       } else {
         setIsLoading('폴더 가져오는 중..');
         const { data, error } = await supabase
-          .from('ex_favorite_folders')
-          .select('id, folder_name, ex_favorite(content_id)')
+          .from('favorite_folders')
+          .select('id, folder_name, favorite(content_id)')
           .eq('user_id', userId);
 
         if (error) throw error;
@@ -148,7 +163,7 @@ function ViewDetails() {
           data.map((item) => ({
             id: item.id,
             name: item.folder_name,
-            storage: item.ex_favorite?.map((i) => i.content_id),
+            storage: item.favorite?.map((i) => i.content_id),
           })),
         );
       }
@@ -227,7 +242,7 @@ function ViewDetails() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-1 p-6">
       <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
         {info ? (
           info.image ? (
@@ -255,7 +270,12 @@ function ViewDetails() {
       </figure>
       <UserMenu menus={userMenu} />
       {data && info ? (
-        <Details info={info} data={data} />
+        <Details
+          info={info}
+          data={data}
+          reviewRef={reviewRef}
+          userId={userId}
+        />
       ) : (
         <div>데이터를 불러오는 중 입니다.</div>
       )}
