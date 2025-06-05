@@ -11,45 +11,47 @@ import CarouselThemes, {
 } from '@/components/Home/CarouselThemes';
 import CarouselVisual from '@/components/Home/CarouselVisual';
 
+const getYear = () => new Date().getFullYear();
 const getMonth = () => new Date().getMonth() + 1;
 
 const getThemeTitle = () => {
+  const year = getYear();
   const month = getMonth();
 
   if (month >= 3 && month <= 4) {
     return {
       title: '벚꽃 하면 바로 이곳',
-      url: `search/result?30q=벚꽃&startDate=20250301&endDate=20250430`, // 날짜 변경
+      url: `search/result?30q=벚꽃&startDate=${year}0301&endDate=${year}0430`,
       keyword: '벚꽃',
     };
   } else if (month >= 5 && month <= 6) {
     return {
       title: '봄바람 타고 떠나고 싶은 이곳',
-      url: `search/result?q=봄&startDate=20250501&endDate=20250630`,
+      url: `search/result?q=봄&startDate=${year}0501&endDate=${year}0630`,
       keyword: '봄',
     };
   } else if (month >= 7 && month <= 9) {
     return {
       title: '시원한 바다와 함께하는 여름',
-      url: `search/result?q=바다&startDate=20250701&endDate=20250930`,
+      url: `search/result?q=바다&startDate=${year}0701&endDate=${year}0930`,
       keyword: '바다',
     };
   } else if (month >= 10 && month <= 11) {
     return {
       title: '단풍 하면 바로 이곳',
-      url: `search/result?q=단풍&startDate=20251001&endDate=20251130`,
+      url: `search/result?q=단풍&startDate=${year}1001&endDate=${year}1130`,
       keyword: '단풍',
     };
   } else if (month === 12) {
     return {
       title: '따듯한 크리스마스를 즐길 이곳',
-      url: `search/result?q=크리스마스&startDate=20251201&endDate=20251231`,
+      url: `search/result?q=크리스마스&startDate=${year}1201&endDate=${year}1231`,
       keyword: '크리스마스',
     };
   } else {
     return {
       title: '흰 눈 사이로 썰매를 타며 즐기기 좋은 이곳',
-      url: `search/result?q=겨울&startDate=20250101&endDate=20250228`,
+      url: `search/result?q=겨울&startDate=${year}0101&endDate=${year}0228`,
       keyword: '겨울',
     };
   }
@@ -59,7 +61,13 @@ const fetchRestaurant = async (): Promise<string[]> => {
   const { data, error } = await supabase.from('home-recommend').select('*');
 
   if (error) throw error;
-  return data;
+
+  const updatedData = data.map((item) => ({
+    ...item,
+    contentid: item.content_id,
+    contenttypeid: '39',
+  }));
+  return updatedData;
 };
 
 function Home() {
@@ -103,7 +111,7 @@ function Home() {
     },
     {
       header: '이달의 축제',
-      moreUrl: `search/result?startDate=2025${String(getMonth()).padStart(2, '0')}01&endDate=2025${String(getMonth()).padStart(2, '0')}30&theme=축제`,
+      moreUrl: `search/result?startDate=${getYear()}${String(getMonth()).padStart(2, '0')}01&endDate=${getYear()}${String(getMonth()).padStart(2, '0')}30&theme=축제`,
       itemList: [...festivalOfTheMonth],
     },
     {
