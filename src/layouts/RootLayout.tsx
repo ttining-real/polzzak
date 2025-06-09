@@ -25,6 +25,8 @@ const HEADER_TITLES: Record<string, string> = {
   '/my/edit/phone-number': '휴대폰 번호 설정',
   '/my/edit/email': '이메일 설정',
   '/my/favorites': '즐겨찾기',
+  '/notice': '공지사항',
+  '/terms': '서비스 이용약관',
 };
 
 const HIDDEN_NAV_PATHS = new Set([
@@ -32,6 +34,8 @@ const HIDDEN_NAV_PATHS = new Set([
   '/login',
   '/splash',
   '/polzzak/add',
+  '/notice',
+  '/terms',
 ]);
 
 const HIDDEN_HEADER_PATHS = new Set(['/map', '/splash']);

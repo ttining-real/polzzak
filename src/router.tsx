@@ -9,12 +9,14 @@ import {
   Map,
   My,
   NotFound,
+  Notice,
   Polzzak,
   Register,
   ResetPassword,
   ResetPasswordCallback,
   Search,
   Splash,
+  Terms,
 } from '@/pages';
 import ViewDetails from '@/pages/Contents/ViewDetails';
 import {
@@ -146,6 +148,14 @@ export const routes = [
       {
         path: '/splash',
         element: <Splash />,
+      },
+      {
+        path: '/notice',
+        element: <Notice />,
+      },
+      {
+        path: '/terms',
+        element: <Terms />,
       },
     ],
   },
