@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useGetTable } from '@/api/supabase/hooks';
@@ -8,6 +8,8 @@ import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import { useToast } from '@/hooks/useToast';
+import { getRandomNickname } from '@/lib/getRandomNickname';
+import { validateNickname } from '@/lib/validationNickname';
 import { useEditStore } from '@/store/useEditStore';
 
 interface ItemTypes {
@@ -17,7 +19,8 @@ interface ItemTypes {
 function NickName() {
   const navigate = useNavigate();
   const showToast = useToast();
-  const { nickname, setNickname } = useEditStore();
+  const nickname = useEditStore((state) => state.nickname);
+  const setNickname = useEditStore((state) => state.setNickname);
   const [validationStatus, setValidationStatus] = useState({
     status: false,
     message: '',
@@ -28,10 +31,18 @@ function NickName() {
     errorDup: '이미 사용된 닉네임입니다.',
   };
   const userData = useGetTable<ItemTypes>('ex_users');
+
   const handleNickname = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNickname(e.target.value);
   };
   const handleNicknameCheck = () => {
+    const validation = validateNickname(nickname);
+
+    if (!validation.isValid) {
+      setValidationStatus({ status: false, message: validation.message });
+      return;
+    }
+
     const isDuplicate = userData?.tableData?.some(
       (item) => item.nickname === nickname,
     );
@@ -41,68 +52,58 @@ function NickName() {
     } else {
       setValidationStatus({ status: true, message: message.success });
     }
-    if (nickname.length < 2 || nickname.length > 10) {
-      setValidationStatus({ status: false, message: message.error });
-    }
   };
   const handleRandomButton = () => {
-    const firstList = [
-      '귀여운',
-      '섹시한',
-      '심심한',
-      '조용한',
-      '똑똑한',
-      '배고픈',
-      '멍청한',
-    ];
-    const secondList = [
-      '오리',
-      '토끼',
-      '쥐',
-      '소',
-      '용',
-      '뱀',
-      '고양이',
-      '개',
-      '돼지',
-      '말',
-      '닭',
-      '병아리',
-    ];
-    const first = firstList[Math.floor(Math.random() * firstList.length)];
-    const second = secondList[Math.floor(Math.random() * secondList.length)];
-    const number = Math.floor(Math.random() * 1000);
+    const randomNickname = getRandomNickname();
 
-    setNickname(`${first}${second}${number}`);
+    setNickname(randomNickname);
   };
   const handleNicknameSave = async () => {
     const result = await updateNickname(nickname);
     if (result) {
       navigate('/my/edit');
-      showToast('닉네임 저장을 성공했습니다.', 'top-[64px]', 3000);
+      showToast('닉네임 설정에 성공했습니다.', 'top-[64px]', 3000);
       setNickname('');
     } else {
-      showToast('닉네임 저장을 실패했습니다.', 'top-[64px]', 3000);
+      showToast('닉네임 설정에 실패했습니다.', 'top-[64px]', 3000);
     }
   };
 
+  useEffect(() => {
+    return () => {
+      setNickname('');
+    };
+  }, [setNickname]);
+
   return (
     <div className="relative flex flex-col">
+      <h2 className="sr-only">닉네임 설정</h2>
+
       <div className="flex items-end gap-1">
         <div className="flex-1">
-          <Input label="닉네임" value={nickname} onChange={handleNickname} />
+          <Input
+            label="닉네임"
+            value={nickname}
+            onChange={handleNickname}
+            maxLength={10}
+            placeholder="2~10자 사이로 입력해 주세요."
+          />
         </div>
         <Button
           variant={'tertiary'}
           className="s-13 text-gray06 absolute top-[5px] left-12 h-5 px-1"
           size="sm"
           onClick={handleRandomButton}
+          aria-label="랜덤 닉네임 생성"
+          type="button"
         >
-          랜덤생성
+          <span aria-hidden="true">랜덤생성</span>
           <Icon id="replay" className="text-gray05" />
         </Button>
         <Button
           variant={'secondary'}
+          type="button"
+          aria-label="닉네임 중복 확인"
           onClick={() => {
             handleNicknameCheck();
           }}
@@ -118,6 +119,8 @@ function NickName() {
         variant={'default'}
         disabled={validationStatus.message !== message.success}
         onClick={handleNicknameSave}
+        type="button"
+        aria-label="닉네임 저장"
       >
         저장
       </Button>
