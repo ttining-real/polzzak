@@ -10,8 +10,9 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useToast } from '@/hooks/useToast';
-import { validatePassword } from '@/lib/validationPassword';
+import { validateEmail } from '@/lib/validationEmail';
 import { validateId } from '@/lib/validationId';
+import { validatePassword } from '@/lib/validationPassword';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 
@@ -90,7 +91,7 @@ function Login() {
     const value = e.target.value;
     setIdValue(value);
 
-    const { isValid, message } = validateId(value);
+    const { isValid, message } = validateEmail(value);
     setIdValid(isValid);
     setIdMessage(isValid ? '' : message);
   };

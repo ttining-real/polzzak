@@ -7,7 +7,7 @@ import AlertDialog from '@/components/Dialog/AlertDialog';
 import Input from '@/components/Input/Input';
 import SelectMenu from '@/components/Input/SelectMenu';
 import { Label } from '@/components/Label';
-import { validEmail } from '@/lib/validationEmail';
+import { validateEmail } from '@/lib/validationEmail';
 import { useDialogStore } from '@/store/useDialogStore';
 
 function FindId() {
@@ -35,7 +35,7 @@ function FindId() {
 
   const isValidEmail =
     inputEmail && inputDomain
-      ? validEmail(`${inputEmail}@${inputDomain}`)
+      ? validateEmail(`${inputEmail}@${inputDomain}`)
       : false;
 
   const onDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
