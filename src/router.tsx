@@ -14,6 +14,7 @@ import {
   ResetPassword,
   ResetPasswordCallback,
   Search,
+  SignUpCallback,
   Splash,
 } from '@/pages';
 import ViewDetails from '@/pages/Contents/ViewDetails';
@@ -52,7 +53,11 @@ export const routes = [
       },
       {
         path: '/register',
-        element: <Register />,
+        element: <Outlet />,
+        children: [
+          { index: true, element: <Register /> },
+          { path: 'sign-up-callback', element: <SignUpCallback /> },
+        ],
       },
       {
         path: '/search',

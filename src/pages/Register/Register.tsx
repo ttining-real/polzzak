@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Progress } from '@/components/Register/progress';
-import { Step1, Step2, Step3, Step4, Step5 } from '@/pages/Register';
+import { Step1, Step2, Step3, Step4 } from '@/pages/Register';
 
 import NotFound from '../NotFound';
 import { REGISTER_STEP } from './REGISTER_STEP';
@@ -33,9 +33,6 @@ function Register() {
         break;
       case 4:
         return <Step4 />;
-        break;
-      case 5:
-        return <Step5 />;
         break;
       default:
         return <NotFound />;
