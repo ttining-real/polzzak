@@ -10,6 +10,7 @@ export interface reviewData {
   userId: string;
   userName: string;
   review: string;
+  contentId: string;
 }
 
 function Review({

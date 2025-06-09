@@ -10,6 +10,7 @@ const DUMMY_DATA = [
     userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
     userName: '홀딱벗은래빗',
     review: '여기 찐 맛집 인정ㅋㅋ',
+    contentId: '3485244',
   },
   {
     id: '111',
@@ -17,6 +18,7 @@ const DUMMY_DATA = [
     userName: '나는야거북거북이',
     review:
       '좀 비싸긴 함.. 근데 인사에 올리기 좋음ㅎㅎ 커플끼리 오기 딱 좋아잉잉잉잉잉잉잉잉잉잉잉',
+    contentId: '3485244',
   },
 ];
 
@@ -332,6 +334,7 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
         userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
         userName: '홀딱벗은래빗',
         review: inputValue.trim(),
+        contentId: '3485244',
       },
     ]);
   };
