@@ -7,6 +7,7 @@ export { default as ResetPasswordCallback } from '@/pages/Login/ResetPasswordCal
 export { default as Map } from '@/pages/Map/Map';
 export { default as Favorites } from '@/pages/My/Favorites/Favorites';
 export { default as My } from '@/pages/My/My';
+export { default as MyReviews } from '@/pages/My/MyReviews/MyReviews';
 export { default as Notice } from '@/pages/My/Notice';
 export { default as Terms } from '@/pages/My/Terms';
 export { default as NotFound } from '@/pages/NotFound';
