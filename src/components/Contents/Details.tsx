@@ -1,24 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
+import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import { Review, reviewData } from '@/components/Contents/Review';
 import Input from '@/components/Input/Input';
-
-const DUMMY_DATA = [
-  {
-    id: '000',
-    userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
-    userName: '홀딱벗은래빗',
-    review: '여기 찐 맛집 인정ㅋㅋ',
-  },
-  {
-    id: '111',
-    userId: 'aaaaaaa',
-    userName: '나는야거북거북이',
-    review:
-      '좀 비싸긴 함.. 근데 인사에 올리기 좋음ㅎㅎ 커플끼리 오기 딱 좋아잉잉잉잉잉잉잉잉잉잉잉',
-  },
-];
+import { addFavoriteWithContentCheck } from '@/lib/favorite';
 
 interface DetailsTypes {
   info: {
@@ -76,7 +63,9 @@ interface DetailsTypes {
 }
 
 function Details({ info, data, reviewRef, userId }: DetailsTypes) {
-  const [reviewList, setReviewList] = useState<reviewData[]>([]);
+  const { id } = useParams();
+  const contentTypeId = data?.contenttypeid ?? '';
+  const [reviewList, setReviewList] = useState<reviewData[] | []>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState<string>('');
   const toggleMoreButton = () => {
@@ -90,14 +79,9 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
     return `${yy}.${mm}.${dd}`;
   };
 
-  useEffect(() => {
-    setReviewList(DUMMY_DATA);
-    // 서버 연결 필요
-  }, []);
-
   const renderByContentTypeId = () => {
-    if (!data.contenttypeid) return;
-    switch (data.contenttypeid) {
+    if (!contentTypeId) return;
+    switch (contentTypeId) {
       case '12':
         return {
           infoItems: [
@@ -322,18 +306,93 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
   };
 
   const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
-  const handleAddReview = () => {
-    // 서버 연결 필요
+
+  useEffect(() => {
+    const getReviewList = async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('content_id', id);
+
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      const list = data?.map((li) => ({
+        id: li.id,
+        userId: li.user_id,
+        userName: li.user_name,
+        review: li.review,
+        contentId: li.content_id,
+        created: li.created_at,
+      }));
+      setReviewList(list);
+    };
+    getReviewList();
+  }, [id]);
+  const handleAddReview = async () => {
+    if (!userId || !id || inputValue.trim() === '') return;
+
+    const getUserName = async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('nickname')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) {
+        console.log(error);
+        return;
+      }
+      return data?.nickname;
+    };
+
+    const userName = await getUserName();
+
+    const insertReview = async () => {
+      const hasContent = await addFavoriteWithContentCheck({
+        contentId: id,
+        contentTypeId: contentTypeId,
+      });
+
+      if (hasContent && 'error' in hasContent && hasContent.error) {
+        console.error(hasContent.error);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert([
+          {
+            content_id: id,
+            user_id: userId,
+            user_name: userName,
+            review: inputValue.trim(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error || !data) {
+        console.error(error);
+        return;
+      }
+
+      setReviewList((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          userId: userId,
+          userName: userName,
+          review: inputValue.trim(),
+          contentId: id,
+          created: data.created_at,
+        },
+      ]);
+    };
+    insertReview();
+
     setInputValue('');
-    setReviewList((prev) => [
-      ...prev,
-      {
-        id: '222',
-        userId: 'c4ff296a-b2a1-4c33-8710-3f7efac11df1',
-        userName: '홀딱벗은래빗',
-        review: inputValue.trim(),
-      },
-    ]);
   };
 
   return (
@@ -407,6 +466,7 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
               setInputValue(value);
             }}
             disabled={!userId}
+            maxLength={200}
           />
           <Button
             disabled={!userId || inputValue.trim() === ''}
@@ -419,12 +479,14 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
           {reviewList.length ? (
             reviewList.map((data) => (
               <Review
+                key={data.id}
                 reviewId={data.id}
                 userId={data.userId}
                 userName={data.userName}
                 review={data.review}
                 currentUser={userId}
                 setReviewList={setReviewList}
+                created={data.created}
               />
             ))
           ) : (
