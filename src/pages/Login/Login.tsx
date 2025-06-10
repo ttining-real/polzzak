@@ -238,14 +238,10 @@ function Login() {
         </Button>
       </fieldset>
       <div className="fs-14 font-regular text-gray07 flex items-center justify-center gap-1">
-        <Link to="find-email" className="px-1">
-          이메일 찾기
-        </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <Link to="reset-password" className="px-1">
           비밀번호 재설정
         </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
+        <span aria-hidden className="bg-gray04 h-[11px] w-[1px]"></span>
         <div className="relative">
           <Link to="/register?step=1" className="px-1">
             회원가입
@@ -253,7 +249,7 @@ function Login() {
           <span className="heartbeat-ring bg-primary absolute top-8 right-2 rounded-3xl px-3 py-1 whitespace-nowrap text-white">
             우리 같이 폴짝해요!
             <span
-              aria-hidden={true}
+              aria-hidden
               className="bg-primary absolute -top-1 right-4 h-2 w-2 rotate-45"
             ></span>
           </span>
