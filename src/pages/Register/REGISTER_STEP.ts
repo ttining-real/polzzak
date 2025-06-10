@@ -9,10 +9,6 @@ export const REGISTER_STEP = [
   },
   {
     step: 3,
-    title: '본인확인을 위해/휴대폰 번호를 입력하고 인증해 주세요.',
-  },
-  {
-    step: 4,
     title: '폴짝에서 사용할 닉네임을 입력해 주세요.',
   },
 ];

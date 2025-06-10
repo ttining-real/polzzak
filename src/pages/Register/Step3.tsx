@@ -1,178 +1,238 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import supabase from '@/api/supabase';
+import { useGetTable } from '@/api/supabase/hooks';
 import Button from '@/components/Button/Button';
 import AlertDialog from '@/components/Dialog/AlertDialog';
+import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
-import { validationPhone } from '@/lib/validationPhone';
+import Validation from '@/components/Input/Validation';
+import { getRandomNickname } from '@/lib/getRandomNickname';
+import { validateNickname } from '@/lib/validationNickname';
 import { useDialogStore } from '@/store/useDialogStore';
 
-function Step3() {
-  const [phoneValue, setPhoneValue] = useState('');
-  const [confirmValue, setConfirmValue] = useState('');
-  const [isValid, setIsValid] = useState(false);
-  const [showConfirmInput, setShowConfirmInput] = useState(false);
-  const [isConfirmValid, setIsConfirmValid] = useState(false);
-  const [nextStep, setNextStep] = useState<number | null>(null);
+interface ItemTypes {
+  nickname: string;
+}
+
+// 회원가입 페이지를 아예 못들어오게 할 것인지?
+// 회원가입 step1 페이지로만 들어가게 할 것인지?
+
+export default function Step4() {
+  const [nicknameValue, setNicknameValue] = useState('');
+  const [validStatus, setValidStatus] = useState({
+    status: false,
+    message: '',
+  });
+  const [isDuplicateChecked, setIsDuplicateChecked] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
 
   const { isOpen, openModal, closeModal } = useDialogStore();
-  const [dialogHeader, setDialogHeader] = useState('');
-  const [dialogDescription, setDialogDescription] = useState<string[]>([]);
 
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const confirmInputRef = useRef<HTMLInputElement>(null);
-
-  const [searchParams] = useSearchParams();
-  const step = searchParams.get('step');
   const navigate = useNavigate();
 
-  // 휴대폰 번호
-  const onChangePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = validationPhone(e.target.value);
-    setPhoneValue(value);
+  const duplicateCheckRef = useRef<HTMLButtonElement>(null);
 
-    const valid = /^(010|011|016|017|018|019)-\d{4}-\d{4}$/.test(value);
-    setIsValid(valid);
+  const userData = useGetTable<ItemTypes>('users');
 
-    if (!valid) {
-      setShowConfirmInput(false);
-      setConfirmValue('');
-      setIsConfirmValid(false);
-    }
-  };
-
-  const onPhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (isValid) {
-        buttonRef.current?.focus();
-        handleButtonClick();
-      }
-    }
-  };
-
-  // 인증번호 확인
-  const onChangeConfirmInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ✅ 닉네임 입력 시 유효성 검사
+  function onChangeNicknameInput(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
-    setConfirmValue(value);
+    setNicknameValue(value);
 
-    // 인증번호가 6자리일 때 유효한 것으로 판단
-    setIsConfirmValid(value.length === 6);
-  };
+    const { isValid, message } = validateNickname(value);
+    setValidStatus({ status: isValid, message });
 
-  const onConfirmKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setIsDuplicateChecked(false);
+  }
+
+  const onNicknameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (isConfirmValid) {
-        buttonRef.current?.focus();
+      if (nicknameValue) {
+        duplicateCheckRef.current?.focus();
+        handleIdDuplicateCheck();
       }
     }
   };
 
-  const handleResendButton = () => {
-    console.log('재전송 버튼 클릭');
-  };
+  // ✅ 중복 검사만 수행 (형식은 validateNickname으로 미리 검사됨)
+  function handleIdDuplicateCheck() {
+    if (!validStatus.status) {
+      setValidStatus({
+        status: false,
+        message: '닉네임 형식을 먼저 확인해 주세요.',
+      });
+      setIsDuplicateChecked(false);
+      setIsAvailable(false);
+      return;
+    }
 
-  // 버튼 조건 분기
-  const handleButtonClick = () => {
-    if (showConfirmInput) {
-      if (!isConfirmValid) return; // 인증번호가 6자리 아닐 땐 동작하지 않도록
+    const isDuplicate = userData?.tableData?.some(
+      (user) => user.nickname === nicknameValue,
+    );
 
-      // TODO: 인증번호 확인 API 호출
-      const isAuthSuccess = true; // 임시
-
-      if (isAuthSuccess) {
-        const currentStep = Number(step ?? '1');
-        const calculatedNextStep = currentStep + 1;
-
-        localStorage.setItem('register_phone', phoneValue);
-        setNextStep(calculatedNextStep);
-
-        setDialogHeader('인증에 성공하였습니다.');
-        setDialogDescription(['다음 버튼을 눌러 진행해 주세요.']);
-      } else {
-        setDialogHeader('인증에 실패하였습니다.');
-        setDialogDescription(['인증 번호를 확인해 주세요.']);
-      }
-
-      openModal();
+    if (isDuplicate) {
+      setValidStatus({
+        status: false,
+        message: '이미 사용 중인 닉네임입니다.',
+      });
+      setIsDuplicateChecked(true);
+      setIsAvailable(false);
     } else {
-      setShowConfirmInput(true);
-
-      // TODO: 인증번호 발송 API 호출
+      setValidStatus({
+        status: true,
+        message: '사용 가능한 닉네임입니다.',
+      });
+      setIsDuplicateChecked(true);
+      setIsAvailable(true);
     }
+  }
+
+  // ✅ 랜덤 생성
+  const handleRandomButton = () => {
+    const randomNickname = getRandomNickname();
+    setNicknameValue(randomNickname);
+
+    const { isValid, message } = validateNickname(randomNickname);
+    setValidStatus({ status: isValid, message });
+    setIsDuplicateChecked(false);
   };
 
-  useEffect(() => {
-    if (showConfirmInput) {
-      confirmInputRef.current?.focus();
-      setConfirmValue('');
-      setIsConfirmValid(false);
+  // ✅ 완료
+  const handleCompleteButton = async () => {
+    if (!(validStatus.status && isDuplicateChecked)) return;
+
+    localStorage.setItem('register_nickname', nicknameValue);
+
+    // const user_id = localStorage.getItem('register_id');
+    const email = localStorage.getItem('register_email');
+    const password = localStorage.getItem('register_password');
+    const phone_number = localStorage.getItem('register_phone');
+    const nickname = localStorage.getItem('register_nickname');
+
+    // 값이 하나라도 비어 있으면 중단
+    if (!password || !email || !phone_number || !nickname) {
+      console.error('⚠️ 등록 정보 누락');
+      return;
     }
-  }, [showConfirmInput]);
+
+    // 🛡️ Supabase Auth에 사용자 등록
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: 'http://localhost:5173/register/sign-up-callback',
+        data: {
+          display_name: nickname,
+          phone: phone_number,
+        },
+      },
+    });
+
+    if (authError) {
+      console.error('회원가입 에러 : ', authError.message);
+      alert(`회원가입 중 에러 발생 : ${authError.message}`);
+      return;
+    }
+
+    // ✨ Supabase는 email confirmation이 활성화된 경우 session이 null이고, user도 null일 수 있음
+    // 이 경우는 "이메일 인증을 기다리는 중" 상태
+    if (!authData.user) {
+      console.log('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      alert('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      // 여기서 DB에 데이터를 저장하면 안 됨! (인증 완료 후에 저장해야 함)
+      return;
+    }
+
+    // 실시간 로그인 성공 (거의 발생하지 않지만 예외 처리)
+    if (!authData.user.id) {
+      console.error('User ID가 없음');
+      return;
+    }
+
+    // Supabase 백엔드 반영까지 잠깐 기다림 (안정성을 위해)
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const userId = authData.user.id;
+
+    // users 테이블에 추가 정보 삽입
+    const { error: insertError } = await supabase.from('users').insert({
+      id: userId,
+      email,
+      phone_number,
+      nickname,
+      created_at: new Date().toISOString(),
+    });
+
+    if (insertError) {
+      console.error('users 삽입 실패:', insertError.message);
+      return;
+    }
+
+    // 3. 성공 시 모달 열기
+    openModal();
+  };
 
   return (
     <>
-      <div>
-        <Input
-          label="휴대폰 번호"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          placeholder="000-0000-0000"
-          value={phoneValue}
-          onChange={onChangePhoneInput}
-          onKeyDown={onPhoneKeyDown}
-          maxLength={13}
-        />
-      </div>
-
-      {showConfirmInput && (
+      <div className="relative flex flex-col">
         <div className="flex items-end gap-2">
-          <div className="flex-grow">
+          <div className="flex-1">
             <Input
-              ref={confirmInputRef}
-              label="인증번호 확인"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              placeholder="인증번호 6자리를 입력해 주세요."
-              maxLength={6}
-              value={confirmValue}
-              onChange={onChangeConfirmInput}
-              onKeyDown={onConfirmKeyDown}
+              label="닉네임"
+              placeholder="닉네임을 입력해 주세요."
+              value={nicknameValue}
+              onChange={onChangeNicknameInput}
+              onKeyDown={onNicknameKeyDown}
             />
+            <Button
+              variant="tertiary"
+              className="fs-13 text-gray06 absolute top-[5px] left-12 h-5 px-1"
+              size="sm"
+              onClick={handleRandomButton}
+            >
+              랜덤 생성
+              <Icon id="replay" className="text-gray05" />
+            </Button>
           </div>
-          <Button variant="secondary" onClick={handleResendButton}>
-            재전송
+          <Button
+            ref={duplicateCheckRef}
+            variant="secondary"
+            onClick={handleIdDuplicateCheck}
+          >
+            중복확인
           </Button>
         </div>
-      )}
-
+        {validStatus.message && (
+          <Validation
+            status={validStatus.status}
+            message={validStatus.message}
+          />
+        )}
+      </div>
       <Button
-        ref={buttonRef}
-        onClick={handleButtonClick}
-        disabled={showConfirmInput ? !isConfirmValid : !isValid}
+        onClick={handleCompleteButton}
+        disabled={!(isDuplicateChecked && isAvailable)}
       >
-        {showConfirmInput ? '인증하기' : '인증번호 받기'}
+        회원가입
       </Button>
-
       {isOpen && (
         <AlertDialog
-          header={dialogHeader}
-          description={dialogDescription}
+          header="이메일 인증을 완료해 주세요."
+          description={[
+            `${nicknameValue}님,`,
+            '인증 링크를 이메일로 전송했습니다.',
+            '이메일 인증을 완료해 주세요!',
+          ]}
           button={[
-            {
-              text: '취소',
-              onClick: () => {
-                closeModal();
-              },
-            },
             {
               text: '확인',
               onClick: () => {
                 closeModal();
-                if (nextStep) {
-                  navigate(`/register?step=${nextStep}`);
-                }
+                setNicknameValue('');
+                navigate('/login');
               },
             },
           ]}
@@ -181,5 +241,3 @@ function Step3() {
     </>
   );
 }
-
-export default Step3;
