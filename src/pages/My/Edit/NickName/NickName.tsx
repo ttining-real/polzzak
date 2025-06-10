@@ -61,7 +61,7 @@ function NickName() {
   const handleNicknameSave = async () => {
     const result = await updateNickname(nickname);
     if (result) {
-      navigate('/my/edit');
+      navigate(-1);
       showToast('닉네임 설정에 성공했습니다.', 'top-[64px]', 3000);
       setNickname('');
     } else {
