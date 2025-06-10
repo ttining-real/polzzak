@@ -8,6 +8,7 @@ import {
   Login,
   Map,
   My,
+  MyReviews,
   NotFound,
   Notice,
   Polzzak,
@@ -142,6 +143,10 @@ export const routes = [
           {
             path: 'favorites/:id',
             element: <FavoritesDetails />,
+          },
+          {
+            path: 'my-reviews',
+            element: <MyReviews />,
           },
         ],
       },

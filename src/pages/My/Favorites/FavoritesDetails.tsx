@@ -39,7 +39,7 @@ function FavoritesDetails() {
     async (folderId: string) => {
       const { data, error } = await supabase
         .from('favorite')
-        .select('ex_contents(contentid, contenttypeid)')
+        .select('contents(contentid, contenttypeid)')
         .eq('folder_id', folderId)
         .order('created_at', { ascending: false });
 
@@ -54,7 +54,7 @@ function FavoritesDetails() {
       }
 
       type DataType = {
-        ex_contents: {
+        contents: {
           contentid: string;
           contenttypeid: string;
         };
@@ -63,8 +63,8 @@ function FavoritesDetails() {
       const getData = data as unknown as DataType[];
 
       const contentsData = getData.map((item) => ({
-        contentid: item.ex_contents.contentid,
-        contenttypeid: item.ex_contents.contenttypeid,
+        contentid: item.contents.contentid,
+        contenttypeid: item.contents.contenttypeid,
       }));
 
       setItemList(contentsData);
