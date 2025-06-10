@@ -73,14 +73,14 @@ function Step2() {
   const isNextEnabled =
     pwValid === true && pwCheckValid === true && pwValue === pwCheckValue;
 
-  console.log(step);
+  // console.log(step);
 
   const handleNextButton = () => {
     const currentStep = Number(step ?? '1');
     const nextStep = currentStep + 1;
 
     if (pwValid === true && pwCheckValid === true && pwValue === pwCheckValue) {
-      console.log('비밀번호 저장 & 다음 페이지로 이동');
+      // console.log('비밀번호 저장 & 다음 페이지로 이동');
       localStorage.setItem('register_password', pwCheckValue);
       navigate(`/register?step=${nextStep}`);
     }

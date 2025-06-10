@@ -3,18 +3,21 @@ import { createBrowserRouter, Outlet } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import {
   Contents,
-  FindId,
+  FindEmail,
   Home,
   Login,
   Map,
   My,
   NotFound,
+  Notice,
   Polzzak,
   Register,
   ResetPassword,
   ResetPasswordCallback,
   Search,
+  SignUpCallback,
   Splash,
+  Terms,
 } from '@/pages';
 import ViewDetails from '@/pages/Contents/ViewDetails';
 import {
@@ -42,7 +45,7 @@ export const routes = [
         element: <Outlet />,
         children: [
           { index: true, element: <Login /> },
-          { path: 'find-id', element: <FindId /> },
+          { path: 'find-email', element: <FindEmail /> },
           { path: 'reset-password', element: <ResetPassword /> },
           {
             path: 'reset-password-callback',
@@ -52,7 +55,11 @@ export const routes = [
       },
       {
         path: '/register',
-        element: <Register />,
+        element: <Outlet />,
+        children: [
+          { index: true, element: <Register /> },
+          { path: 'sign-up-callback', element: <SignUpCallback /> },
+        ],
       },
       {
         path: '/search',
@@ -146,6 +153,14 @@ export const routes = [
       {
         path: '/splash',
         element: <Splash />,
+      },
+      {
+        path: '/notice',
+        element: <Notice />,
+      },
+      {
+        path: '/terms',
+        element: <Terms />,
       },
     ],
   },

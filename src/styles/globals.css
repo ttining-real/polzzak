@@ -95,6 +95,7 @@ body {
   --font-size-15: 0.9375rem; /* 15px */
   --font-size-16: 1rem; /* 16px */
   --font-size-18: 1.125rem; /* 18px */
+  --font-size-24: 1.5rem; /* 24px */
   --font-size-40: 2.5rem; /* 40px */
 
   /* shad cn style */
@@ -239,6 +240,9 @@ body {
   .fs-18 {
     font-size: var(--font-size-18); /* 18px */
   }
+  .fs-24 {
+    font-size: var(--font-size-24); /* 24px */
+  }
   .fs-40 {
     font-size: var(--font-size-40); /* 40px */
   }
@@ -313,4 +317,8 @@ body {
 .heartbeat-ring {
   animation: heartbeat-ring 2.5s ease-in-out infinite;
   z-index: 0;
+}
+
+summary::marker {
+  color: var(--color-primary);
 }
