@@ -3,7 +3,7 @@ import { createBrowserRouter, Outlet } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import {
   Contents,
-  FindId,
+  FindEmail,
   Home,
   Login,
   Map,
@@ -43,7 +43,7 @@ export const routes = [
         element: <Outlet />,
         children: [
           { index: true, element: <Login /> },
-          { path: 'find-id', element: <FindId /> },
+          { path: 'find-email', element: <FindEmail /> },
           { path: 'reset-password', element: <ResetPassword /> },
           {
             path: 'reset-password-callback',

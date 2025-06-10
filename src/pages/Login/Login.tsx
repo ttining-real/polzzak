@@ -238,8 +238,8 @@ function Login() {
         </Button>
       </fieldset>
       <div className="fs-14 font-regular text-gray07 flex items-center justify-center gap-1">
-        <Link to="find-id" className="px-1">
-          아이디 찾기
+        <Link to="find-email" className="px-1">
+          이메일 찾기
         </Link>
         <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <Link to="reset-password" className="px-1">

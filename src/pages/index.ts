@@ -1,6 +1,6 @@
 export { default as Contents } from './Contents/Contents';
 export { default as Home } from './Home/Home';
-export { default as FindId } from './Login/FindId';
+export { default as FindEmail } from './Login/FindEmail';
 export { default as Login } from './Login/Login';
 export { default as ResetPassword } from './Login/ResetPassword';
 export { default as ResetPasswordCallback } from './Login/ResetPasswordCallback';
