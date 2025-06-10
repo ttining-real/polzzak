@@ -1,8 +1,12 @@
-import { Dispatch } from 'react';
+import { Dispatch, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { fetchGetDetailCommon } from '@/api/openAPI/utils/fetchGetDetailCommon';
+import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import AlertDialog from '@/components/Dialog/AlertDialog';
 import Icon from '@/components/Icon/Icon';
+import { typeToFilterName } from '@/lib/filterMap';
 import { useDialogStore } from '@/store/useDialogStore';
 
 export interface reviewData {
@@ -11,6 +15,7 @@ export interface reviewData {
   userName: string;
   review: string;
   contentId: string;
+  created: string;
 }
 
 function Review({
@@ -20,6 +25,9 @@ function Review({
   review,
   currentUser,
   setReviewList,
+  contentId,
+  created,
+  isMyReviewPage,
 }: {
   reviewId?: string;
   userId?: string;
@@ -27,35 +35,88 @@ function Review({
   review?: string;
   currentUser?: string;
   setReviewList?: Dispatch<React.SetStateAction<reviewData[]>>;
+  contentId?: string;
+  created?: string;
+  isMyReviewPage?: boolean;
 }) {
+  const [cardInfo, setCardInfo] = useState<{
+    addr1: string;
+    contenttypeid: string;
+    title: string;
+  } | null>(null);
   const { isOpenId, openModal, closeModal } = useDialogStore();
   const myReview = userId === currentUser;
 
+  useEffect(() => {
+    if (!isMyReviewPage || !contentId) return;
+
+    const fetchDetail = async () => {
+      const info = await fetchGetDetailCommon(contentId);
+      setCardInfo({
+        addr1: info.addr1,
+        contenttypeid: info.contenttypeid,
+        title: info.title,
+      });
+    };
+    fetchDetail();
+  }, [isMyReviewPage, contentId]);
+
+  const reviewDate = (data: string) => {
+    const createdDate = data?.slice(0, 10).split('-');
+    return `${createdDate[0]}년 ${createdDate[1]}월 ${createdDate[2]}일`;
+  };
+
   const onClickDelete = () => {
     if (!setReviewList) return;
+    const deleteReview = async () => {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
+      if (error) {
+        console.error(error);
+        return;
+      }
+    };
+    deleteReview();
     setReviewList((prev) => prev.filter((review) => review.id !== reviewId));
     closeModal();
   };
 
   return userId && review ? (
     <article className="fs-13 bg-gray01 lh flex flex-col gap-1 rounded-md p-3">
-      <div className="flex gap-1">
-        <p className="flex-1">{review}</p>
-        {myReview && (
-          <Button
-            variant={'tertiary'}
-            size={'sm'}
-            className="bg-gray01 h-5 w-7"
-            onClick={() => {
-              openModal(reviewId);
-              console.log('click');
-            }}
-          >
-            <Icon id="delete" />
-          </Button>
-        )}
+      <div>
+        <div className="flex gap-1">
+          {isMyReviewPage && cardInfo ? (
+            <Link
+              to={`/contents/${contentId}?category=${typeToFilterName(cardInfo.contenttypeid)}`}
+              className="w-full flex-1 truncate"
+            >
+              <span className="fs-14 mr-1 font-semibold">{cardInfo.title}</span>
+              <span className="text-gray06">{`${cardInfo.addr1.split(' ')[0]} ${cardInfo.addr1.split(' ')[1]}`}</span>
+            </Link>
+          ) : (
+            <p className="fs-14 flex-1 font-semibold">{userName}</p>
+          )}
+          {myReview && (
+            <Button
+              variant={'tertiary'}
+              size={'sm'}
+              className="bg-gray01 h-5 w-7"
+              onClick={() => {
+                openModal(reviewId);
+              }}
+            >
+              <Icon id="delete" className="text-primary" />
+            </Button>
+          )}
+        </div>
+
+        <p className="mt-2">{review}</p>
       </div>
-      <footer className="text-gray06 text-right">{userName}</footer>
+      <footer className="text-gray06 text-right">
+        {created ? reviewDate(created) : '0000년 00월 00일'}
+      </footer>
       {isOpenId === reviewId && (
         <AlertDialog
           header="리뷰 삭제"
