@@ -1,11 +1,15 @@
 import supabase from '@/api/supabase';
 
 // 💛 즐겨찾기 추가 및 콘텐츠 체크
-export const addFavoriteWithContentCheck = async (
-  folderId: string,
-  contentId: string,
-  contentTypeId: string,
-) => {
+export const addFavoriteWithContentCheck = async ({
+  contentId,
+  contentTypeId,
+  folderId,
+}: {
+  contentId: string;
+  contentTypeId: string;
+  folderId?: string;
+}) => {
   // 🔍 1. 먼저 contents 테이블에 해당 콘텐츠가 있는지 확인
   const { data: existingContent } = await supabase
     .from('contents')
@@ -30,11 +34,13 @@ export const addFavoriteWithContentCheck = async (
     }
   }
 
-  // ❤️ 3. favorite에 찜 정보 삽입
-  return await supabase.from('favorite').insert([
-    {
-      folder_id: folderId,
-      content_id: contentId,
-    },
-  ]);
+  if (folderId) {
+    // ❤️ 3. favorite에 찜 정보 삽입
+    return await supabase.from('favorite').insert([
+      {
+        folder_id: folderId,
+        content_id: contentId,
+      },
+    ]);
+  }
 };

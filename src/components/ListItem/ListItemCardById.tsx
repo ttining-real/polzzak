@@ -111,13 +111,13 @@ function ListItemCardById({
         }
       } else {
         try {
-          const { error } = await addFavoriteWithContentCheck(
-            folderId,
+          const result = await addFavoriteWithContentCheck({
             contentId,
             contentTypeId,
-          );
+            folderId,
+          });
 
-          if (error) throw error;
+          if (result && 'error' in result && result.error) throw result.error;
           setIsCheck(true);
           setLikeAndReview((prev) => ({
             likes: (prev.likes ?? 0) + 1,
