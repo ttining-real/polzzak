@@ -10,8 +10,8 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useToast } from '@/hooks/useToast';
+import { validateEmail } from '@/lib/validationEmail';
 import { validatePassword } from '@/lib/validationPassword';
-import { validateId } from '@/lib/validationId';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 
@@ -22,10 +22,10 @@ function Login() {
 
   const { isOpen, openModal, closeModal } = useDialogStore();
 
-  // 🕹️ 아이디
-  const [idValue, setIdValue] = useState('');
-  const [idMessage, setIdMessage] = useState('');
-  const [idValid, setIdValid] = useState<boolean | null>(null);
+  // 🕹️ 이메일
+  const [emailValue, setEmailValue] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
   // 🕹️ 비밀번호
   const [pwValue, setPwValue] = useState('');
@@ -39,66 +39,87 @@ function Login() {
     ? 'visibillity_on'
     : 'visibillity_off';
 
-  // 🕹️ 아이디 저장
-  const [isSavedId, setIsSavedId] = useState(() => {
-    const saved = localStorage.getItem('saveId');
-    return saved ? JSON.parse(saved) : true;
-  });
+  // 🕹️ 이메일 주소 저장
+  const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
   const pwInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. 페이지 진입 시 foundId 적용
+  // ☘️ 페이지 진입 시 foundEmail 적용
   useEffect(() => {
-    if (location.state?.foundId) {
-      setIdValue(location.state.foundId);
-      setIdValid(true);
+    let initialEmail = '';
+    let emailToValidate = '';
+
+    // 1. location.state?.foundEmail 우선
+    if (location.state?.foundEmail) {
+      initialEmail = location.state.foundEmail;
+      emailToValidate = location.state.foundEmail;
+    } else {
+      // 2. 저장된 이메일 (이메일 저장 체크가 기본 true이므로 항상 읽음)
+      const savedEmail = localStorage.getItem('user');
+      if (savedEmail) {
+        initialEmail = savedEmail;
+        emailToValidate = savedEmail;
+      } else {
+        // 3. 회원가입 시 저장된 이메일
+        const registerEmail = localStorage.getItem('register_email');
+        if (registerEmail) {
+          initialEmail = registerEmail;
+          emailToValidate = registerEmail;
+        }
+      }
     }
-  }, [location.state?.foundId]);
 
-  // 2. 페이지 진입 시 토스트 메시지 출력
+    setEmailValue(initialEmail);
+    if (emailToValidate) {
+      const { isValid } = validateEmail(emailToValidate);
+      setEmailValid(isValid);
+    } else {
+      setEmailValid(null);
+    }
+  }, [location.state]); // ✅ 배열 길이 고정
+
+  // ☘️ 페이지 진입 시 토스트 메시지 출력
   useEffect(() => {
-    console.log('location.state', location.state);
-
     if (location.state?.toastMessage) {
       showToast(location.state.toastMessage);
     }
 
-    if (location.state?.foundId) {
-      setIdValue(location.state.foundId);
-      setIdValid(true);
+    if (location.state?.foundEmail) {
+      setEmailValue(location.state.foundEmail);
+      setEmailValid(true);
       return;
     }
   }, [location.state, showToast]);
 
-  // 3. 로컬 스토리지 아이디 값 불러오기
+  // ☘️ 로컬 스토리지 아이디 값 불러오기
   useEffect(() => {
-    if (!location.state?.foundId) {
-      if (isSavedId) {
+    if (!location.state?.foundEmail) {
+      if (isSavedLogin) {
         const savedId = localStorage.getItem('user');
         if (savedId) {
-          setIdValue(savedId);
-          setIdValid(true);
+          setEmailValue(savedId);
+          setEmailValid(true);
         }
       } else {
-        setIdValue('');
-        setIdValid(null);
+        setEmailValue('');
+        setEmailValid(null);
       }
     }
-  }, [isSavedId, location.state?.foundId]);
+  }, [isSavedLogin, location.state?.foundEmail]);
 
-  const onChangeIDInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChangeEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setIdValue(value);
+    setEmailValue(value);
 
-    const { isValid, message } = validateId(value);
-    setIdValid(isValid);
-    setIdMessage(isValid ? '' : message);
+    const { isValid, message } = validateEmail(value);
+    setEmailValid(isValid);
+    setEmailMessage(isValid ? '' : message);
   };
 
-  const onIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (idValid) {
+      if (emailValid) {
         pwInputRef.current?.focus();
       }
     }
@@ -116,34 +137,21 @@ function Login() {
   const onPWKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (idValid && pwValid) onClickLogin();
+      if (emailValid && pwValid) onClickLogin();
     }
   };
 
   const onClickVisible = () => setIsVisible((prev) => !prev);
 
-  const onChangeSavedIdToggle = () => setIsSavedId((prev: boolean) => !prev);
+  const onChangeSavedIdToggle = () => setIsSavedLogin((prev: boolean) => !prev);
 
   // * 🛡️ Supabase Auth 로그인 처리
   const onClickLogin = async () => {
-    // 1. user_id → email 매핑
-    const { data: userRow, error: findError } = await supabase
-      .from('ex_users')
-      .select('email')
-      .eq('user_id', idValue)
-      .single();
-
-    if (findError || !userRow) {
-      setIdValid(false);
-      openModal();
-      return;
-    }
-
     const { setSession, setUser } = useAuthStore.getState();
 
-    // 2. email + password로 supabase.auth 로그인
+    // 1. supabase.auth 로그인: 이메일 + 패스워드 조합
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: userRow.email,
+      email: emailValue,
       password: pwValue,
     });
 
@@ -157,9 +165,9 @@ function Login() {
       setUser(data.user);
     }
 
-    // 3. 저장 옵션에 따라 아이디 저장
-    if (isSavedId) {
-      localStorage.setItem('user', idValue);
+    // 2. 저장 옵션에 따라 이메일 저장
+    if (isSavedLogin) {
+      localStorage.setItem('user', emailValue);
       localStorage.setItem('saveId', 'true');
     } else {
       localStorage.removeItem('user');
@@ -186,16 +194,16 @@ function Login() {
         <div>
           <Input
             type="text"
-            label="아이디"
-            value={idValue}
-            placeholder="아이디"
+            label="이메일"
+            value={emailValue}
+            placeholder="example@polzzak.com"
             hideLabel={true}
-            onChange={onChangeIDInput}
-            onKeyDown={onIdKeyDown}
-            aria-label="아이디를 입력해 주세요."
+            onChange={onChangeEmailInput}
+            onKeyDown={onEmailKeyDown}
+            aria-label="이메일 주소를 입력해 주세요."
           />
-          {idValid !== null && (
-            <Validation status={idValid} message={idMessage} />
+          {emailValid !== null && (
+            <Validation status={emailValid} message={emailMessage} />
           )}
         </div>
         <div>
@@ -220,18 +228,18 @@ function Login() {
         </div>
         <div className="flex items-center justify-between gap-2">
           <Checkbox
-            label="아이디 저장"
-            checked={isSavedId}
+            label="이메일 주소 저장"
+            checked={isSavedLogin}
             onCheckedChange={onChangeSavedIdToggle}
           />
         </div>
-        <Button onClick={onClickLogin} disabled={!idValid || !pwValid}>
+        <Button onClick={onClickLogin} disabled={!emailValid || !pwValid}>
           로그인
         </Button>
       </fieldset>
       <div className="fs-14 font-regular text-gray07 flex items-center justify-center gap-1">
-        <Link to="find-id" className="px-1">
-          아이디 찾기
+        <Link to="find-email" className="px-1">
+          이메일 찾기
         </Link>
         <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <Link to="reset-password" className="px-1">
@@ -260,7 +268,7 @@ function Login() {
               text: '확인',
               onClick: () => {
                 closeModal();
-                setIdValue('');
+                setEmailValue('');
                 setPwValue('');
               },
             },

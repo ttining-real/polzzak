@@ -11,7 +11,7 @@ import Loader from '@/components/Loader/Loader';
 import { validatePassword } from '@/lib/validationPassword';
 import { useDialogStore } from '@/store/useDialogStore';
 
-function ResetPasswordCallback() {
+export default function ResetPasswordCallback() {
   const navigate = useNavigate();
 
   // 🕹️ 비밀번호
@@ -209,5 +209,3 @@ function ResetPasswordCallback() {
     </main>
   );
 }
-
-export default ResetPasswordCallback;

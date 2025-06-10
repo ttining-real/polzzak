@@ -7,10 +7,10 @@ import AlertDialog from '@/components/Dialog/AlertDialog';
 import Input from '@/components/Input/Input';
 import SelectMenu from '@/components/Input/SelectMenu';
 import { Label } from '@/components/Label';
-import { validEmail } from '@/lib/validationEmail';
+import { validateEmail } from '@/lib/validationEmail';
 import { useDialogStore } from '@/store/useDialogStore';
 
-function FindId() {
+export default function FindEmail() {
   const navigate = useNavigate();
   const [inputEmail, setInputEmail] = useState('');
   const [inputDomain, setInputDomain] = useState('');
@@ -35,17 +35,17 @@ function FindId() {
 
   const isValidEmail =
     inputEmail && inputDomain
-      ? validEmail(`${inputEmail}@${inputDomain}`)
+      ? validateEmail(`${inputEmail}@${inputDomain}`)
       : false;
 
   const onDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (isValidEmail) handleFindId();
+      if (isValidEmail) handleFindEmail();
     }
   };
 
-  const handleFindId = async () => {
+  const handleFindEmail = async () => {
     const fullEmail = `${inputEmail}@${inputDomain}`;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -140,7 +140,7 @@ function FindId() {
           onSelectedEmail={handleSelectedEmail}
           className="flex-1"
         />
-        <Button onClick={handleFindId} disabled={!isValidEmail}>
+        <Button onClick={handleFindEmail} disabled={!isValidEmail}>
           아이디 찾기
         </Button>
       </div>
@@ -167,5 +167,3 @@ function FindId() {
     </main>
   );
 }
-
-export default FindId;
