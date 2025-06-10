@@ -31,7 +31,6 @@ export default function Step4() {
   const { isOpen, openModal, closeModal } = useDialogStore();
 
   const navigate = useNavigate();
-
   const duplicateCheckRef = useRef<HTMLButtonElement>(null);
 
   const userData = useGetTable<ItemTypes>('users');
@@ -45,6 +44,7 @@ export default function Step4() {
     setValidStatus({ status: isValid, message });
 
     setIsDuplicateChecked(false);
+    setIsAvailable(false);
   }
 
   const onNicknameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -98,6 +98,7 @@ export default function Step4() {
     const { isValid, message } = validateNickname(randomNickname);
     setValidStatus({ status: isValid, message });
     setIsDuplicateChecked(false);
+    setIsAvailable(false);
   };
 
   // ✅ 완료
@@ -106,14 +107,12 @@ export default function Step4() {
 
     localStorage.setItem('register_nickname', nicknameValue);
 
-    // const user_id = localStorage.getItem('register_id');
     const email = localStorage.getItem('register_email');
     const password = localStorage.getItem('register_password');
-    const phone_number = localStorage.getItem('register_phone');
     const nickname = localStorage.getItem('register_nickname');
 
     // 값이 하나라도 비어 있으면 중단
-    if (!password || !email || !phone_number || !nickname) {
+    if (!password || !email || !nickname) {
       console.error('⚠️ 등록 정보 누락');
       return;
     }
@@ -126,7 +125,6 @@ export default function Step4() {
         emailRedirectTo: 'http://localhost:5173/register/sign-up-callback',
         data: {
           display_name: nickname,
-          phone: phone_number,
         },
       },
     });
@@ -161,7 +159,6 @@ export default function Step4() {
     const { error: insertError } = await supabase.from('users').insert({
       id: userId,
       email,
-      phone_number,
       nickname,
       created_at: new Date().toISOString(),
     });
