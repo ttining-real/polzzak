@@ -76,7 +76,7 @@ function NickName() {
   }, [setNickname]);
 
   return (
-    <div className="relative flex flex-col">
+    <section className="relative flex flex-col" role="main">
       <h2 className="sr-only">닉네임 설정</h2>
 
       <div className="flex items-end gap-1">
@@ -124,7 +124,7 @@ function NickName() {
       >
         저장
       </Button>
-    </div>
+    </section>
   );
 }
 
