@@ -1,9 +1,10 @@
-export const validEmail = (email: string): boolean => {
-  // 이메일 전체 정규식
-  const emailRegex = /^[a-zA-Z0-9]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+export function validateEmail(email: string) {
+  const trimmed = email.trim();
+  const isValid =
+    trimmed.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
 
-  // 공백이 있는 경우는 무조건 false
-  if (/\s/.test(email)) return false;
-
-  return emailRegex.test(email);
-};
+  return {
+    isValid,
+    message: isValid ? '' : '올바른 이메일 형식을 입력해 주세요.',
+  };
+}
