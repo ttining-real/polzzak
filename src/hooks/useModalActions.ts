@@ -50,18 +50,24 @@ export function useModalActions() {
       closeModal();
     },
     변경: () => console.log('변경 버튼에 맞는 함수'),
-    로그아웃: () => {
-      navigate('/', {
-        state: { toastMessage: '로그아웃이 완료되었습니다.' },
-      });
-      // > 아이디 저장일 경우, 아닌 경우로 나누어서 수정
-      localStorage.clear();
-      sessionStorage.clear();
-      closeModal();
+    로그아웃: async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) throw error;
+        localStorage.removeItem('user');
+
+        navigate('/', {
+          state: { toastMessage: '로그아웃이 완료되었습니다.' },
+        });
+
+        closeModal();
+      } catch (error) {
+        console.error('로그아웃 실패 :', error);
+      }
     },
     탈퇴: async () => {
-      const LOGINED_USER =
-        localStorage.getItem('user') || sessionStorage.getItem('user');
+      const LOGINED_USER = localStorage.getItem('user');
       const { error } = await supabase
         .from('ex_users')
         .delete()
