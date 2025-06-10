@@ -131,12 +131,23 @@ export default function Step4() {
       },
     });
 
-    if (authError || !authData.user) {
-      console.error('Supabase Auth 등록 실패:', authError?.message);
+    if (authError) {
+      console.error('회원가입 에러 : ', authError.message);
+      alert(`회원가입 중 에러 발생 : ${authError.message}`);
       return;
     }
 
-    if (!authData.user?.id) {
+    // ✨ Supabase는 email confirmation이 활성화된 경우 session이 null이고, user도 null일 수 있음
+    // 이 경우는 "이메일 인증을 기다리는 중" 상태
+    if (!authData.user) {
+      console.log('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      alert('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      // 여기서 DB에 데이터를 저장하면 안 됨! (인증 완료 후에 저장해야 함)
+      return;
+    }
+
+    // 실시간 로그인 성공 (거의 발생하지 않지만 예외 처리)
+    if (!authData.user.id) {
       console.error('User ID가 없음');
       return;
     }
@@ -146,7 +157,7 @@ export default function Step4() {
 
     const userId = authData.user.id;
 
-    // ex_users 테이블에 추가 정보 삽입
+    // users 테이블에 추가 정보 삽입
     const { error: insertError } = await supabase.from('users').insert({
       id: userId,
       email,
