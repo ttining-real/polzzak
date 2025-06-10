@@ -41,7 +41,7 @@ function FavoriteDialog({
 
     const getContent = async () => {
       const { data, error } = await supabase
-        .from('ex_contents')
+        .from('contents')
         .select('contentid')
         .eq('contentid', id);
 
@@ -61,7 +61,7 @@ function FavoriteDialog({
     try {
       if (selectFolder && isOpenId === '즐겨찾기') {
         if (!isSaveContent) {
-          const { error } = await supabase.from('ex_contents').insert([
+          const { error } = await supabase.from('contents').insert([
             {
               contentid: id,
               contenttypeid: info ? info.contenttypeid : listContentTypeid,

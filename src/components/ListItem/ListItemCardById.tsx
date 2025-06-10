@@ -62,7 +62,7 @@ function ListItemCardById({
 
     const getLikesAndReviews = async () => {
       const { data, error } = await supabase
-        .from('ex_contents')
+        .from('contents')
         .select('likes, reviews')
         .eq('contentid', contentId)
         .maybeSingle();

@@ -6,17 +6,17 @@ export const addFavoriteWithContentCheck = async (
   contentId: string,
   contentTypeId: string,
 ) => {
-  // 🔍 1. 먼저 ex_contents 테이블에 해당 콘텐츠가 있는지 확인
+  // 🔍 1. 먼저 contents 테이블에 해당 콘텐츠가 있는지 확인
   const { data: existingContent } = await supabase
-    .from('ex_contents')
+    .from('contents')
     .select('contentid')
     .eq('contentid', contentId)
     .single();
 
-  // ➕ 2. 없으면 먼저 ex_contents에 삽입
+  // ➕ 2. 없으면 먼저 contents에 삽입
   if (!existingContent) {
     const { error: insertContentError } = await supabase
-      .from('ex_contents')
+      .from('contents')
       .insert([
         {
           contentid: contentId,
@@ -25,7 +25,7 @@ export const addFavoriteWithContentCheck = async (
       ]);
 
     if (insertContentError) {
-      console.error('❌ ex_contents 삽입 실패:', insertContentError);
+      console.error('❌ contents 삽입 실패:', insertContentError);
       return { error: insertContentError };
     }
   }
