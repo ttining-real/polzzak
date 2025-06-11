@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
 
-import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
-import { Review, reviewData } from '@/components/Contents/Review';
-import Input from '@/components/Input/Input';
-import { addFavoriteWithContentCheck } from '@/lib/favorite';
+import ReviewList from '@/components/Contents/ReviewList';
 
 interface DetailsTypes {
   info: {
@@ -58,16 +54,20 @@ interface DetailsTypes {
     telname?: string;
     tel?: string;
   };
-  reviewRef?: React.RefObject<HTMLDivElement | null>;
-  userId?: string;
+  reviewRef: React.RefObject<HTMLDivElement | null>;
+  userId: string;
+  searchParams: URLSearchParams;
 }
 
-function Details({ info, data, reviewRef, userId }: DetailsTypes) {
-  const { id } = useParams();
+function Details({
+  info,
+  data,
+  reviewRef,
+  userId,
+  searchParams,
+}: DetailsTypes) {
   const contentTypeId = data?.contenttypeid ?? '';
-  const [reviewList, setReviewList] = useState<reviewData[] | []>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState<string>('');
   const toggleMoreButton = () => {
     setIsOpen(!isOpen);
   };
@@ -307,94 +307,6 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
 
   const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
 
-  useEffect(() => {
-    const getReviewList = async () => {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('content_id', id);
-
-      if (error) {
-        console.log(error);
-        return;
-      }
-
-      const list = data?.map((li) => ({
-        id: li.id,
-        userId: li.user_id,
-        userName: li.user_name,
-        review: li.review,
-        contentId: li.content_id,
-        created: li.created_at,
-      }));
-      setReviewList(list);
-    };
-    getReviewList();
-  }, [id]);
-  const handleAddReview = async () => {
-    if (!userId || !id || inputValue.trim() === '') return;
-
-    const getUserName = async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('nickname')
-        .eq('id', userId)
-        .maybeSingle();
-      if (error) {
-        console.log(error);
-        return;
-      }
-      return data?.nickname;
-    };
-
-    const userName = await getUserName();
-
-    const insertReview = async () => {
-      const hasContent = await addFavoriteWithContentCheck({
-        contentId: id,
-        contentTypeId: contentTypeId,
-      });
-
-      if (hasContent && 'error' in hasContent && hasContent.error) {
-        console.error(hasContent.error);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert([
-          {
-            content_id: id,
-            user_id: userId,
-            user_name: userName,
-            review: inputValue.trim(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (error || !data) {
-        console.error(error);
-        return;
-      }
-
-      setReviewList((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          userId: userId,
-          userName: userName,
-          review: inputValue.trim(),
-          contentId: id,
-          created: data.created_at,
-        },
-      ]);
-    };
-    insertReview();
-
-    setInputValue('');
-  };
-
   return (
     <section className="flex flex-col gap-6">
       {/* 홈 */}
@@ -443,57 +355,13 @@ function Details({ info, data, reviewRef, userId }: DetailsTypes) {
       ))}
 
       {/* 리뷰 */}
-      <div className="flex flex-col gap-4">
-        <h3
-          ref={reviewRef}
-          className="fs-14 border-b-gray03 flex w-full gap-2 border-b border-solid p-2 font-bold text-black"
-        >
-          리뷰
-          <span className="fs-13 text-primary font-semibold">
-            {reviewList.length}
-          </span>
-        </h3>
-        <div className="relative flex items-center justify-center gap-2">
-          <Input
-            label="리뷰 작성"
-            hideLabel={true}
-            placeholder={
-              userId ? '리뷰를 작성해 주세요!' : '로그인 후 이용해 주세요!'
-            }
-            value={inputValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setInputValue(value);
-            }}
-            disabled={!userId}
-            maxLength={200}
-          />
-          <Button
-            disabled={!userId || inputValue.trim() === ''}
-            onClick={handleAddReview}
-          >
-            등록
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2">
-          {reviewList.length ? (
-            reviewList.map((data) => (
-              <Review
-                key={data.id}
-                reviewId={data.id}
-                userId={data.userId}
-                userName={data.userName}
-                review={data.review}
-                currentUser={userId}
-                setReviewList={setReviewList}
-                created={data.created}
-              />
-            ))
-          ) : (
-            <Review />
-          )}
-        </div>
-      </div>
+      {reviewRef && userId && (
+        <ReviewList
+          reviewRef={reviewRef}
+          userId={userId}
+          searchParams={searchParams}
+        />
+      )}
     </section>
   );
 }
