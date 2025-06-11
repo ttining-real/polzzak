@@ -1,6 +1,6 @@
-export function validateEmail(emailId: string, emailDomain: string) {
-  const trimmedId = emailId.trim();
-  const trimmedDomain = emailDomain.trim();
+export function validateEmail(emailId: string = '', emailDomain: string = '') {
+  const trimmedId = emailId?.trim();
+  const trimmedDomain = emailDomain?.trim();
 
   if (!trimmedId && !trimmedDomain) {
     return {
