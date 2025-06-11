@@ -71,7 +71,8 @@ function Login() {
 
     setEmailValue(initialEmail);
     if (emailToValidate) {
-      const { isValid } = validateEmail(emailToValidate);
+      const [emailId, emailDomain] = emailToValidate.split('@');
+      const { isValid } = validateEmail(emailId, emailDomain);
       setEmailValid(isValid);
     } else {
       setEmailValid(null);
@@ -98,11 +99,21 @@ function Login() {
         const savedId = localStorage.getItem('user');
         if (savedId) {
           setEmailValue(savedId);
-          setEmailValid(true);
+          const [emailId, emailDomain = ''] = savedId.split('@');
+          const { isValid } = validateEmail(emailId, emailDomain);
+          setEmailValid(isValid);
         }
       } else {
-        setEmailValue('');
-        setEmailValid(null);
+        const sessionId = sessionStorage.getItem('user');
+        if (sessionId) {
+          setEmailValue(sessionId);
+          const [emailId, emailDomain = ''] = sessionId.split('@');
+          const { isValid } = validateEmail(emailId, emailDomain);
+          setEmailValid(isValid);
+        } else {
+          setEmailValue('');
+          setEmailValid(false);
+        }
       }
     }
   }, [isSavedLogin, location.state?.foundEmail]);
@@ -111,7 +122,9 @@ function Login() {
     const value = e.target.value;
     setEmailValue(value);
 
-    const { isValid, message } = validateEmail(value);
+    const [emailId, emailDomain = ''] = value.split('@');
+
+    const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(isValid ? '' : message);
   };
@@ -165,13 +178,18 @@ function Login() {
       setUser(data.user);
     }
 
+    console.log('저장 여부:', isSavedLogin, '이메일:', emailValue);
+    localStorage.setItem('user', emailValue);
+
     // 2. 저장 옵션에 따라 이메일 저장
     if (isSavedLogin) {
       localStorage.setItem('user', emailValue);
       localStorage.setItem('saveId', 'true');
+      sessionStorage.removeItem('user');
     } else {
       localStorage.removeItem('user');
       localStorage.setItem('saveId', 'false');
+      sessionStorage.setItem('user', emailValue);
     }
 
     navigate('/', { replace: true });
