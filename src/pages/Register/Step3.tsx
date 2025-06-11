@@ -19,7 +19,7 @@ interface ItemTypes {
 // 회원가입 페이지를 아예 못들어오게 할 것인지?
 // 회원가입 step1 페이지로만 들어가게 할 것인지?
 
-export default function Step4() {
+export default function Step3() {
   const [nicknameValue, setNicknameValue] = useState('');
   const [validStatus, setValidStatus] = useState({
     status: false,
@@ -28,7 +28,7 @@ export default function Step4() {
   const [isDuplicateChecked, setIsDuplicateChecked] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
 
-  const { isOpen, openModal, closeModal } = useDialogStore();
+  const { isOpen, isOpenId, openModal, closeModal } = useDialogStore();
 
   const navigate = useNavigate();
   const duplicateCheckRef = useRef<HTMLButtonElement>(null);
@@ -107,13 +107,23 @@ export default function Step4() {
 
     localStorage.setItem('register_nickname', nicknameValue);
 
-    const email = localStorage.getItem('register_email');
-    const password = localStorage.getItem('register_password');
-    const nickname = localStorage.getItem('register_nickname');
+    const email = localStorage.getItem('register_email')?.trim() ?? '';
+    const password = localStorage.getItem('register_password')?.trim() ?? '';
+    const nickname = localStorage.getItem('register_nickname')?.trim() ?? '';
 
     // 값이 하나라도 비어 있으면 중단
-    if (!password || !email || !nickname) {
-      console.error('⚠️ 등록 정보 누락');
+    if (!email || !password || !nickname) {
+      console.error('⚠️ 등록 정보 누락:', { email, password, nickname });
+      // alert('회원가입 정보가 누락되었습니다. 다시 시도해 주세요.');
+      openModal('missing-info');
+      return;
+    }
+
+    // 이메일 형식 간단 점검 (정규식 or validateNickname과 별개로)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      // alert('이메일 형식이 올바르지 않습니다.');
+      openModal('invalid-email');
       return;
     }
 
@@ -131,7 +141,8 @@ export default function Step4() {
 
     if (authError) {
       console.error('회원가입 에러 : ', authError.message);
-      alert(`회원가입 중 에러 발생 : ${authError.message}`);
+      // alert(`회원가입 중 에러 발생 : ${authError.message}`);
+      openModal('sign-up-error');
       return;
     }
 
@@ -139,7 +150,8 @@ export default function Step4() {
     // 이 경우는 "이메일 인증을 기다리는 중" 상태
     if (!authData.user) {
       console.log('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
-      alert('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      // alert('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
+      openModal('email-sent');
       // 여기서 DB에 데이터를 저장하면 안 됨! (인증 완료 후에 저장해야 함)
       return;
     }
@@ -147,6 +159,7 @@ export default function Step4() {
     // 실시간 로그인 성공 (거의 발생하지 않지만 예외 처리)
     if (!authData.user.id) {
       console.error('User ID가 없음');
+      openModal('no-user-id');
       return;
     }
 
@@ -165,12 +178,80 @@ export default function Step4() {
 
     if (insertError) {
       console.error('users 삽입 실패:', insertError.message);
+      openModal('insert-error');
       return;
     }
 
     // 3. 성공 시 모달 열기
-    openModal();
+    openModal('email-sent');
   };
+
+  const getDialogContent = () => {
+    switch (isOpenId) {
+      case 'missing-info':
+        return {
+          header: '회원가입 정보 누락',
+          description: [
+            '회원가입 정보가 누락되었습니다.',
+            '다시 시도해 주세요.',
+          ],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'invalid-email':
+        return {
+          header: '이메일 형식 오류',
+          description: ['이메일 형식이 올바르지 않습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'sign-up-error':
+        return {
+          header: '회원가입 실패',
+          description: [
+            '회원가입 중 에러가 발생했습니다.',
+            '다시 시도해 주세요.',
+          ],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'no-user-id':
+        return {
+          header: '사용자 정보 오류',
+          description: ['회원가입 중 사용자 정보를 불러오지 못했습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'insert-error':
+        return {
+          header: '데이터 저장 실패',
+          description: [
+            '사용자 정보를 저장하는데 실패했습니다.',
+            '다시 시도해 주세요.',
+          ],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'email-sent':
+        return {
+          header: '이메일 인증을 완료해 주세요.',
+          description: [
+            `${nicknameValue}님,`,
+            '인증 링크를 이메일로 전송했습니다.',
+            '이메일 인증을 완료해 주세요!',
+          ],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                setNicknameValue('');
+                navigate('/login');
+              },
+            },
+          ],
+        };
+      default:
+        return null;
+    }
+  };
+
+  const dialogContent = getDialogContent();
 
   return (
     <>
@@ -215,7 +296,7 @@ export default function Step4() {
       >
         회원가입
       </Button>
-      {isOpen && (
+      {isOpen && dialogContent && (
         <AlertDialog
           header="이메일 인증을 완료해 주세요."
           description={[
