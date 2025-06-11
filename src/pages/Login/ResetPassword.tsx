@@ -1,52 +1,78 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import AlertDialog from '@/components/Dialog/AlertDialog';
 import Input from '@/components/Input/Input';
 import SelectMenu from '@/components/Input/SelectMenu';
+import Validation from '@/components/Input/Validation';
 import { Label } from '@/components/Label';
 import { validateEmail } from '@/lib/validationEmail';
 import { useDialogStore } from '@/store/useDialogStore';
 
 function ResetPassword() {
-  const [inputEmail, setInputEmail] = useState('');
-  const [inputDomain, setInputDomain] = useState('');
+  const [emailIdValue, setEmailIdValue] = useState('');
+  const [emailDomainValue, setEmailDomainValue] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
+
   const { isOpen, openModal, closeModal } = useDialogStore();
   const [dialogContent, setDialogContent] = useState<{
     header: string;
     description: string[];
   } | null>(null);
 
-  const isValidEmail =
-    inputEmail && inputDomain
-      ? validateEmail(`${inputEmail}@${inputDomain}`)
-      : false;
+  // ref
+  const domainRef = useRef<HTMLInputElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleInputEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputEmail(e.target.value.trim());
+  const fullEmail = `${emailIdValue}@${emailDomainValue}`;
+
+  useEffect(() => {
+    if (!emailIdValue && !emailDomainValue) {
+      setEmailValid(null);
+      setEmailMessage('');
+      return;
+    }
+
+    const { isValid, message } = validateEmail(emailIdValue, emailDomainValue);
+
+    setEmailValid(isValid);
+    setEmailMessage(message);
+  }, [emailIdValue, emailDomainValue]);
+
+  // 이메일 아이디
+  const onChangeEmailIdInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmailIdValue(e.target.value.trim());
   };
 
-  const handleInputDomain = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputDomain(e.target.value.trim());
-  };
-
-  const onDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onEmailIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (isValidEmail) handleSendResetEmail();
+      domainRef.current?.focus();
+    }
+  };
+
+  // 이메일 도메인
+  const onChangeEmailDomainInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmailDomainValue(e.target.value.trim());
+  };
+
+  const onEmailDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendButtonRef.current?.focus();
+      if (emailValid) handleSendResetEmail();
     }
   };
 
   const handleSelectedEmail = (selected: string) => {
-    setInputDomain(selected === '직접 입력' ? '' : selected);
+    setEmailDomainValue(selected === '직접 입력' ? '' : selected);
   };
 
   const handleSendResetEmail = async () => {
-    const fullEmail = `${inputEmail}@${inputDomain}`;
-
     const { data: userRow, error: findError } = await supabase
-      .from('ex_users')
+      .from('users')
       .select('email')
       .eq('email', fullEmail)
       .single();
@@ -103,41 +129,51 @@ function ResetPassword() {
         비밀번호 재설정 링크를 보내드릴게요!
       </p>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <Label className="p-1">이메일</Label>
-          <div className="flex items-center justify-center gap-1">
-            <div className="flex-1">
-              <Input
-                label="이메일 아이디"
-                hideLabel={true}
-                type="text"
-                placeholder="email"
-                value={inputEmail}
-                onChange={handleInputEmail}
-              />
-            </div>
-            <span className="fs-14 text-gray06">@</span>
-            <div className="flex-1">
-              <Input
-                label="이메일 도메인"
-                hideLabel={true}
-                type="text"
-                placeholder="직접 입력"
-                value={inputDomain}
-                onKeyDown={onDomainKeyDown}
-                onChange={handleInputDomain}
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label>이메일</Label>
+          <div className="flex w-full items-center gap-2">
+            <Input
+              label="이메일 주소"
+              value={emailIdValue}
+              hideLabel={true}
+              placeholder="example"
+              onChange={onChangeEmailIdInput}
+              onKeyDown={onEmailIdKeyDown}
+              aria-label="이메일 주소를 입력해 주세요."
+            />
+            <span>@</span>
+            <Input
+              ref={domainRef}
+              label="이메일 도메인"
+              value={emailDomainValue}
+              hideLabel={true}
+              placeholder="polzzak.com"
+              onChange={onChangeEmailDomainInput}
+              onKeyDown={onEmailDomainKeyDown}
+              aria-label="이메일 주소를 입력해 주세요."
+            />
           </div>
         </div>
+        {emailValid !== null && (
+          <Validation
+            status={emailValid ? true : false}
+            message={emailMessage}
+          />
+        )}
+
         <SelectMenu
           data={'email'}
           onSelectedEmail={handleSelectedEmail}
           className="flex-1"
         />
-        <Button onClick={handleSendResetEmail} disabled={!isValidEmail}>
+        <Button
+          ref={sendButtonRef}
+          onClick={handleSendResetEmail}
+          disabled={!emailValid} // true일 때만 활성화
+        >
           이메일 발송
         </Button>
+
         <p className="fs-14 text-gray07 mt-4 text-center">
           이메일이 기억나지 않으시면, 고객센터(
           <span className="text-primary px-[1px] underline">
