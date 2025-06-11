@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
@@ -9,14 +9,18 @@ import Validation from '@/components/Input/Validation';
 import { Label } from '@/components/Label';
 import { validateEmail } from '@/lib/validationEmail';
 
-function Step1() {
+export default function Step1() {
   const [emailIdValue, setEmailIdValue] = useState('');
   const [emailDomainValue, setEmailDomainValue] = useState('');
+  const [selectedEmailDomain, setSelectedEmailDomain] = useState('직접 입력'); // SelectMenu 선택 상태
+
   const [emailMessage, setEmailMessage] = useState('');
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
-  const [isChecked, setIsChecked] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
+
+  const [isDuplicateConfirmed, setIsDuplicateConfirmed] = useState(false); // 중복 확인 성공 여부
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false); // 중복 확인 진행 중
+  const [hasPerformedDuplicateCheck, setHasPerformedDuplicateCheck] =
+    useState(false); // 중복 확인 시도 여부
 
   const [searchParams] = useSearchParams();
   const step = searchParams.get('step');
@@ -26,25 +30,26 @@ function Step1() {
   const domainRef = useRef<HTMLInputElement>(null);
   const duplicateCheckRef = useRef<HTMLButtonElement>(null);
 
-  // 이메일 주소 조합
+  // 이메일 전체 주소
   const fullEmail = `${emailIdValue}@${emailDomainValue}`;
 
+  // 이메일 유효성 검사
   const validateFullEmail = (emailId: string, emailDomain: string) => {
     const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(message);
-    setIsChecked(false); // 중복확인 무효화
+    setIsDuplicateConfirmed(false); // 도메인/아이디 바뀌면 중복 확인 무효화
   };
 
-  // 이메일 아이디
+  // 이메일 아이디 input 변경 핸들러
   const onChangeEmailIdInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmailIdValue(value);
-    validateFullEmail(emailIdValue, value);
+    validateFullEmail(value, emailDomainValue);
 
-    if (hasChecked) {
-      // 중복확인 초기화
-      setIsChecked(false);
+    if (hasPerformedDuplicateCheck) {
+      setIsDuplicateConfirmed(false);
+      setEmailValid(false);
       setEmailMessage('중복 확인을 다시 해 주세요.');
     }
   };
@@ -56,15 +61,19 @@ function Step1() {
     }
   };
 
-  // 이메일 도메인
+  // 이메일 도메인 input 변경 핸들러
   const onChangeEmailDomainInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmailDomainValue(value);
-    validateFullEmail(emailDomainValue, value);
+    validateFullEmail(emailIdValue, value);
 
-    if (hasChecked) {
-      // 중복확인 초기화
-      setIsChecked(false);
+    // 도메인 직접 입력 시 SelectMenu 상태도 변경
+    if (selectedEmailDomain !== '직접 입력') {
+      setSelectedEmailDomain('직접 입력');
+    }
+
+    if (hasPerformedDuplicateCheck) {
+      setIsDuplicateConfirmed(false);
       setEmailMessage('중복 확인을 다시 해 주세요.');
     }
   };
@@ -79,57 +88,59 @@ function Step1() {
     }
   };
 
-  useEffect(() => {
-    validateFullEmail(emailIdValue, emailDomainValue);
-    // 도메인/아이디가 바뀌면 항상 검증 & 중복 확인 해제
-  }, [emailIdValue, emailDomainValue]);
-
+  // SelectMenu 선택 변경 핸들러
   function handleSelectedEmail(selected: string) {
+    setSelectedEmailDomain(selected);
+
     if (selected === '직접 입력') {
       setEmailDomainValue('');
+      validateFullEmail(emailIdValue, '');
     } else {
       setEmailDomainValue(selected);
+      validateFullEmail(emailIdValue, selected);
     }
+    setIsDuplicateConfirmed(false);
+    setEmailMessage('중복 확인을 다시 해 주세요.');
   }
 
-  // 중복 확인
+  // 중복 확인 함수
   const handleIdDuplicateCheck = async () => {
     if (!emailValid) {
       setEmailMessage('이메일 형식을 먼저 확인해 주세요.');
       return;
     }
 
-    setChecking(true);
+    setIsCheckingDuplicate(true);
 
     const { data, error } = await supabase
       .from('users')
       .select('email')
       .eq('email', fullEmail)
-      .maybeSingle(); // ← 존재하지 않으면 null 반환
+      .maybeSingle();
 
-    setChecking(false);
-
-    setHasChecked(true);
+    setIsCheckingDuplicate(false);
+    setHasPerformedDuplicateCheck(true);
 
     if (error) {
       console.error(error);
       setEmailValid(false);
       setEmailMessage('중복 확인 중 오류가 발생했습니다.');
-      setIsChecked(false);
+      setIsDuplicateConfirmed(false);
       return;
     }
 
     if (data) {
       setEmailValid(false);
       setEmailMessage('이미 사용 중인 이메일입니다.');
-      setIsChecked(false);
+      setIsDuplicateConfirmed(false);
     } else {
       setEmailValid(true);
       setEmailMessage('사용 가능한 이메일입니다.');
-      setIsChecked(true);
+      setIsDuplicateConfirmed(true);
     }
   };
 
+  // 다음 버튼 클릭
   const handleNextButton = async () => {
     // 서버에서 다시 한 번 중복 확인
     const { data, error: checkError } = await supabase
@@ -152,7 +163,7 @@ function Step1() {
     }
 
     // 중복이 아니면 저장
-    localStorage.setItem('register_email', emailIdValue);
+    localStorage.setItem('register_email', fullEmail);
 
     const currentStep = Number(step ?? '1');
     const nextStep = currentStep + 1;
@@ -188,25 +199,30 @@ function Step1() {
             />
             <Button
               ref={duplicateCheckRef}
-              variant={'secondary'}
-              onClick={() => {
-                handleIdDuplicateCheck();
-              }}
+              variant="secondary"
+              onClick={handleIdDuplicateCheck}
+              disabled={isCheckingDuplicate}
             >
-              {checking ? '확인 중...' : '중복확인'}
+              {isCheckingDuplicate ? '확인 중...' : '중복확인'}
             </Button>
           </div>
         </div>
         {emailValid !== null && (
           <Validation status={emailValid} message={emailMessage} />
         )}
-        <SelectMenu data={'email'} onSelectedEmail={handleSelectedEmail} />
+        <SelectMenu
+          data="email"
+          selectedEmail={selectedEmailDomain}
+          setSelectedEmail={setSelectedEmailDomain}
+          onSelectedEmail={handleSelectedEmail}
+        />
       </div>
-      <Button disabled={!emailValid || !isChecked} onClick={handleNextButton}>
+      <Button
+        disabled={!emailValid || !isDuplicateConfirmed}
+        onClick={handleNextButton}
+      >
         다음
       </Button>
     </>
   );
 }
-
-export default Step1;

@@ -30,6 +30,8 @@ interface SelectMenuProps {
   className?: string;
   onSelectedEmail?: (email: string) => void;
   setSelectPolzzak?: (id: string) => void;
+  selectedEmail?: string;
+  setSelectedEmail?: (email: string) => void;
 }
 
 function SelectMenu({
@@ -37,6 +39,8 @@ function SelectMenu({
   className,
   onSelectedEmail,
   setSelectPolzzak,
+  selectedEmail,
+  setSelectedEmail,
 }: SelectMenuProps) {
   const emailArr = [
     'gmail.com',
@@ -47,7 +51,6 @@ function SelectMenu({
     '직접 입력',
   ];
   const [daySelected, setDaySelected] = useState('');
-  const [selectedEmail, setSelectedEmail] = useState('직접 입력');
 
   useEffect(() => {
     if (!data || data === 'email') return;
@@ -63,9 +66,9 @@ function SelectMenu({
   if (data === 'email') {
     return (
       <Select
-        value={selectedEmail}
+        value={selectedEmail ?? '직접 입력'}
         onValueChange={(value) => {
-          setSelectedEmail(value);
+          setSelectedEmail?.(value);
           onSelectedEmail?.(value);
         }}
       >
