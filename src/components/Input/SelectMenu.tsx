@@ -38,8 +38,16 @@ function SelectMenu({
   onSelectedEmail,
   setSelectPolzzak,
 }: SelectMenuProps) {
-  const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
+  const emailArr = [
+    'gmail.com',
+    'naver.com',
+    'daum.net',
+    'hanmail.net',
+    'kakao.com',
+    '직접 입력',
+  ];
   const [daySelected, setDaySelected] = useState('');
+  const [selectedEmail, setSelectedEmail] = useState('직접 입력');
 
   useEffect(() => {
     if (!data || data === 'email') return;
@@ -54,7 +62,13 @@ function SelectMenu({
 
   if (data === 'email') {
     return (
-      <Select onValueChange={(value) => onSelectedEmail?.(value)}>
+      <Select
+        value={selectedEmail}
+        onValueChange={(value) => {
+          setSelectedEmail(value);
+          onSelectedEmail?.(value);
+        }}
+      >
         <SelectTrigger className={className}>
           <SelectValue placeholder="이메일 선택" />
         </SelectTrigger>
