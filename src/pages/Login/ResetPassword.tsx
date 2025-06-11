@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
@@ -28,22 +28,17 @@ function ResetPassword() {
 
   const fullEmail = `${emailIdValue}@${emailDomainValue}`;
 
-  useEffect(() => {
-    if (!emailIdValue && !emailDomainValue) {
-      setEmailValid(null);
-      setEmailMessage('');
-      return;
-    }
-
-    const { isValid, message } = validateEmail(emailIdValue, emailDomainValue);
-
+  const validateFullEmail = (emailId: string, emailDomain: string) => {
+    const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(message);
-  }, [emailIdValue, emailDomainValue]);
+  };
 
   // 이메일 아이디
   const onChangeEmailIdInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmailIdValue(e.target.value.trim());
+    const value = e.target.value;
+    setEmailIdValue(value);
+    validateFullEmail(value, emailDomainValue);
   };
 
   const onEmailIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -55,7 +50,10 @@ function ResetPassword() {
 
   // 이메일 도메인
   const onChangeEmailDomainInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmailDomainValue(e.target.value.trim());
+    // setEmailDomainValue(e.target.value.trim());
+    const value = e.target.value;
+    setEmailDomainValue(value);
+    validateFullEmail(emailIdValue, value);
   };
 
   const onEmailDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -116,6 +114,9 @@ function ResetPassword() {
     openModal();
   };
 
+  const isValidationVisible =
+    emailIdValue.trim() !== '' || emailDomainValue.trim() !== '';
+
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
       <h2 className="font-semibold text-black">
@@ -153,14 +154,13 @@ function ResetPassword() {
               aria-label="이메일 주소를 입력해 주세요."
             />
           </div>
+          {isValidationVisible && (
+            <Validation
+              status={emailValid ? true : false}
+              message={emailMessage}
+            />
+          )}
         </div>
-        {emailValid !== null && (
-          <Validation
-            status={emailValid ? true : false}
-            message={emailMessage}
-          />
-        )}
-
         <SelectMenu
           data={'email'}
           onSelectedEmail={handleSelectedEmail}
