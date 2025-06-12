@@ -38,7 +38,6 @@ export default function Step1() {
     const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(message);
-    setIsDuplicateConfirmed(false); // 도메인/아이디 바뀌면 중복 확인 무효화
   };
 
   // 이메일 아이디 input 변경 핸들러
@@ -49,7 +48,6 @@ export default function Step1() {
 
     if (hasPerformedDuplicateCheck) {
       setIsDuplicateConfirmed(false);
-      setEmailValid(false);
       setEmailMessage('중복 확인을 다시 해 주세요.');
     }
   };
@@ -99,8 +97,11 @@ export default function Step1() {
       setEmailDomainValue(selected);
       validateFullEmail(emailIdValue, selected);
     }
-    setIsDuplicateConfirmed(false);
-    setEmailMessage('중복 확인을 다시 해 주세요.');
+
+    if (hasPerformedDuplicateCheck) {
+      setIsDuplicateConfirmed(false);
+      setEmailMessage('중복 확인을 다시 해 주세요');
+    }
   }
 
   // 중복 확인 함수
@@ -123,18 +124,15 @@ export default function Step1() {
 
     if (error) {
       console.error(error);
-      setEmailValid(false);
       setEmailMessage('중복 확인 중 오류가 발생했습니다.');
       setIsDuplicateConfirmed(false);
       return;
     }
 
     if (data) {
-      setEmailValid(false);
       setEmailMessage('이미 사용 중인 이메일입니다.');
       setIsDuplicateConfirmed(false);
     } else {
-      setEmailValid(true);
       setEmailMessage('사용 가능한 이메일입니다.');
       setIsDuplicateConfirmed(true);
     }
@@ -151,14 +149,13 @@ export default function Step1() {
 
     if (checkError) {
       console.error('중복 확인 중 오류 발생', checkError);
-      setEmailValid(false);
       setEmailMessage('중복 확인 중 오류가 발생했습니다.');
       return;
     }
 
     if (data) {
-      setEmailValid(false);
       setEmailMessage('이미 사용 중인 이메일입니다.');
+      setIsDuplicateConfirmed(false);
       return;
     }
 
@@ -208,7 +205,10 @@ export default function Step1() {
           </div>
         </div>
         {emailValid !== null && (
-          <Validation status={emailValid} message={emailMessage} />
+          <Validation
+            status={emailValid ? isDuplicateConfirmed : false}
+            message={emailMessage}
+          />
         )}
         <SelectMenu
           data="email"
