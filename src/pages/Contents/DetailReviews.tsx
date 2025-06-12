@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { reviewData } from '@/components/Contents/Review';
 import ReviewList from '@/components/Contents/ReviewList';
 import Loader from '@/components/Loader/Loader';
-import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import useGetReviews from '@/hooks/useGetReviews';
+import { filterNameToType } from '@/lib/filterMap';
 import { useAuthStore } from '@/store/useAuthStore';
 
-function MyReviews() {
+function DetailReviews() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const contentTypeName = searchParams.get('category');
+  const contentTypeId = filterNameToType(contentTypeName ?? '');
   const [reviewList, setReviewList] = useState<reviewData[]>([]);
   const [totalReview, setTotalReview] = useState(0);
   const { user } = useAuthStore();
@@ -18,15 +22,15 @@ function MyReviews() {
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useGetReviews({
-      id: userId ?? '',
-      find: ['user_id', userId ?? ''],
+      id: id ?? '',
+      find: ['content_id', id ?? ''],
     });
 
   useEffect(() => {
-    if (!userId) {
-      navigate('/login');
+    if (!id || !contentTypeId) {
+      navigate('/');
     }
-  }, [userId, navigate]);
+  }, [contentTypeId, id, navigate]);
 
   useEffect(() => {
     if (data?.pages) {
@@ -48,18 +52,10 @@ function MyReviews() {
   if (!userId || isLoading) return <Loader text="리뷰 불러오는 중.." />;
 
   return (
-    <div>
-      <h2 className="fs-14 lh bg-primary relative -mx-6 mb-6 flex flex-col gap-2 p-6 text-white">
-        <div className="fs-16 flex items-center gap-1 font-semibold">
-          <RabbitFace size={24} /> <p>안내</p>
-        </div>
-        <p className="">
-          카드 위 제목을 누르면 리뷰를 작성한 장소의 상세 페이지로 이동해요!
-        </p>
-        <span className="triangle absolute -bottom-[0.1px] left-10"></span>
-      </h2>
+    <section className="p-6">
       <ReviewList
         userId={userId}
+        searchParams={searchParams}
         reviewList={reviewList}
         setReviewList={setReviewList}
         totalReview={totalReview}
@@ -71,8 +67,8 @@ function MyReviews() {
       >
         Loading...
       </div>
-    </div>
+    </section>
   );
 }
 
-export default MyReviews;
+export default DetailReviews;

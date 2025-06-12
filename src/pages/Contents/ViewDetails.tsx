@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Outlet,
   useLocation,
   useNavigate,
   useParams,
@@ -28,7 +29,8 @@ function ViewDetails() {
   const [searchParams] = useSearchParams();
   const contentTypeName = searchParams.get('category');
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const isReviewPage = pathname.includes('reviews');
   const [isLoading, setIsLoading] = useState('');
   const [radioList, setRadioList] = useState<
     FavoirteType[] | PolzzakType[] | null
@@ -98,7 +100,7 @@ function ViewDetails() {
   }, [data, setContentsTitle]);
 
   useEffect(() => {
-    if (!id) {
+    if (!id || !contentTypeName) {
       navigate('/', { replace: true });
       return;
     }
@@ -242,85 +244,96 @@ function ViewDetails() {
   };
 
   return (
-    <div className="flex flex-col gap-1 p-6">
-      <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
-        {info ? (
-          info.image ? (
-            <>
-              <img
-                src={info.image}
-                alt=""
-                className="h-full w-full rounded-2xl"
-              />
-              <figcaption className="sr-only">{info.title}</figcaption>
-            </>
-          ) : (
-            <>
-              <img
-                src="/images/rabbit_face.png"
-                alt=""
-                className="mb-4 aspect-square h-12"
-              />
-              <figcaption className="">등록된 이미지가 없습니다.</figcaption>
-            </>
-          )
-        ) : (
-          <div className="text-center">이미지를 불러오는 중 입니다.</div>
-        )}
-      </figure>
-      <UserMenu menus={userMenu} />
-      {data && info ? (
-        <Details
-          info={info}
-          data={data}
-          reviewRef={reviewRef}
-          userId={userId}
-        />
+    <>
+      {isReviewPage ? (
+        <Outlet />
       ) : (
-        <div>데이터를 불러오는 중 입니다.</div>
+        <div className="flex flex-col gap-1 p-6">
+          <figure className="bg-primary/10 flex h-full min-h-[230px] w-full flex-col items-center justify-center rounded-2xl">
+            {info ? (
+              info.image ? (
+                <>
+                  <img
+                    src={info.image}
+                    alt=""
+                    className="h-full w-full rounded-2xl"
+                  />
+                  <figcaption className="sr-only">{info.title}</figcaption>
+                </>
+              ) : (
+                <>
+                  <img
+                    src="/images/rabbit_face.png"
+                    alt=""
+                    className="mb-4 aspect-square h-12"
+                  />
+                  <figcaption>등록된 이미지가 없습니다.</figcaption>
+                </>
+              )
+            ) : (
+              <div className="text-center">이미지를 불러오는 중 입니다.</div>
+            )}
+          </figure>
+          <UserMenu menus={userMenu} />
+          {data && info && userId ? (
+            <Details
+              info={info}
+              data={data}
+              reviewRef={reviewRef}
+              userId={userId}
+              searchParams={searchParams}
+            />
+          ) : (
+            <div>데이터를 불러오는 중 입니다.</div>
+          )}
+          {(isOpenId === '즐겨찾기' || isOpenId === '기존폴짝') &&
+            id &&
+            userId &&
+            data && (
+              <FavoriteDialog
+                radioList={radioList}
+                id={id}
+                userId={userId}
+                info={{
+                  contenttypeid: data?.contenttypeid,
+                  title: info?.title ?? '타이틀이 없어요.',
+                  addr1: info.addr1,
+                }}
+                setIsMyContent={setIsMyContent}
+              />
+            )}
+          {isOpenId === '폴짝선택' && (
+            <AlertDialog
+              header="폴짝 추가하기"
+              description={['신규 또는 기존 폴짝을 ']}
+              buttonDirection="col"
+              button={[
+                {
+                  text: '신규 폴짝 추가하기',
+                  onClick: () => {
+                    onClickNewPolzzak();
+                  },
+                },
+                {
+                  text: '기존 폴짝 추가하기',
+                  onClick: () => {
+                    onClickExistingPolzzak();
+                  },
+                },
+              ]}
+            />
+          )}
+          <Button variant={'float'}>
+            <Icon id="arrow_top" />
+          </Button>
+
+          <cite className="text-gray06 bg-gray01 fs-13 ls lh -mx-6 mt-10 -mb-6 p-6 text-center">
+            ※ 한국관광공사 TourAPI 4.0을 통해 제공받은 데이터 입니다.
+          </cite>
+          {isLoading && <Loader text={isLoading} />}
+        </div>
       )}
-      {(isOpenId === '즐겨찾기' || isOpenId === '기존폴짝') &&
-        id &&
-        userId &&
-        data && (
-          <FavoriteDialog
-            radioList={radioList}
-            id={id}
-            userId={userId}
-            info={{
-              contenttypeid: data?.contenttypeid,
-              title: info?.title ?? '타이틀이 없어요.',
-              addr1: info.addr1,
-            }}
-            setIsMyContent={setIsMyContent}
-          />
-        )}
-      {isOpenId === '폴짝선택' && (
-        <AlertDialog
-          header="폴짝 추가하기"
-          description={['신규 또는 기존 폴짝을 ']}
-          buttonDirection="col"
-          button={[
-            {
-              text: '신규 폴짝 추가하기',
-              onClick: () => {
-                onClickNewPolzzak();
-              },
-            },
-            {
-              text: '기존 폴짝 추가하기',
-              onClick: () => {
-                onClickExistingPolzzak();
-              },
-            },
-          ]}
-        />
-      )}
-      <Button variant={'float'}>
-        <Icon id="arrow_top" />
-      </Button>
-      {isLoading && <Loader text={isLoading} />}
-    </div>
+    </>
   );
 }
 
