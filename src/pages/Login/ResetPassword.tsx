@@ -13,6 +13,8 @@ import { useDialogStore } from '@/store/useDialogStore';
 function ResetPassword() {
   const [emailIdValue, setEmailIdValue] = useState('');
   const [emailDomainValue, setEmailDomainValue] = useState('');
+  const [selectedEmailDomain, setSelectedEmailDomain] = useState('직접 입력'); // SelectMenu 선택 상태
+
   const [emailMessage, setEmailMessage] = useState('');
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
@@ -26,8 +28,10 @@ function ResetPassword() {
   const domainRef = useRef<HTMLInputElement>(null);
   const sendButtonRef = useRef<HTMLButtonElement>(null);
 
+  // 이메일 전체 주소
   const fullEmail = `${emailIdValue}@${emailDomainValue}`;
 
+  // 이메일 유효성 검사
   const validateFullEmail = (emailId: string, emailDomain: string) => {
     const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
@@ -50,23 +54,34 @@ function ResetPassword() {
 
   // 이메일 도메인
   const onChangeEmailDomainInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // setEmailDomainValue(e.target.value.trim());
     const value = e.target.value;
     setEmailDomainValue(value);
     validateFullEmail(emailIdValue, value);
+
+    // 도메인 직접 입력 시 SelectMenu 상태도 변경
+    if (selectedEmailDomain !== '직접 입력') {
+      setSelectedEmailDomain('직접 입력');
+    }
   };
 
   const onEmailDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       sendButtonRef.current?.focus();
-      if (emailValid) handleSendResetEmail();
+      if (emailValid) {
+        // sendButtonRef.current?.focus();
+        handleSendResetEmail();
+      }
     }
   };
 
-  const handleSelectedEmail = (selected: string) => {
-    setEmailDomainValue(selected === '직접 입력' ? '' : selected);
-  };
+  function handleSelectedEmail(selected: string) {
+    setSelectedEmailDomain(selected);
+
+    const newDomain = selected === '직접 입력' ? '' : selected;
+    setEmailDomainValue(newDomain);
+    validateFullEmail(emailIdValue, newDomain);
+  }
 
   const handleSendResetEmail = async () => {
     const { data: userRow, error: findError } = await supabase
@@ -76,7 +91,6 @@ function ResetPassword() {
       .single();
 
     if (findError || !userRow) {
-      // 존재하지 않는 이메일
       setDialogContent({
         header: '이메일이 존재하지 않습니다.',
         description: [
@@ -94,7 +108,6 @@ function ResetPassword() {
     });
 
     if (error) {
-      // 이메일 발송 실패
       setDialogContent({
         header: '이메일 발송 실패',
         description: [
@@ -107,15 +120,11 @@ function ResetPassword() {
     }
 
     setDialogContent({
-      // 이메일 발송 성공
       header: '이메일 발송 완료!',
       description: ['비밀번호 재설정 링크가', '이메일로 전송되었습니다.'],
     });
     openModal();
   };
-
-  const isValidationVisible =
-    emailIdValue.trim() !== '' || emailDomainValue.trim() !== '';
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-6 py-8">
@@ -151,25 +160,24 @@ function ResetPassword() {
               placeholder="polzzak.com"
               onChange={onChangeEmailDomainInput}
               onKeyDown={onEmailDomainKeyDown}
-              aria-label="이메일 주소를 입력해 주세요."
+              aria-label="이메일 도메인을 입력해 주세요."
             />
           </div>
-          {isValidationVisible && (
-            <Validation
-              status={emailValid ? true : false}
-              message={emailMessage}
-            />
+          {emailValid !== null && emailMessage !== '' && (
+            <Validation status={emailValid} message={emailMessage} />
           )}
         </div>
         <SelectMenu
           data={'email'}
+          selectedEmail={selectedEmailDomain}
+          setSelectedEmail={setSelectedEmailDomain}
           onSelectedEmail={handleSelectedEmail}
           className="flex-1"
         />
         <Button
           ref={sendButtonRef}
           onClick={handleSendResetEmail}
-          disabled={!emailValid} // true일 때만 활성화
+          disabled={!emailValid}
         >
           이메일 발송
         </Button>
