@@ -132,7 +132,7 @@ export default function Step3() {
       email,
       password,
       options: {
-        emailRedirectTo: 'http://localhost:5173/register/sign-up-callback',
+        emailRedirectTo: 'http://localhost:5173/login',
         data: {
           display_name: nickname,
         },
