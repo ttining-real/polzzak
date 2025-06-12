@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
+import { getReviewsContent } from '@/api/supabase/utils/getReviewsContent';
 import Button from '@/components/Button/Button';
+import { reviewData } from '@/components/Contents/Review';
 import ReviewList from '@/components/Contents/ReviewList';
 
 interface DetailsTypes {
@@ -66,8 +69,13 @@ function Details({
   userId,
   searchParams,
 }: DetailsTypes) {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const contentTypeId = data?.contenttypeid ?? '';
   const [isOpen, setIsOpen] = useState(false);
+  const [reviewList, setReviewList] = useState<reviewData[]>([]);
+  const [totalReview, setTotalReview] = useState(0);
+
   const toggleMoreButton = () => {
     setIsOpen(!isOpen);
   };
@@ -307,6 +315,24 @@ function Details({
 
   const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
 
+  useEffect(() => {
+    if (!id) {
+      navigate('/', { replace: true });
+      return;
+    }
+    const fetchReviews = async () => {
+      const res = await getReviewsContent({
+        find: ['content_id', id],
+        page: 0,
+        pageSize: 3,
+      });
+
+      setReviewList(res?.[0] ?? []);
+      setTotalReview(res?.[1] ?? 0);
+    };
+    fetchReviews();
+  }, [id, navigate]);
+
   return (
     <section className="flex flex-col gap-6">
       {/* 홈 */}
@@ -360,6 +386,9 @@ function Details({
           reviewRef={reviewRef}
           userId={userId}
           searchParams={searchParams}
+          reviewList={reviewList}
+          setReviewList={setReviewList}
+          totalReview={totalReview}
         />
       )}
     </section>
