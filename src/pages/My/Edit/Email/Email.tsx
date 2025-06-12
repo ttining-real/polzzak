@@ -16,18 +16,17 @@ interface ItemTypes {
 
 function Email() {
   const navigate = useNavigate();
-  const userData = useGetTable<ItemTypes>('ex_users');
+  const userData = useGetTable<ItemTypes>('users');
   const showToast = useToast();
-  const {
-    emailId,
-    setEmailId,
-    domain,
-    setDomain,
-    validationStatus,
-    setValidationStatus,
-  } = useEditStore();
+  const emailId = useEditStore((state) => state.emailId);
+  const setEmailId = useEditStore((state) => state.setEmailId);
+  const domain = useEditStore((state) => state.domain);
+  const setDomain = useEditStore((state) => state.setDomain);
+  const validationStatus = useEditStore((state) => state.validationStatus);
+  const setValidationStatus = useEditStore(
+    (state) => state.setValidationStatus,
+  );
   const email = `${emailId}@${domain}`;
-  // const pattern = /^[A-Za-z0-9_\.\-]+@[A-Za-z0-9\-]+\.[A-za-z0-9\-]+/;
   const pattern = /^[A-Za-z0-9_.-]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/;
 
   const message = {
@@ -69,21 +68,27 @@ function Email() {
     }
   };
   const handleEmailSave = async () => {
-    const result = await updateEmail(email);
+    try {
+      const result = await updateEmail(email);
 
-    if (result) {
-      navigate(-1);
-      showToast('이메일 저장을 성공했습니다.', 'top-[64px]', 3000);
-      setEmailId('');
-      setDomain('');
-      setValidationStatus({ status: false, message: '' });
-    } else {
-      showToast('이메일 저장을 실패했습니다.', 'top-[64px]', 3000);
+      if (result) {
+        navigate(-1);
+        showToast('이메일 저장을 성공했습니다.', 'top-[64px]', 3000);
+        setEmailId('');
+        setDomain('');
+        setValidationStatus({ status: false, message: '' });
+      } else {
+        showToast('이메일 저장을 실패했습니다.', 'top-[64px]', 3000);
+      }
+    } catch (error) {
+      console.error('이메일 변경 중 오류:', error);
     }
   };
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-4" role="main">
+      <h2 className="sr-only">이메일 설정</h2>
+
       <div className="flex flex-col">
         <Label>이메일</Label>
         <div className="flex items-center justify-center gap-1">

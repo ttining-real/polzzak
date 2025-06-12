@@ -5,28 +5,31 @@ interface ValidationStatus {
   message: string;
 }
 
-interface EditStore {
-  phoneNumber: string;
-  setPhoneNumber: (phoneNumber: string) => void;
-  authNumber: string;
-  setAuthNumber: (authNumber: string) => void;
+interface EditState {
   nickname: string;
-  setNickname: (nickname: string) => void;
+  phoneNumber: string;
+  authNumber: string;
   emailId: string;
-  setEmailId: (emailId: string) => void;
   domain: string;
-  setDomain: (domain: string) => void;
   validationStatus: ValidationStatus;
+}
+
+interface EditActions {
+  setPhoneNumber: (phoneNumber: string) => void;
+  setAuthNumber: (authNumber: string) => void;
+  setNickname: (nickname: string) => void;
+  setEmailId: (emailId: string) => void;
+  setDomain: (domain: string) => void;
   setValidationStatus: (validationStatus: ValidationStatus) => void;
 }
 
-export const useEditStore = create<EditStore>()((set) => ({
+export const useEditStore = create<EditState & EditActions>()((set) => ({
+  nickname: '',
+  setNickname: (nickname) => set({ nickname }),
   phoneNumber: '',
   setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
   authNumber: '',
   setAuthNumber: (authNumber) => set({ authNumber }),
-  nickname: '',
-  setNickname: (nickname) => set({ nickname }),
   emailId: '',
   setEmailId: (emailId) => set({ emailId }),
   domain: '',

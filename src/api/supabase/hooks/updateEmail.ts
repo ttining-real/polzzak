@@ -1,35 +1,40 @@
 import supabase from '@/api/supabase';
 
-export const updateEmail = async (email: string) => {
-  const USER_ID =
-    localStorage.getItem('ex_users') ||
-    localStorage.getItem('user') ||
-    sessionStorage.getItem('user');
+export const updateEmail = async (newEmail: string) => {
+  try {
+    const CURRENT_LOGINED_EMAIL = localStorage.getItem('user');
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  if (!USER_ID) {
-    console.error('해당 USER의 ID가 존재하지 않습니다.');
+    if (userError || !user || !CURRENT_LOGINED_EMAIL) {
+      console.error('유저 정보를 가져올 수 없습니다.:', userError);
+      return false;
+    }
+
+    if (user.email === CURRENT_LOGINED_EMAIL) {
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+      if (updateError) {
+        console.error('이메일 업데이트 실패:', updateError);
+        return false;
+      }
+
+      const { error: dbUpdateError } = await supabase
+        .from('users')
+        .update({ email: newEmail })
+        .eq('email', CURRENT_LOGINED_EMAIL);
+      if (dbUpdateError) {
+        console.error('users 테이블 이메일 업데이트 실패:', dbUpdateError);
+        return false;
+      }
+
+      return true;
+    }
+  } catch (err) {
+    console.error('이메일 업데이트 예외 발생:', err);
     return false;
   }
-
-  const { data: USER_DATA, error: fetchError } = await supabase
-    .from('ex_users')
-    .select('*');
-
-  if (!USER_DATA || fetchError) {
-    console.error(fetchError, '사용자 정보를 가져오는 데 실패했습니다.');
-    return;
-  }
-
-  const { error: UpdateError } = await supabase
-    .from('ex_users')
-    .update({ email: email })
-    .eq('user_id', USER_ID)
-    .single();
-
-  if (UpdateError) {
-    console.error(UpdateError, '이메일을 저장하는 데 실패했습니다.');
-    return false;
-  }
-
-  return true;
 };
