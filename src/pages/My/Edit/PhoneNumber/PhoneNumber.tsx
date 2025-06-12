@@ -45,9 +45,7 @@ function PhoneNumber() {
     if (vertify) {
       try {
         const USER_ID =
-          localStorage.getItem('ex_users') ||
-          localStorage.getItem('user') ||
-          sessionStorage.getItem('user');
+          localStorage.getItem('user') || sessionStorage.getItem('user');
 
         if (!USER_ID) {
           console.error('해당 USER의 ID가 존재하지 않습니다.');
