@@ -95,6 +95,12 @@ function Login() {
 
           setLockRedirect(false); // 로그인 성공 시, 리다이렉트 해제
           openModal('email-verification-success');
+          // ⚠️ 수정 필요
+          // console.log(emailValue);
+          // localStorage.setItem('user', emailValue);
+          localStorage.removeItem('register_email');
+          localStorage.removeItem('register_password');
+          localStorage.removeItem('register_nickname');
         }
       };
 
@@ -254,7 +260,8 @@ function Login() {
           header: '이메일 인증 성공',
           description: [
             '이메일 인증이 완료되었습니다.',
-            '확인 버튼을 누르면 홈 화면으로 이동합니다.',
+            '확인 버튼을 누르면',
+            '홈 화면으로 이동합니다.',
           ],
           button: [
             {
@@ -275,6 +282,7 @@ function Login() {
               text: '확인',
               onClick: () => {
                 closeModal();
+                navigate('/', { replace: true });
               },
             },
           ],
