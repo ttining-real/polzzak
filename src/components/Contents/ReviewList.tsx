@@ -6,6 +6,7 @@ import Button from '@/components/Button/Button';
 import { Review, reviewData } from '@/components/Contents/Review';
 import Input from '@/components/Input/Input';
 import { addFavoriteWithContentCheck } from '@/lib/favorite';
+import { filterNameToType } from '@/lib/filterMap';
 
 interface ReviewListProps {
   userId?: string;
@@ -25,12 +26,14 @@ function ReviewList({
   totalReview,
 }: ReviewListProps) {
   const { id } = useParams();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const isMyReviewPage = pathname === '/my/my-reviews';
   const isReviewPage =
     pathname.startsWith('/contents/') && pathname.includes('reviews');
-  const isMyReviewPage = pathname === '/my/my-reviews';
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
+  const categoryName = search.split('=')[1];
+  const contentTypeId = filterNameToType(categoryName);
 
   const handleAddReview = async () => {
     if (!userId || !id || inputValue.trim() === '') return;
@@ -53,7 +56,7 @@ function ReviewList({
     const insertReview = async () => {
       const hasContent = await addFavoriteWithContentCheck({
         contentId: id,
-        contentTypeId: '39', // 수정해야해!!!!!
+        contentTypeId: contentTypeId ?? '',
       });
 
       if (hasContent && 'error' in hasContent && hasContent.error) {
