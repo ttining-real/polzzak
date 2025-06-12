@@ -232,7 +232,7 @@ function Login() {
       setSession(data.session);
       setUser(data.user);
       setLockRedirect(true); // 로그인 성공 시 리다이렉트 잠금
-      openModal('email-verification-success');
+      openModal('login-success'); // ✅ 여기 수정
     }
   };
 
@@ -254,6 +254,20 @@ function Login() {
         return {
           header: '이메일 인증 성공',
           description: ['이메일 인증이 완료되었습니다.'],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                setLockRedirect(false); // 리다이렉트 허용
+              },
+            },
+          ],
+        };
+      case 'login-success': // ✅ 로그인 성공 모달 추가
+        return {
+          header: '로그인 성공',
+          description: ['로그인이 성공적으로 완료되었습니다.'],
           button: [
             {
               text: '확인',
