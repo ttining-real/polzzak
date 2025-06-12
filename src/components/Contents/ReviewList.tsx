@@ -193,7 +193,7 @@ function ReviewList({
             </li>
           )}
         </ul>
-        {!isReviewPage && (
+        {!isReviewPage && reviewList.length !== 0 && (
           <Button
             variant={'secondary'}
             size={'md'}
