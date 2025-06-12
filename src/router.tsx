@@ -3,7 +3,6 @@ import { createBrowserRouter, Outlet } from 'react-router-dom';
 import RootLayout from '@/layouts/RootLayout';
 import {
   Contents,
-  FindEmail,
   Home,
   Login,
   Map,
@@ -16,7 +15,6 @@ import {
   ResetPassword,
   ResetPasswordCallback,
   Search,
-  SignUpCallback,
   Splash,
   Terms,
 } from '@/pages';
@@ -47,7 +45,6 @@ export const routes = [
         element: <Outlet />,
         children: [
           { index: true, element: <Login /> },
-          { path: 'find-email', element: <FindEmail /> },
           { path: 'reset-password', element: <ResetPassword /> },
           {
             path: 'reset-password-callback',
@@ -57,11 +54,7 @@ export const routes = [
       },
       {
         path: '/register',
-        element: <Outlet />,
-        children: [
-          { index: true, element: <Register /> },
-          { path: 'sign-up-callback', element: <SignUpCallback /> },
-        ],
+        element: <Register />,
       },
       {
         path: '/search',

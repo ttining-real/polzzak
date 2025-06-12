@@ -1,7 +1,30 @@
-export function validateEmail(email: string) {
-  const trimmed = email.trim();
-  const isValid =
-    trimmed.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+export function validateEmail(emailId: string = '', emailDomain: string = '') {
+  const trimmedId = emailId?.trim();
+  const trimmedDomain = emailDomain?.trim();
+
+  if (!trimmedId && !trimmedDomain) {
+    return {
+      isValid: false,
+      message: '이메일 아이디와 도메인을 입력해 주세요.',
+    };
+  }
+
+  if (!trimmedId) {
+    return {
+      isValid: false,
+      message: '이메일 아이디를 입력해 주세요.',
+    };
+  }
+
+  if (!trimmedDomain) {
+    return {
+      isValid: false,
+      message: '이메일 도메인을 입력해 주세요.',
+    };
+  }
+
+  const fullEmail = `${trimmedId}@${trimmedDomain}`;
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fullEmail);
 
   return {
     isValid,

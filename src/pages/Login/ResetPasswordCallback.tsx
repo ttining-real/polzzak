@@ -24,10 +24,15 @@ export default function ResetPasswordCallback() {
   const [pwCheckMessage, setPwCheckMessage] = useState('');
   const [pwCheckValid, setPwCheckValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호 가시성
-  const [isVisible, setIsVisible] = useState(false);
-  const inputType = isVisible ? 'text' : 'password';
-  const visibleIconId: IconId = isVisible
+  // 🕹️ 비밀번호 가시성 (개별 관리)
+  const [isVisiblePW, setIsVisiblePW] = useState(false);
+  const [isVisiblePWCheck, setIsVisiblePWCheck] = useState(false);
+  const inputTypePW = isVisiblePW ? 'text' : 'password';
+  const inputTypePWCheck = isVisiblePWCheck ? 'text' : 'password';
+  const visibleIconIdPW: IconId = isVisiblePW
+    ? 'visibillity_on'
+    : 'visibillity_off';
+  const visibleIconIdPWCheck: IconId = isVisiblePWCheck
     ? 'visibillity_on'
     : 'visibillity_off';
 
@@ -73,7 +78,8 @@ export default function ResetPasswordCallback() {
     }
   };
 
-  const onClickVisible = () => setIsVisible((prev) => !prev);
+  const onClickVisiblePW = () => setIsVisiblePW((prev) => !prev);
+  const onClickVisiblePWCheck = () => setIsVisiblePWCheck((prev) => !prev);
 
   // ⚠️ 비밀번호 재설정 이메일 링크 클릭 시, supabase가 자동 로그인 처리
   useEffect(() => {
@@ -148,7 +154,7 @@ export default function ResetPasswordCallback() {
       <div className="flex flex-col gap-4">
         <div>
           <Input
-            type={inputType}
+            type={inputTypePW}
             label="새 비밀번호"
             value={pwValue}
             placeholder="새 비밀번호"
@@ -156,8 +162,8 @@ export default function ResetPasswordCallback() {
             onKeyDown={onPWKeyDown}
             aria-label="비밀번호를 입력해 주세요."
           >
-            <Button variant="input" onClick={onClickVisible}>
-              <Icon id={visibleIconId} />
+            <Button variant="input" onClick={onClickVisiblePW}>
+              <Icon id={visibleIconIdPW} />
             </Button>
           </Input>
           {pwValid !== null && (
@@ -167,7 +173,7 @@ export default function ResetPasswordCallback() {
         <div>
           <Input
             ref={pwCheckInputRef}
-            type={inputType}
+            type={inputTypePWCheck}
             label="새 비밀번호 확인"
             value={pwCheckValue}
             placeholder="새로운 비밀번호를 한 번 더 입력해 주세요."
@@ -175,8 +181,8 @@ export default function ResetPasswordCallback() {
             onKeyDown={onPWCheckKeyDown}
             aria-label="새로운 비밀번호를 한 번 더 입력해 주세요."
           >
-            <Button variant="input" onClick={onClickVisible}>
-              <Icon id={visibleIconId} />
+            <Button variant="input" onClick={onClickVisiblePWCheck}>
+              <Icon id={visibleIconIdPWCheck} />
             </Button>
           </Input>
           {pwCheckValid !== null && (

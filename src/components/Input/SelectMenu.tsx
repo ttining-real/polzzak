@@ -30,6 +30,8 @@ interface SelectMenuProps {
   className?: string;
   onSelectedEmail?: (email: string) => void;
   setSelectPolzzak?: (id: string) => void;
+  selectedEmail?: string;
+  setSelectedEmail?: (email: string) => void;
 }
 
 function SelectMenu({
@@ -37,8 +39,17 @@ function SelectMenu({
   className,
   onSelectedEmail,
   setSelectPolzzak,
+  selectedEmail,
+  setSelectedEmail,
 }: SelectMenuProps) {
-  const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
+  const emailArr = [
+    'gmail.com',
+    'naver.com',
+    'daum.net',
+    'hanmail.net',
+    'kakao.com',
+    '직접 입력',
+  ];
   const [daySelected, setDaySelected] = useState('');
 
   useEffect(() => {
@@ -54,7 +65,13 @@ function SelectMenu({
 
   if (data === 'email') {
     return (
-      <Select onValueChange={(value) => onSelectedEmail?.(value)}>
+      <Select
+        value={selectedEmail ?? '직접 입력'}
+        onValueChange={(value) => {
+          setSelectedEmail?.(value);
+          onSelectedEmail?.(value);
+        }}
+      >
         <SelectTrigger className={className}>
           <SelectValue placeholder="이메일 선택" />
         </SelectTrigger>
