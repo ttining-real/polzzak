@@ -36,6 +36,7 @@ export function useModalActions() {
       if (result) {
         navigate('/login', { replace: true });
         localStorage.removeItem('users');
+        sessionStorage.removeItem('users');
         closeModal();
       } else {
         console.error('닉네임 저장 실패 또는 이미 존재합니다.');
@@ -56,6 +57,7 @@ export function useModalActions() {
 
         if (error) throw error;
         localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
 
         navigate('/', {
           state: { toastMessage: '로그아웃이 완료되었습니다.' },

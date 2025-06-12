@@ -2,7 +2,8 @@ import supabase from '@/api/supabase';
 
 export const updateEmail = async (newEmail: string) => {
   try {
-    const CURRENT_LOGINED_EMAIL = localStorage.getItem('user');
+    const CURRENT_LOGINED_EMAIL =
+      localStorage.getItem('user') || sessionStorage.getItem('user');
     const {
       data: { user },
       error: userError,

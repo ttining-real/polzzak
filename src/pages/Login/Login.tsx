@@ -20,41 +20,105 @@ function Login() {
   const showToast = useToast();
   const navigate = useNavigate();
 
-  const { isOpen, openModal, closeModal } = useDialogStore();
+  const { isOpen, isOpenId, openModal, closeModal } = useDialogStore();
+  const { session, setSession, setUser } = useAuthStore();
 
-  // 🕹️ 이메일
+  // 이메일
   const [emailValue, setEmailValue] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호
+  // 비밀번호
   const [pwValue, setPwValue] = useState('');
   const [pwMessage, setPwMessage] = useState('');
   const [pwValid, setPwValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호 가시성
+  // 비밀번호 가시성 버튼
   const [isVisible, setIsVisible] = useState(false);
   const inputType = isVisible ? 'text' : 'password';
   const visibleIconId: IconId = isVisible
     ? 'visibillity_on'
     : 'visibillity_off';
 
-  // 🕹️ 이메일 주소 저장
+  // 이메일 주소 저장
   const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
+  // 리다이렉트 잠금
+  const [lockRedirect, setLockRedirect] = useState(false);
+
+  // ref
   const pwInputRef = useRef<HTMLInputElement>(null);
 
-  // ☘️ 페이지 진입 시 foundEmail 적용
+  // 로그인 여부
+  const isLoggedIn = !!session;
+
+  // '/login' 경로 접근 시
+  useEffect(() => {
+    if (isLoggedIn && lockRedirect) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoggedIn, lockRedirect, navigate, session]);
+
+  // Supabase 인증 성공
+  useEffect(() => {
+    const hashParams = new URLSearchParams(location.hash.substring(1));
+
+    if (hashParams.get('type') === 'signup') {
+      const checkAuth = async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: sessionData } = await supabase.auth.getSession();
+
+          setSession(sessionData.session);
+          setUser(user);
+
+          const nickname = localStorage.getItem('register_nickname') ?? '';
+
+          const { error: upsertError } = await supabase.from('users').upsert(
+            {
+              id: user.id,
+              email: user.email,
+              nickname,
+              created_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' },
+          );
+
+          if (upsertError) {
+            console.error('users 테이블 upsert 실패', upsertError.message);
+            openModal('insert-error');
+            return;
+          }
+
+          setLockRedirect(false); // 로그인 성공 시, 리다이렉트 해제
+          openModal('email-verification-success');
+          // ⚠️ 수정 필요
+          // console.log(emailValue);
+          // localStorage.setItem('user', emailValue);
+          localStorage.removeItem('register_email');
+          localStorage.removeItem('register_password');
+          localStorage.removeItem('register_nickname');
+        }
+      };
+
+      checkAuth();
+    }
+  }, [location.hash, openModal, setSession, setUser]);
+
+  // 페이지 진입 시 foundEmail
   useEffect(() => {
     let initialEmail = '';
     let emailToValidate = '';
 
-    // 1. location.state?.foundEmail 우선
+    // 1. location.state?.foundEmail
     if (location.state?.foundEmail) {
       initialEmail = location.state.foundEmail;
       emailToValidate = location.state.foundEmail;
     } else {
-      // 2. 저장된 이메일 (이메일 저장 체크가 기본 true이므로 항상 읽음)
+      // 2. 저장된 이메일
       const savedEmail = localStorage.getItem('user');
       if (savedEmail) {
         initialEmail = savedEmail;
@@ -70,15 +134,19 @@ function Login() {
     }
 
     setEmailValue(initialEmail);
+
     if (emailToValidate) {
-      const { isValid } = validateEmail(emailToValidate);
+      const [emailId, emailDomain] = emailToValidate.split('@');
+      const { isValid } = validateEmail(emailId, emailDomain);
       setEmailValid(isValid);
+      setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
     } else {
       setEmailValid(null);
+      setEmailMessage('');
     }
-  }, [location.state]); // ✅ 배열 길이 고정
+  }, [location.state]);
 
-  // ☘️ 페이지 진입 시 토스트 메시지 출력
+  // 페이지 진입 시 토스트 메시지
   useEffect(() => {
     if (location.state?.toastMessage) {
       showToast(location.state.toastMessage);
@@ -87,22 +155,21 @@ function Login() {
     if (location.state?.foundEmail) {
       setEmailValue(location.state.foundEmail);
       setEmailValid(true);
-      return;
     }
   }, [location.state, showToast]);
 
-  // ☘️ 로컬 스토리지 아이디 값 불러오기
+  // 로컬 스토리지에 저장된 이메일
   useEffect(() => {
     if (!location.state?.foundEmail) {
       if (isSavedLogin) {
         const savedId = localStorage.getItem('user');
         if (savedId) {
           setEmailValue(savedId);
-          setEmailValid(true);
+          const [emailId, emailDomain = ''] = savedId.split('@');
+          const { isValid } = validateEmail(emailId, emailDomain);
+          setEmailValid(isValid);
+          setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
         }
-      } else {
-        setEmailValue('');
-        setEmailValid(null);
       }
     }
   }, [isSavedLogin, location.state?.foundEmail]);
@@ -111,7 +178,8 @@ function Login() {
     const value = e.target.value;
     setEmailValue(value);
 
-    const { isValid, message } = validateEmail(value);
+    const [emailId, emailDomain = ''] = value.split('@');
+    const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(isValid ? '' : message);
   };
@@ -145,37 +213,86 @@ function Login() {
 
   const onChangeSavedIdToggle = () => setIsSavedLogin((prev: boolean) => !prev);
 
-  // * 🛡️ Supabase Auth 로그인 처리
   const onClickLogin = async () => {
-    const { setSession, setUser } = useAuthStore.getState();
-
-    // 1. supabase.auth 로그인: 이메일 + 패스워드 조합
     const { data, error } = await supabase.auth.signInWithPassword({
       email: emailValue,
       password: pwValue,
     });
 
     if (error) {
-      openModal();
+      openModal('login-failed');
+      setPwValue(''); // 비밀번호 초기화
       return;
     }
 
     if (data.session && data.user) {
       setSession(data.session);
       setUser(data.user);
-    }
 
-    // 2. 저장 옵션에 따라 이메일 저장
-    if (isSavedLogin) {
-      localStorage.setItem('user', emailValue);
-      localStorage.setItem('saveId', 'true');
-    } else {
-      localStorage.removeItem('user');
-      localStorage.setItem('saveId', 'false');
-    }
+      if (isSavedLogin) {
+        localStorage.setItem('user', emailValue);
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', emailValue);
+        localStorage.removeItem('user');
+      }
 
-    navigate('/', { replace: true });
+      openModal('login-success');
+    }
   };
+
+  const getDialogContent = () => {
+    switch (isOpenId) {
+      case 'login-failed':
+        return {
+          header: '로그인 실패',
+          description: ['이메일 또는 비밀번호가 일치하지 않습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'insert-error':
+        return {
+          header: '사용자 정보 저장 실패',
+          description: ['사용자 정보를 저장하는 데 실패했습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'email-verification-success':
+        return {
+          header: '이메일 인증 성공',
+          description: [
+            '이메일 인증이 완료되었습니다.',
+            '확인 버튼을 누르면',
+            '홈 화면으로 이동합니다.',
+          ],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                setLockRedirect(true);
+              },
+            },
+          ],
+        };
+      case 'login-success':
+        return {
+          header: '로그인 성공',
+          description: ['로그인이 성공적으로 완료되었습니다.'],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                navigate('/', { replace: true });
+              },
+            },
+          ],
+        };
+      default:
+        return null;
+    }
+  };
+
+  const dialogContent = getDialogContent();
 
   return (
     <main className="m-auto flex h-full w-full max-w-[420px] flex-col justify-center gap-6 px-6 pb-20">
@@ -238,14 +355,10 @@ function Login() {
         </Button>
       </fieldset>
       <div className="fs-14 font-regular text-gray07 flex items-center justify-center gap-1">
-        <Link to="find-email" className="px-1">
-          이메일 찾기
-        </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <Link to="reset-password" className="px-1">
           비밀번호 재설정
         </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
+        <span aria-hidden className="bg-gray04 h-[11px] w-[1px]"></span>
         <div className="relative">
           <Link to="/register?step=1" className="px-1">
             회원가입
@@ -253,26 +366,17 @@ function Login() {
           <span className="heartbeat-ring bg-primary absolute top-8 right-2 rounded-3xl px-3 py-1 whitespace-nowrap text-white">
             우리 같이 폴짝해요!
             <span
-              aria-hidden={true}
+              aria-hidden
               className="bg-primary absolute -top-1 right-4 h-2 w-2 rotate-45"
             ></span>
           </span>
         </div>
       </div>
-      {isOpen && (
+      {isOpen && dialogContent && (
         <AlertDialog
-          header="로그인에 실패하였습니다."
-          description={['아이디 또는 비밀번호를', '다시 확인해 주세요.']}
-          button={[
-            {
-              text: '확인',
-              onClick: () => {
-                closeModal();
-                setEmailValue('');
-                setPwValue('');
-              },
-            },
-          ]}
+          header={dialogContent.header}
+          description={dialogContent.description}
+          button={dialogContent.button}
         />
       )}
     </main>

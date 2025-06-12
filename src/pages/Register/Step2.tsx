@@ -7,7 +7,7 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import { validatePassword } from '@/lib/validationPassword';
 
-function Step2() {
+export default function Step2() {
   const [pwValue, setPwValue] = useState('');
   const [pwMessage, setPwMessage] = useState('');
   const [pwValid, setPwValid] = useState<boolean | null>(null);
@@ -141,5 +141,3 @@ function Step2() {
     </>
   );
 }
-
-export default Step2;
