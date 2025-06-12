@@ -35,7 +35,7 @@ export function useModalActions() {
       const result = await updateNickname(nickname);
       if (result) {
         navigate('/login', { replace: true });
-        localStorage.removeItem('ex_users');
+        localStorage.removeItem('users');
         closeModal();
       } else {
         console.error('닉네임 저장 실패 또는 이미 존재합니다.');
@@ -67,21 +67,46 @@ export function useModalActions() {
       }
     },
     탈퇴: async () => {
-      const LOGINED_USER = localStorage.getItem('user');
-      const { error } = await supabase
-        .from('ex_users')
-        .delete()
-        .eq('user_id', LOGINED_USER);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      navigate('/', {
-        state: { toastMessage: '회원 탈퇴가 완료되었습니다.' },
-      });
-      localStorage.clear();
-      sessionStorage.clear();
-      if (error) {
-        console.error('회원 탈퇴를 할 수 없습니다. ', error);
+        if (!user) {
+          console.log('No user found');
+          return { success: false, error: 'No user logged in' };
+        }
+
+        console.log('Deleting user:', user.id);
+
+        const response = await fetch('/api/supabase/utils/deleteUsers', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: user.id }),
+        });
+
+        const text = await response.text();
+        let result: { message?: string; error?: string } = {};
+
+        try {
+          result = text ? JSON.parse(text) : {};
+        } catch (e) {
+          console.error('Failed to parse response as JSON:', e);
+        }
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to delete user');
+        }
+
+        await supabase.auth.signOut();
+
+        return { success: true, message: result.message || 'User deleted' };
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        return { success: false, error: error };
       }
-      closeModal();
     },
     '신규 폴짝 추가하기': () =>
       console.log('신규 폴짝 추가하기 버튼에 맞는 함수'),
