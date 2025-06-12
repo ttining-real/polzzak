@@ -23,24 +23,24 @@ function Login() {
   const { isOpen, isOpenId, openModal, closeModal } = useDialogStore();
   const { session, setSession, setUser } = useAuthStore();
 
-  // 🕹️ 이메일
+  // 이메일
   const [emailValue, setEmailValue] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호
+  // 비밀번호
   const [pwValue, setPwValue] = useState('');
   const [pwMessage, setPwMessage] = useState('');
   const [pwValid, setPwValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호 가시성
+  // 비밀번호 가시성 버튼
   const [isVisible, setIsVisible] = useState(false);
   const inputType = isVisible ? 'text' : 'password';
   const visibleIconId: IconId = isVisible
     ? 'visibillity_on'
     : 'visibillity_off';
 
-  // 🕹️ 이메일 주소 저장
+  // 이메일 주소 저장
   const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
   // 리다이렉트 잠금
@@ -49,16 +49,17 @@ function Login() {
   // ref
   const pwInputRef = useRef<HTMLInputElement>(null);
 
+  // 로그인 여부
   const isLoggedIn = !!session;
-  console.log(isLoggedIn);
 
+  // '/login' 경로 접근 시
   useEffect(() => {
     if (isLoggedIn && !lockRedirect) {
       navigate('/', { replace: true });
     }
   }, [isLoggedIn, lockRedirect, navigate]);
 
-  // Supabase 인증 성공 콜백 처리
+  // Supabase 인증 성공
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.substring(1));
 
@@ -69,7 +70,6 @@ function Login() {
         } = await supabase.auth.getUser();
 
         if (user) {
-          // 세션도 같이 받아옴
           const { data: sessionData } = await supabase.auth.getSession();
 
           setSession(sessionData.session);
@@ -100,19 +100,19 @@ function Login() {
 
       checkAuth();
     }
-  }, [location.hash, openModal]);
+  }, [location.hash, openModal, setSession, setUser]);
 
-  // ☘️ 페이지 진입 시 foundEmail 적용
+  // 페이지 진입 시 foundEmail
   useEffect(() => {
     let initialEmail = '';
     let emailToValidate = '';
 
-    // 1. location.state?.foundEmail 우선
+    // 1. location.state?.foundEmail
     if (location.state?.foundEmail) {
       initialEmail = location.state.foundEmail;
       emailToValidate = location.state.foundEmail;
     } else {
-      // 2. 저장된 이메일 (이메일 저장 체크가 기본 true이므로 항상 읽음)
+      // 2. 저장된 이메일
       const savedEmail = localStorage.getItem('user');
       if (savedEmail) {
         initialEmail = savedEmail;
@@ -128,16 +128,19 @@ function Login() {
     }
 
     setEmailValue(initialEmail);
+
     if (emailToValidate) {
       const [emailId, emailDomain] = emailToValidate.split('@');
       const { isValid } = validateEmail(emailId, emailDomain);
       setEmailValid(isValid);
+      setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
     } else {
       setEmailValid(null);
+      setEmailMessage('');
     }
-  }, [location.state]); // ✅ 배열 길이 고정
+  }, [location.state]);
 
-  // ☘️ 페이지 진입 시 토스트 메시지 출력
+  // 페이지 진입 시 토스트 메시지
   useEffect(() => {
     if (location.state?.toastMessage) {
       showToast(location.state.toastMessage);
@@ -146,11 +149,10 @@ function Login() {
     if (location.state?.foundEmail) {
       setEmailValue(location.state.foundEmail);
       setEmailValid(true);
-      return;
     }
   }, [location.state, showToast]);
 
-  // ☘️ 로컬 스토리지 아이디 값 불러오기
+  // 로컬 스토리지에 저장된 이메일
   useEffect(() => {
     if (!location.state?.foundEmail) {
       if (isSavedLogin) {
@@ -160,6 +162,7 @@ function Login() {
           const [emailId, emailDomain = ''] = savedId.split('@');
           const { isValid } = validateEmail(emailId, emailDomain);
           setEmailValid(isValid);
+          setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
         }
       } else {
         const sessionId = sessionStorage.getItem('user');
@@ -168,9 +171,11 @@ function Login() {
           const [emailId, emailDomain = ''] = sessionId.split('@');
           const { isValid } = validateEmail(emailId, emailDomain);
           setEmailValid(isValid);
+          setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
         } else {
           setEmailValue('');
           setEmailValid(false);
+          setEmailMessage('');
         }
       }
     }
@@ -181,7 +186,6 @@ function Login() {
     setEmailValue(value);
 
     const [emailId, emailDomain = ''] = value.split('@');
-
     const { isValid, message } = validateEmail(emailId, emailDomain);
     setEmailValid(isValid);
     setEmailMessage(isValid ? '' : message);
@@ -216,7 +220,6 @@ function Login() {
 
   const onChangeSavedIdToggle = () => setIsSavedLogin((prev: boolean) => !prev);
 
-  // 로그인 버튼
   const onClickLogin = async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: emailValue,
@@ -225,14 +228,24 @@ function Login() {
 
     if (error) {
       openModal('login-failed');
+      setPwValue(''); // 비밀번호 초기화
       return;
     }
 
     if (data.session && data.user) {
       setSession(data.session);
       setUser(data.user);
-      setLockRedirect(true); // 로그인 성공 시 리다이렉트 잠금
-      openModal('login-success'); // ✅ 여기 수정
+
+      if (isSavedLogin) {
+        localStorage.setItem('user', emailValue);
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', emailValue);
+        localStorage.removeItem('user');
+      }
+
+      setLockRedirect(true); // 로그인 성공 시, 리다이렉트 잠금
+      openModal('login-success');
     }
   };
 
@@ -259,12 +272,12 @@ function Login() {
               text: '확인',
               onClick: () => {
                 closeModal();
-                setLockRedirect(false); // 리다이렉트 허용
+                setLockRedirect(false);
               },
             },
           ],
         };
-      case 'login-success': // ✅ 로그인 성공 모달 추가
+      case 'login-success':
         return {
           header: '로그인 성공',
           description: ['로그인이 성공적으로 완료되었습니다.'],
@@ -273,7 +286,7 @@ function Login() {
               text: '확인',
               onClick: () => {
                 closeModal();
-                setLockRedirect(false); // 리다이렉트 허용
+                setLockRedirect(false);
               },
             },
           ],
