@@ -47,7 +47,7 @@ function My() {
     {
       label: '리뷰작성',
       icon: 'review',
-      path: '/my/review',
+      path: '/my/my-reviews',
     },
     {
       label: '공유하기',

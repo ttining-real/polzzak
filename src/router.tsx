@@ -18,6 +18,7 @@ import {
   Splash,
   Terms,
 } from '@/pages';
+import DetailReviews from '@/pages/Contents/DetailReviews';
 import ViewDetails from '@/pages/Contents/ViewDetails';
 import {
   Edit as UserEdit,
@@ -146,7 +147,18 @@ export const routes = [
       {
         path: '/contents',
         element: <Contents />,
-        children: [{ path: ':id', element: <ViewDetails /> }],
+        children: [
+          {
+            path: ':id',
+            element: <ViewDetails />,
+            children: [
+              {
+                path: 'reviews',
+                element: <DetailReviews />,
+              },
+            ],
+          },
+        ],
       },
       {
         path: '/splash',
