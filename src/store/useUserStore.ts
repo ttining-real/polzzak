@@ -23,11 +23,8 @@ export const useUserStore = create<UserState & UserActions>((set) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const CURRENT_USER = localStorage.getItem('user');
-
-      if (!CURRENT_USER) {
-        throw new Error('해당 USER의 정보를 가져올 수 없습니다.');
-      }
+      const CURRENT_USER =
+        localStorage.getItem('user') || sessionStorage.getItem('user');
 
       const { data: USER_DATA, error } = await supabase
         .from('users')
@@ -40,7 +37,6 @@ export const useUserStore = create<UserState & UserActions>((set) => ({
 
       set({ user: USER_DATA[0], isLoading: false });
     } catch (error) {
-      console.error(error);
       set({
         error:
           error instanceof Error
