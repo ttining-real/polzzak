@@ -12,7 +12,6 @@ export { default as Terms } from '@/pages/My/Terms';
 export { default as NotFound } from '@/pages/NotFound';
 export { default as Polzzak } from '@/pages/Polzzak/Polzzak';
 export { default as Register } from '@/pages/Register/Register';
-export { default as SignUpCallback } from '@/pages/Register/SignUpCallback';
 export { default as Search } from '@/pages/Search/Search';
 export { default as SearchResult } from '@/pages/Search/SearchResult';
 export { default as Splash } from '@/pages/Splash/Splash';

@@ -15,7 +15,6 @@ import {
   ResetPassword,
   ResetPasswordCallback,
   Search,
-  SignUpCallback,
   Splash,
   Terms,
 } from '@/pages';
@@ -54,11 +53,7 @@ export const routes = [
       },
       {
         path: '/register',
-        element: <Outlet />,
-        children: [
-          { index: true, element: <Register /> },
-          { path: 'sign-up-callback', element: <SignUpCallback /> },
-        ],
+        element: <Register />,
       },
       {
         path: '/search',
