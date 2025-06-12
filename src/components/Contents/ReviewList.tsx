@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
@@ -11,72 +11,26 @@ interface ReviewListProps {
   userId?: string;
   searchParams?: URLSearchParams;
   reviewRef?: React.RefObject<HTMLDivElement | null>;
+  reviewList: reviewData[] | [];
+  setReviewList: Dispatch<SetStateAction<reviewData[]>>;
+  totalReview: number;
 }
 
-function ReviewList({ userId, searchParams, reviewRef }: ReviewListProps) {
+function ReviewList({
+  userId,
+  searchParams,
+  reviewRef,
+  reviewList,
+  setReviewList,
+  totalReview,
+}: ReviewListProps) {
   const { id } = useParams();
   const { pathname } = useLocation();
   const isReviewPage =
     pathname.startsWith('/contents/') && pathname.includes('reviews');
   const isMyReviewPage = pathname === '/my/my-reviews';
   const navigate = useNavigate();
-  const [reviewList, setReviewList] = useState<reviewData[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [totalReview, setTotalReview] = useState(0);
-
-  const getReviewList = useCallback(
-    async (
-      find: [string, string],
-      withCount?: boolean,
-      range?: [number, number],
-    ) => {
-      let query = supabase
-        .from('reviews')
-        .select('*', withCount ? { count: 'exact' } : undefined)
-        .eq(find[0], find[1])
-        .order('created_at', { ascending: false });
-
-      if (range) {
-        query = query.range(range[0], range[1]);
-      }
-
-      const { data, count, error } = await query;
-
-      if (error) {
-        console.log(error);
-        return;
-      }
-
-      const list = data?.map((li) => ({
-        id: li.id,
-        userId: li.user_id,
-        userName: li.user_name,
-        review: li.review,
-        contentId: li.content_id,
-        created: li.created_at,
-      }));
-      setReviewList(list);
-      if (withCount) setTotalReview(count ?? 0);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (!isReviewPage && !isMyReviewPage) {
-      if (!id) return;
-      getReviewList(['content_id', id], true, [0, 2]);
-    } else if (isReviewPage) {
-      if (!id) return;
-      getReviewList(['content_id', id], false);
-    } else if (isMyReviewPage) {
-      console.log(isMyReviewPage);
-      if (!userId) {
-        navigate('/login');
-        return;
-      }
-      getReviewList(['user_id', userId], false, [0, 15]);
-    }
-  }, [id, isReviewPage, isMyReviewPage, getReviewList, navigate, userId]);
 
   const handleAddReview = async () => {
     if (!userId || !id || inputValue.trim() === '') return;
@@ -166,9 +120,7 @@ function ReviewList({ userId, searchParams, reviewRef }: ReviewListProps) {
         className="fs-14 border-b-gray03 flex w-full gap-2 border-b border-solid p-2 font-bold text-black"
       >
         리뷰
-        <span className="fs-13 text-primary font-semibold">
-          {!isReviewPage && !isMyReviewPage ? totalReview : reviewList.length}
-        </span>
+        <span className="fs-13 text-primary font-semibold">{totalReview}</span>
       </h3>
       <div className="relative flex items-center justify-center gap-2">
         <Input
