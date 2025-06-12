@@ -42,7 +42,18 @@ function Login() {
   // 🕹️ 이메일 주소 저장
   const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
+  // auth
+  const { session } = useAuthStore();
+  const isLoggedIn = !!session;
+
   const pwInputRef = useRef<HTMLInputElement>(null);
+
+  // 로그인 한 상태에서 /login 경로 접속 시
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/', { replace: true }); // 홈으로 리다이렉트
+    }
+  }, [isLoggedIn, navigate]);
 
   // ☘️ 페이지 진입 시 foundEmail 적용
   useEffect(() => {
