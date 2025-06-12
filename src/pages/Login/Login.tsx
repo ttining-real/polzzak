@@ -44,7 +44,7 @@ function Login() {
   const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
   // 리다이렉트 잠금
-  const [lockRedirect, setLockRedirect] = useState(true);
+  const [lockRedirect, setLockRedirect] = useState(false);
 
   // ref
   const pwInputRef = useRef<HTMLInputElement>(null);
@@ -54,10 +54,10 @@ function Login() {
 
   // '/login' 경로 접근 시
   useEffect(() => {
-    if (isLoggedIn && !lockRedirect) {
+    if (isLoggedIn && lockRedirect) {
       navigate('/', { replace: true });
     }
-  }, [isLoggedIn, lockRedirect, navigate]);
+  }, [isLoggedIn, lockRedirect, navigate, session]);
 
   // Supabase 인증 성공
   useEffect(() => {
@@ -93,7 +93,7 @@ function Login() {
             return;
           }
 
-          setLockRedirect(true);
+          setLockRedirect(false); // 로그인 성공 시, 리다이렉트 해제
           openModal('email-verification-success');
         }
       };
@@ -164,19 +164,6 @@ function Login() {
           setEmailValid(isValid);
           setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
         }
-      } else {
-        const sessionId = sessionStorage.getItem('user');
-        if (sessionId) {
-          setEmailValue(sessionId);
-          const [emailId, emailDomain = ''] = sessionId.split('@');
-          const { isValid } = validateEmail(emailId, emailDomain);
-          setEmailValid(isValid);
-          setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
-        } else {
-          setEmailValue('');
-          setEmailValid(false);
-          setEmailMessage('');
-        }
       }
     }
   }, [isSavedLogin, location.state?.foundEmail]);
@@ -244,7 +231,6 @@ function Login() {
         localStorage.removeItem('user');
       }
 
-      setLockRedirect(true); // 로그인 성공 시, 리다이렉트 잠금
       openModal('login-success');
     }
   };
@@ -266,13 +252,16 @@ function Login() {
       case 'email-verification-success':
         return {
           header: '이메일 인증 성공',
-          description: ['이메일 인증이 완료되었습니다.'],
+          description: [
+            '이메일 인증이 완료되었습니다.',
+            '확인 버튼을 누르면 홈 화면으로 이동합니다.',
+          ],
           button: [
             {
               text: '확인',
               onClick: () => {
                 closeModal();
-                setLockRedirect(false);
+                setLockRedirect(true);
               },
             },
           ],
@@ -286,7 +275,6 @@ function Login() {
               text: '확인',
               onClick: () => {
                 closeModal();
-                setLockRedirect(false);
               },
             },
           ],
