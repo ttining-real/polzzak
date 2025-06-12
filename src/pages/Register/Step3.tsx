@@ -16,9 +16,6 @@ interface ItemTypes {
   nickname: string;
 }
 
-// 회원가입 페이지를 아예 못들어오게 할 것인지?
-// 회원가입 step1 페이지로만 들어가게 할 것인지?
-
 export default function Step3() {
   const [nicknameValue, setNicknameValue] = useState('');
   const [validStatus, setValidStatus] = useState({
@@ -114,7 +111,6 @@ export default function Step3() {
     // 값이 하나라도 비어 있으면 중단
     if (!email || !password || !nickname) {
       console.error('⚠️ 등록 정보 누락:', { email, password, nickname });
-      // alert('회원가입 정보가 누락되었습니다. 다시 시도해 주세요.');
       openModal('missing-info');
       return;
     }
@@ -122,7 +118,6 @@ export default function Step3() {
     // 이메일 형식 간단 점검 (정규식 or validateNickname과 별개로)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      // alert('이메일 형식이 올바르지 않습니다.');
       openModal('invalid-email');
       return;
     }
@@ -132,6 +127,7 @@ export default function Step3() {
       email,
       password,
       options: {
+        // ⚠️ redirectTo: '배포 URL로 변경/login',
         emailRedirectTo: 'http://localhost:5173/login',
         data: {
           display_name: nickname,
@@ -141,7 +137,6 @@ export default function Step3() {
 
     if (authError) {
       console.error('회원가입 에러 : ', authError.message);
-      // alert(`회원가입 중 에러 발생 : ${authError.message}`);
       openModal('sign-up-error');
       return;
     }
@@ -150,9 +145,8 @@ export default function Step3() {
     // 이 경우는 "이메일 인증을 기다리는 중" 상태
     if (!authData.user) {
       console.log('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
-      // alert('✅ 인증 이메일이 발송되었습니다. 이메일을 확인해주세요.');
       openModal('email-sent');
-      // 여기서 DB에 데이터를 저장하면 안 됨! (인증 완료 후에 저장해야 함)
+      // 여기서 DB에 데이터 저장 ❌ (인증 완료 후 저장)
       return;
     }
 
@@ -163,7 +157,7 @@ export default function Step3() {
       return;
     }
 
-    // Supabase 백엔드 반영까지 잠깐 기다림 (안정성을 위해)
+    // Supabase 백엔드 반영까지 잠깐 기다림 (안정성)
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const userId = authData.user.id;
