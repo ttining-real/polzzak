@@ -49,12 +49,14 @@ function MyReviews() {
 
   return (
     <div>
-      <h2 className="fs-14 lh bg-primary relative -mx-6 mb-6 flex flex-col gap-2 p-6 text-white">
+      <h2 className="fs-14 lh bg-primary relative -m-6 flex flex-col gap-2 p-6 text-white">
         <div className="fs-16 flex items-center gap-1 font-semibold">
           <RabbitFace size={24} /> <p>안내</p>
         </div>
-        <p className="">
-          카드 위 제목을 누르면 리뷰를 작성한 장소의 상세 페이지로 이동해요!
+        <p>
+          {reviewList.length
+            ? '카드 위 제목을 누르면 리뷰를 작성한 장소의 상세 페이지로 이동해요!'
+            : '아직 작성한 리뷰가 없어요!'}
         </p>
         <span className="triangle absolute -bottom-[0.1px] left-10"></span>
       </h2>
@@ -63,6 +65,7 @@ function MyReviews() {
         reviewList={reviewList}
         setReviewList={setReviewList}
         totalReview={totalReview}
+        setTotalReview={setTotalReview}
       />
       <div
         hidden={!hasNextPage}

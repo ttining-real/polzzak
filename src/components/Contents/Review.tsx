@@ -1,8 +1,7 @@
-import { Dispatch, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchGetDetailCommon } from '@/api/openAPI/utils/fetchGetDetailCommon';
-import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
 import AlertDialog from '@/components/Dialog/AlertDialog';
 import Icon from '@/components/Icon/Icon';
@@ -24,20 +23,20 @@ function Review({
   userName,
   review,
   currentUser,
-  setReviewList,
   contentId,
   created,
   isMyReviewPage,
+  onClickDelete,
 }: {
   reviewId?: string;
   userId?: string;
   userName?: string;
   review?: string;
   currentUser?: string;
-  setReviewList?: Dispatch<React.SetStateAction<reviewData[]>>;
   contentId?: string;
   created?: string;
   isMyReviewPage?: boolean;
+  onClickDelete?: (id: string) => void;
 }) {
   const [cardInfo, setCardInfo] = useState<{
     addr1: string;
@@ -64,23 +63,6 @@ function Review({
   const reviewDate = (data: string) => {
     const createdDate = data?.slice(0, 10).split('-');
     return `${createdDate[0]}년 ${createdDate[1]}월 ${createdDate[2]}일`;
-  };
-
-  const onClickDelete = () => {
-    if (!setReviewList) return;
-    const deleteReview = async () => {
-      const { error } = await supabase
-        .from('reviews')
-        .delete()
-        .eq('id', reviewId);
-      if (error) {
-        console.error(error);
-        return;
-      }
-    };
-    deleteReview();
-    setReviewList((prev) => prev.filter((review) => review.id !== reviewId));
-    closeModal();
   };
 
   return userId && review ? (
@@ -131,7 +113,9 @@ function Review({
             {
               text: '삭제',
               onClick: () => {
-                onClickDelete();
+                if (onClickDelete && reviewId) {
+                  onClickDelete(reviewId);
+                }
               },
             },
           ]}
