@@ -305,22 +305,35 @@ function ViewDetails() {
           {isOpenId === '폴짝선택' && (
             <AlertDialog
               header="폴짝 추가하기"
-              description={['신규 또는 기존 폴짝을 ']}
-              buttonDirection="col"
-              button={[
-                {
-                  text: '신규 폴짝 추가하기',
-                  onClick: () => {
-                    onClickNewPolzzak();
-                  },
-                },
-                {
-                  text: '기존 폴짝 추가하기',
-                  onClick: () => {
-                    onClickExistingPolzzak();
-                  },
-                },
+              description={[
+                `신규${radioList?.length ? ' 또는 기존' : ''} 폴짝을 추가해 주세요.`,
               ]}
+              buttonDirection="col"
+              button={
+                radioList?.length
+                  ? [
+                      {
+                        text: '신규 폴짝 추가하기',
+                        onClick: () => {
+                          onClickNewPolzzak();
+                        },
+                      },
+                      {
+                        text: '기존 폴짝 추가하기',
+                        onClick: () => {
+                          onClickExistingPolzzak();
+                        },
+                      },
+                    ]
+                  : [
+                      {
+                        text: '신규 폴짝 추가하기',
+                        onClick: () => {
+                          onClickNewPolzzak();
+                        },
+                      },
+                    ]
+              }
             />
           )}
           <Button variant={'float'}>

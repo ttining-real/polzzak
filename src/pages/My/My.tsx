@@ -5,6 +5,7 @@ import Modal from '@/components/Modal/Modal';
 import MenuItem from '@/components/My/MenuItem';
 import Profile from '@/components/Profile/Profile';
 import UserMenu, { MenuItemTypes } from '@/components/UserMenu/UserMenu';
+import { useToast } from '@/hooks/useToast';
 import RequireLogin from '@/pages/RequireLogin';
 import { useModalStore } from '@/store/useModalStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -20,6 +21,7 @@ function My() {
   const fetchUserInfo = useUserStore((state) => state.fetchUserInfo);
   const isLoading = useUserStore((state) => state.isLoading);
   const error = useUserStore((state) => state.error);
+  const showToast = useToast();
 
   const handleLogoutClick = () => {
     openModal('logout');
@@ -38,22 +40,24 @@ function My() {
       path: '/my/favorites',
     },
     {
-      label: '폴짝추가',
+      label: '나의폴짝',
       icon: 'calendar',
-      onClick: () => {
-        console.log('클릭');
-      },
+      path: '/polzzak',
     },
     {
-      label: '리뷰작성',
+      label: '나의리뷰',
       icon: 'review',
       path: '/my/my-reviews',
     },
     {
-      label: '공유하기',
-      icon: 'share',
+      label: '고객센터',
+      icon: 'customer',
       onClick: () => {
-        console.log('공유하기 클릭');
+        showToast(
+          '[polzzak@gmail.com] 으로 문의해 주세요.',
+          'top-[64px]',
+          2500,
+        );
       },
     },
   ];

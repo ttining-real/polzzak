@@ -59,6 +59,7 @@ function DetailReviews() {
         reviewList={reviewList}
         setReviewList={setReviewList}
         totalReview={totalReview}
+        setTotalReview={setTotalReview}
       />
       <div
         hidden={!hasNextPage}
