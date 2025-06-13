@@ -59,6 +59,23 @@ function Login() {
     }
   }, [isLoggedIn, lockRedirect, navigate, session]);
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const emailParam = searchParams.get('email');
+
+    if (emailParam) {
+      setEmailValue(emailParam);
+
+      const [emailId, emailDomain = ''] = emailParam.split('@');
+      const { isValid, message } = validateEmail(emailId, emailDomain);
+
+      setEmailValid(isValid);
+      setEmailMessage(isValid ? '' : message);
+
+      localStorage.setItem('user', emailParam);
+    }
+  }, [location.search]);
+
   // Supabase 인증 성공
   useEffect(() => {
     const hashParams = new URLSearchParams(location.hash.substring(1));
