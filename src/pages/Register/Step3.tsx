@@ -128,7 +128,7 @@ export default function Step3() {
       password,
       options: {
         // ⚠️ redirectTo: '배포 URL로 변경/login',
-        emailRedirectTo: 'http://localhost:5173/login',
+        emailRedirectTo: `http://localhost:5173/login?email=${encodeURIComponent(email)}`,
         data: {
           display_name: nickname,
         },
