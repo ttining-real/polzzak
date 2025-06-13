@@ -389,6 +389,7 @@ function Details({
           reviewList={reviewList}
           setReviewList={setReviewList}
           totalReview={totalReview}
+          setTotalReview={setTotalReview}
         />
       )}
     </section>

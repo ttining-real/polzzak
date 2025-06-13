@@ -15,6 +15,7 @@ interface ReviewListProps {
   reviewList: reviewData[] | [];
   setReviewList: Dispatch<SetStateAction<reviewData[]>>;
   totalReview: number;
+  setTotalReview: Dispatch<SetStateAction<number>>;
 }
 
 function ReviewList({
@@ -24,6 +25,7 @@ function ReviewList({
   reviewList,
   setReviewList,
   totalReview,
+  setTotalReview,
 }: ReviewListProps) {
   const { id } = useParams();
   const { pathname, search } = useLocation();
@@ -96,8 +98,28 @@ function ReviewList({
     };
     insertReview();
 
+    setTotalReview((prev) => prev + 1);
+
     setInputValue('');
   };
+
+  const onClickDelete = (reviewId: string) => {
+    if (!setReviewList) return;
+    const deleteReview = async () => {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
+      if (error) {
+        console.error(error);
+        return;
+      }
+    };
+    deleteReview();
+    setReviewList((prev) => prev.filter((review) => review.id !== reviewId));
+    setTotalReview((prev) => prev - 1);
+  };
+
   return isMyReviewPage ? (
     <ul className="mt-4 flex flex-col gap-2">
       {reviewList?.map((review) => (
@@ -108,10 +130,10 @@ function ReviewList({
             userName={review.userName}
             review={review.review}
             currentUser={userId}
-            setReviewList={setReviewList}
             contentId={review.contentId}
             created={review.created}
             isMyReviewPage={isMyReviewPage}
+            onClickDelete={onClickDelete}
           />
         </li>
       ))}
@@ -161,8 +183,8 @@ function ReviewList({
                     userName={data.userName}
                     review={data.review}
                     currentUser={userId}
-                    setReviewList={setReviewList}
                     created={data.created}
+                    onClickDelete={onClickDelete}
                   />
                 </li>
               ))
@@ -178,8 +200,8 @@ function ReviewList({
                     userName={data.userName}
                     review={data.review}
                     currentUser={userId}
-                    setReviewList={setReviewList}
                     created={data.created}
+                    onClickDelete={onClickDelete}
                   />{' '}
                   {idx === 2 && (
                     <div className="from-gray07 pointer-events-none absolute bottom-0 left-0 h-2 w-full bg-gradient-to-t to-transparent dark:from-white" />
@@ -193,7 +215,7 @@ function ReviewList({
             </li>
           )}
         </ul>
-        {!isReviewPage && (
+        {!isReviewPage && reviewList.length > 2 && (
           <Button
             variant={'secondary'}
             size={'md'}
