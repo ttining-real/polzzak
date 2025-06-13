@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
 
+import Button from '@/components/Button/Button';
 import { reviewData } from '@/components/Contents/Review';
 import ReviewList from '@/components/Contents/ReviewList';
 import Loader from '@/components/Loader/Loader';
@@ -49,31 +50,57 @@ function MyReviews() {
 
   return (
     <div>
-      <h2 className="fs-14 lh bg-primary relative -m-6 flex flex-col gap-2 p-6 text-white">
+      <h2
+        className={`fs-14 lh relative -m-6 flex flex-col gap-2 p-6 text-white ${reviewList.length ? 'bg-primary' : 'bg-gray07'}`}
+      >
         <div className="fs-16 flex items-center gap-1 font-semibold">
           <RabbitFace size={24} /> <p>안내</p>
         </div>
         <p>
           {reviewList.length
             ? '카드 위 제목을 누르면 리뷰를 작성한 장소의 상세 페이지로 이동해요!'
-            : '아직 작성한 리뷰가 없어요!'}
+            : '내가 작성한 모든 리뷰를 볼 수 있어요!'}
         </p>
         <span className="triangle absolute -bottom-[0.1px] left-10"></span>
       </h2>
-      <ReviewList
-        userId={userId}
-        reviewList={reviewList}
-        setReviewList={setReviewList}
-        totalReview={totalReview}
-        setTotalReview={setTotalReview}
-      />
-      <div
-        hidden={!hasNextPage}
-        ref={ref}
-        className="text-primary animate-pulse p-8 text-center font-semibold duration-1000"
-      >
-        Loading...
-      </div>
+      {reviewList.length ? (
+        <>
+          <ReviewList
+            userId={userId}
+            reviewList={reviewList}
+            setReviewList={setReviewList}
+            totalReview={totalReview}
+            setTotalReview={setTotalReview}
+          />
+          <div
+            hidden={!hasNextPage}
+            ref={ref}
+            className="text-primary animate-pulse p-8 text-center font-semibold duration-1000"
+          >
+            Loading...
+          </div>
+        </>
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+            <RabbitFace size={72} />
+            <h3 className="fs-16 font-semibold">아직 작성한 리뷰가 없어요.</h3>
+            <p className="fs-16 flex flex-col items-center">
+              <span>방문한 장소의 감상을 남겨보세요.</span>
+              <span>여러분의 경험이 다른 사용자에게 큰 도움이 돼요!</span>
+            </p>
+          </div>
+          <Button
+            variant={'secondary'}
+            onClick={() => {
+              navigate('/');
+            }}
+            className="w-full"
+          >
+            홈으로 돌아가기
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
