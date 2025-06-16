@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { useHeaderStore } from '@/store/useHeaderStore';
 
 interface FavoritesCardsProps {
-  id: string;
   name: string;
   images: string[];
   onClickDelete?: () => void;
@@ -14,13 +13,13 @@ interface FavoritesCardsProps {
 }
 
 function FavoritesCards({
-  id,
   name,
   images,
   onClickDelete,
   onClickModify,
 }: FavoritesCardsProps) {
   const isEditMode = useHeaderStore((state) => state.isEditMode);
+  const encodedName = encodeURIComponent(name);
 
   return isEditMode ? (
     <div
@@ -37,7 +36,7 @@ function FavoritesCards({
     </div>
   ) : (
     <Link
-      to={`/my/favorites/${id}`}
+      to={`/my/favorites/${encodedName}`}
       className={cn(
         'focus-visible:ring-ring relative w-full outline-none focus-visible:rounded-md focus-visible:ring-[2px] focus-visible:ring-offset-2',
       )}

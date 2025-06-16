@@ -1,23 +1,27 @@
 import { Link } from 'react-router-dom';
 
 import { CarouselItem } from '@/components/Home/Carousel';
+import { typeToFilterName } from '@/lib/filterMap';
 
 import RabbitFace from '../RabbitFace/RabbitFace';
 
 export interface ThemeItem {
   contentid: string;
+  contenttypeid: string;
   title: string;
   addr1: string;
   firstimage: string;
 }
 
 function ThemeItemCard({ item }: { item: ThemeItem }) {
-  const { contentid, firstimage, title, addr1 } = item;
+  const { contentid, contenttypeid, firstimage, title, addr1 } = item;
 
   return (
     <CarouselItem className="shrink-0 basis-[150px]">
       {/* 상세페이지 생성 후 수정 */}
-      <Link to={`/contents/${contentid}`}>
+      <Link
+        to={`/contents/${contentid}?category=${typeToFilterName(contenttypeid)}`}
+      >
         <figure>
           <div className="bg-primary/10 flex aspect-[4/3] w-full items-center justify-center rounded-md">
             {firstimage ? (

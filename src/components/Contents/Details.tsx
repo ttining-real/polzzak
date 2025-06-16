@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
+import { getReviewsContent } from '@/api/supabase/utils/getReviewsContent';
 import Button from '@/components/Button/Button';
+import { reviewData } from '@/components/Contents/Review';
+import ReviewList from '@/components/Contents/ReviewList';
 
 interface DetailsTypes {
   info: {
@@ -39,19 +43,39 @@ interface DetailsTypes {
     chkcreditcardshopping?: string;
     saleitem?: string;
     infocentershopping?: string;
+    reservation?: string;
+    usetimeleports?: string;
+    parkingleports?: string;
+    parkingfeeleports?: string;
   };
   data: {
     contenttypeid?: string;
     title?: string;
     addr1?: string;
+    addr2?: string;
     overview?: string;
     telname?: string;
     tel?: string;
   };
+  reviewRef: React.RefObject<HTMLDivElement | null>;
+  userId: string;
+  searchParams: URLSearchParams;
 }
 
-function Details({ info, data }: DetailsTypes) {
+function Details({
+  info,
+  data,
+  reviewRef,
+  userId,
+  searchParams,
+}: DetailsTypes) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const contentTypeId = data?.contenttypeid ?? '';
   const [isOpen, setIsOpen] = useState(false);
+  const [reviewList, setReviewList] = useState<reviewData[]>([]);
+  const [totalReview, setTotalReview] = useState(0);
+
   const toggleMoreButton = () => {
     setIsOpen(!isOpen);
   };
@@ -64,15 +88,20 @@ function Details({ info, data }: DetailsTypes) {
   };
 
   const renderByContentTypeId = () => {
-    if (!data.contenttypeid) return;
-    switch (data.contenttypeid) {
+    if (!contentTypeId) return;
+    switch (contentTypeId) {
       case '12':
         return {
           infoItems: [
             { label: '장소명', value: `${data.title}` },
             { label: '운영시간', value: `${info.usetime}` },
             { label: '휴무일', value: `${info.restdate}` },
-            { label: '주소', value: `${data.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             { label: '문의', value: `${info.infocenter}` },
             { label: '주차여부', value: `${info.parking}` },
             { label: '체험활동', value: `${info.expguide ?? ''}` },
@@ -90,7 +119,12 @@ function Details({ info, data }: DetailsTypes) {
             { label: '시설명', value: `${data.title}` },
             { label: '운영시간', value: `${info.usetimeculture}` },
             { label: '휴무일', value: `${info.restdateculture}` },
-            { label: '주소', value: `${data.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             { label: '문의', value: `${info.infocenterculture}` },
             { label: '입장료', value: `${info.usefee}` },
             { label: '소요시간', value: `${info.spendtime}` },
@@ -112,7 +146,12 @@ function Details({ info, data }: DetailsTypes) {
               value: `${changeDate(info.eventstartdate ?? '')} ~ ${changeDate(info.eventenddate ?? '')}`,
             },
             { label: '휴무일', value: '1월 1일, 설날 및 추석 연휴' },
-            { label: '주소', value: `${data.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             {
               label: '문의',
               value: `${info.sponsor1tel ? info.sponsor1tel : data.tel}`,
@@ -129,13 +168,76 @@ function Details({ info, data }: DetailsTypes) {
             },
           ],
         };
+      case '25':
+        return {
+          infoItems: [
+            { label: '코스명', value: `${data.title}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
+          ],
+          overview: [
+            {
+              label: '코스 소개',
+              value: `${data.overview}`,
+            },
+          ],
+        };
+      case '28':
+        return {
+          infoItems: [
+            { label: '장소명', value: `${data.title}` },
+            {
+              label: '이용시간',
+              value: `${info.usetimeleports}`,
+            },
+            { label: '예약', value: `${info.reservation}` },
+            { label: '휴무일', value: '1월 1일, 설날 및 추석 연휴' },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
+            {
+              label: '문의',
+              value: `${info.sponsor1tel ? info.sponsor1tel : data.tel}`,
+            },
+            {
+              label: '입장료',
+              value: `${info.usetimefestival ? info.usetimefestival : '없음'}`,
+            },
+            {
+              label: '주차여부',
+              value: `${info.parkingleports}`,
+            },
+            {
+              label: '주차요금',
+              value: `${info.parkingfeeleports}`,
+            },
+          ],
+          overview: [
+            {
+              label: '장소 소개',
+              value: `${data.overview}`,
+            },
+          ],
+        };
       case '32':
         return {
           infoItems: [
             { label: '숙소명', value: `${data.title}` },
             { label: '체크인', value: `${info.checkintime}` },
             { label: '체크아웃', value: `${info.checkouttime}` },
-            { label: '주소', value: `${info.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             { label: '문의', value: `${info.infocenterlodging}` },
             { label: '주차여부', value: `${info.parkinglodging}` },
             { label: '편의시설', value: `${info.subfacility}` },
@@ -153,7 +255,12 @@ function Details({ info, data }: DetailsTypes) {
             { label: '장소명', value: `${data.title}` },
             { label: '운영시간', value: `${info.opentime}` },
             { label: '휴무일', value: `${info.restdateshopping}` },
-            { label: '주소', value: `${info.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             {
               label: '문의',
               value:
@@ -179,7 +286,12 @@ function Details({ info, data }: DetailsTypes) {
             { label: '상호명', value: `${data.title}` },
             { label: '영업시간', value: `${info.opentimefood}` },
             { label: '휴무일', value: `${info.restdatefood}` },
-            { label: '주소', value: `${info.addr1}` },
+            {
+              label: '주소',
+              value: data.addr2
+                ? `${data.addr1} ${data.addr2}`
+                : `${data.addr1}`,
+            },
             { label: '문의', value: `${info.infocenterfood}` },
             { label: '대표메뉴', value: `${info.firstmenu}` },
             { label: '기타메뉴', value: `${info.treatmenu}` },
@@ -201,8 +313,29 @@ function Details({ info, data }: DetailsTypes) {
     overview: [],
   };
 
+  const deleteBr = (value: string) => value.replace(/<br\s*\/?>/g, ' ');
+
+  useEffect(() => {
+    if (!id) {
+      navigate('/', { replace: true });
+      return;
+    }
+    const fetchReviews = async () => {
+      const res = await getReviewsContent({
+        find: ['content_id', id],
+        page: 0,
+        pageSize: 3,
+      });
+
+      setReviewList(res?.[0] ?? []);
+      setTotalReview(res?.[1] ?? 0);
+    };
+    fetchReviews();
+  }, [id, navigate]);
+
   return (
     <section className="flex flex-col gap-6">
+      {/* 홈 */}
       <div className="flex flex-col gap-2">
         <h3 className="fs-14 border-b-gray03 w-full border-b border-solid p-2 font-bold text-black">
           이용안내
@@ -218,12 +351,14 @@ function Details({ info, data }: DetailsTypes) {
                   {item.label}
                 </dt>
                 <dd className="fs-13 lh ls whitespace-pre-line">
-                  {item.value}
+                  {deleteBr(item.value)}
                 </dd>
               </div>
             ))}
         </dl>
       </div>
+
+      {/* 추가정보 */}
       {overview.map((item, index) => (
         <div className="flex flex-col gap-2" key={index}>
           <h3 className="fs-14 border-b-gray03 w-full border-b border-solid p-2 font-bold text-black">
@@ -244,9 +379,19 @@ function Details({ info, data }: DetailsTypes) {
           </Button>
         </div>
       ))}
-      <cite className="text-gray04 fs-13 ls lh font-light">
-        ※ 한국관광공사 TourAPI 4.0을 통해 제공받은 데이터 입니다.
-      </cite>
+
+      {/* 리뷰 */}
+      {reviewRef && userId && (
+        <ReviewList
+          reviewRef={reviewRef}
+          userId={userId}
+          searchParams={searchParams}
+          reviewList={reviewList}
+          setReviewList={setReviewList}
+          totalReview={totalReview}
+          setTotalReview={setTotalReview}
+        />
+      )}
     </section>
   );
 }

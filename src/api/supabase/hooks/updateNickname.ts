@@ -2,21 +2,19 @@ import supabase from '@/api/supabase';
 
 export async function updateNickname(inputNickname: string) {
   // > localStorage 또는 sessionStorage에서 사용자ID 가져오기
-  const USER_ID =
-    localStorage.getItem('ex_users') ||
-    localStorage.getItem('user') ||
-    sessionStorage.getItem('user');
+  const USER_EMAIL =
+    localStorage.getItem('user') || sessionStorage.getItem('user');
 
-  if (!USER_ID) {
+  if (!USER_EMAIL) {
     console.error('해당 USER의 ID가 존재하지 않습니다.');
     return false;
   }
 
   // > 현재 사용자 정보 확인
   const { data: USER_DATA, error: fetchError } = await supabase
-    .from('ex_users')
+    .from('users')
     .select('*')
-    .eq('user_id', USER_ID)
+    .eq('email', USER_EMAIL)
     .single();
 
   if (!USER_DATA || fetchError) {
@@ -25,9 +23,9 @@ export async function updateNickname(inputNickname: string) {
   }
 
   const { error: updateError } = await supabase
-    .from('ex_users')
+    .from('users')
     .update({ nickname: inputNickname })
-    .eq('user_id', USER_ID);
+    .eq('email', USER_EMAIL);
 
   if (updateError) {
     console.error(

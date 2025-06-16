@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DateRange } from 'react-day-picker';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
@@ -86,6 +86,7 @@ function polzzakReducer(
 
 function AddNEdit() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isEditPage = Boolean(id);
   const isAddPage = !isEditPage;
@@ -97,8 +98,8 @@ function AddNEdit() {
   const { isOpen, openModal, closeModal } = useDialogStore();
   const [state, dispatch] = useReducer(polzzakReducer, initialPolzzakState);
   const inputRef = useRef<HTMLInputElement>(null);
-  const getUserId = useAuthStore((state) => state.user);
-  const userId = getUserId?.id;
+  const { user } = useAuthStore();
+  const userId = user?.id;
   const showToast = useToast();
   const {
     name,
@@ -112,14 +113,15 @@ function AddNEdit() {
 
   useEffect(() => {
     if (!userId) {
+      showToast('로그인 후 이용할 수 있어요!', 'top-[64px]', 2000);
       navigate('/polzzak', { replace: true });
     }
-  }, [userId, navigate]);
+  }, [userId, navigate, showToast]);
 
   /* 편집 정보 가져오기 */
   const getEditInfo = useCallback(async () => {
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
       .select('*')
       .eq('id', id);
 
@@ -135,7 +137,7 @@ function AddNEdit() {
 
     const getEditRegion = async () => {
       const { data: regionData, error: regionErr } = await supabase
-        .from('ex_polzzak_region')
+        .from('polzzak_region')
         .select('region')
         .eq('polzzak_id', id);
 
@@ -279,17 +281,38 @@ function AddNEdit() {
   const saveAddPolzzak = async () => {
     setIsSaving(true);
 
+    if (!name) return;
+
     let finalThumbnailPath = null;
     if (thumbnailBlob) {
       finalThumbnailPath = await uploadFileToStorage(thumbnailBlob);
     }
     /* 폴짝 이름 저장 */
     const { data, error } = await supabase
-      .from('ex_polzzak')
+      .from('polzzak')
+      .select('name')
+      .match({ user_id: userId, name: name });
+    console.log(data);
+
+    if (data?.length) {
+      showToast('같은 이름이 존재합니다.', 'bottom-[64px]', 2000);
+      setIsSaving(false);
+      return;
+    }
+
+    if (error) {
+      errToast('추가');
+      console.error(error);
+      return;
+    }
+    console.log('1 통과!!');
+
+    const { data: insertData, error: insertErr } = await supabase
+      .from('polzzak')
       .insert([
         {
           user_id: userId,
-          name: name || null,
+          name: name,
           startDate:
             dateRange?.from &&
             format(dateRange.from, 'yyyy-MM-dd', { locale: ko }),
@@ -301,24 +324,29 @@ function AddNEdit() {
       ])
       .select();
 
-    if (error) {
+    if (insertErr) {
       errToast('추가');
-      console.error(error);
+      console.error(insertErr);
       return;
     }
 
-    if (!data || data.length === 0) {
+    if (!insertData || insertData.length === 0) {
       errToast('추가');
-      console.error(error);
+      console.error(insertData);
       return;
     }
+    console.log(insertData);
+    console.log('2 통과!!');
 
-    const polzzakId = data[0].id;
+    const polzzakId = insertData[0].id;
+
+    console.log(polzzakId);
+    console.log('3 통과!!');
     try {
       /* 폴짝 날짜 저장 */
       if (dateRange?.from && !dateRange.to) {
         const { error: oneScheduleErr } = await supabase
-          .from('ex_polzzak_schedule')
+          .from('polzzak_schedule')
           .insert([
             {
               polzzak_id: polzzakId,
@@ -334,7 +362,7 @@ function AddNEdit() {
         );
 
         const { error: scheduleErr } = await supabase
-          .from('ex_polzzak_schedule')
+          .from('polzzak_schedule')
           .insert(
             dateList.map((date) => ({
               polzzak_id: polzzakId,
@@ -348,7 +376,7 @@ function AddNEdit() {
       /* 폴짝 지역 저장 */
       if (region) {
         const { error: regionErr } = await supabase
-          .from('ex_polzzak_region')
+          .from('polzzak_region')
           .insert(
             region.map((item) => ({
               polzzak_id: polzzakId,
@@ -359,16 +387,27 @@ function AddNEdit() {
         if (regionErr) throw regionErr;
       }
 
-      navigate(`/polzzak/${polzzakId}`, { replace: true });
+      const fromPath = location.state?.from;
+
+      console.log('4 통과!!');
+      console.log(fromPath);
+      if (fromPath) {
+        navigate(fromPath, { replace: true });
+      } else {
+        navigate(`/polzzak/${encodeURIComponent(name)}`, { replace: true });
+      }
+
+      console.log('5 통과!!');
     } catch (err) {
       errToast('추가');
       console.error('데이터 저장 실패 : ', err);
       if (polzzakId) {
-        await supabase.from('ex_polzzak').delete().eq('id', polzzakId);
+        await supabase.from('polzzak').delete().eq('id', polzzakId);
       }
     } finally {
       setIsSaving(false);
       dispatch({ type: 'RESET' });
+      console.log('6 통과!!');
     }
   };
 
@@ -381,6 +420,24 @@ function AddNEdit() {
 
   const saveEditPolzzak = async () => {
     setIsSaving(true);
+    if (!name) return;
+    const { data, error } = await supabase
+      .from('polzzak')
+      .select('name')
+      .match({ user_id: userId, name: name });
+    console.log(data);
+
+    if (data?.length) {
+      showToast('같은 이름이 존재합니다.', 'bottom-[64px]', 2000);
+      setIsSaving(false);
+      return;
+    }
+
+    if (error) {
+      errToast('추가');
+      console.error(error);
+      return;
+    }
 
     try {
       let finalThumbnailPath = thumbnail;
@@ -404,11 +461,11 @@ function AddNEdit() {
       }
 
       const { error } = await supabase
-        .from('ex_polzzak')
+        .from('polzzak')
         .update([
           {
             user_id: userId,
-            name: name || null,
+            name: name,
             startDate:
               dateRange?.from &&
               format(dateRange.from, 'yyyy-MM-dd', { locale: ko }),
@@ -461,16 +518,16 @@ function AddNEdit() {
 
         if (toDelete.length > 0) {
           const { error: deleteScheduleErr } = await supabase
-            .from('ex_polzzak_schedule')
+            .from('polzzak_schedule')
             .delete()
             .in('date', toDelete)
             .eq('polzzak_id', id);
           if (deleteScheduleErr) throw deleteScheduleErr;
         }
-        // // 추가: 새로 생긴 날짜는 schedule만 insert
+        // 추가: 새로 생긴 날짜는 schedule만 insert
         if (toInsert.length > 0) {
           const { error: insertScheduleErr } = await supabase
-            .from('ex_polzzak_schedule')
+            .from('polzzak_schedule')
             .insert(
               toInsert.map((date) => ({
                 polzzak_id: id,
@@ -488,7 +545,7 @@ function AddNEdit() {
         }
         if (changeRegion) {
           const { error: deleteErr } = await supabase
-            .from('ex_polzzak_region')
+            .from('polzzak_region')
             .delete()
             .eq('polzzak_id', id);
 
@@ -496,7 +553,7 @@ function AddNEdit() {
         }
 
         const { error: insertErr } = await supabase
-          .from('ex_polzzak_region')
+          .from('polzzak_region')
           .insert(
             region.map((item) => ({
               polzzak_id: id,
@@ -508,7 +565,7 @@ function AddNEdit() {
       } else {
         if (editRegion?.length) {
           const { error: deleteErr } = await supabase
-            .from('ex_polzzak_region')
+            .from('polzzak_region')
             .delete()
             .eq('polzzak_id', id);
 
@@ -540,6 +597,10 @@ function AddNEdit() {
             }
             maxLength={20}
           />
+
+          {!name && (
+            <Validation status={false} message="필수 입력 항목입니다." />
+          )}
         </div>
         <div>
           <Input
@@ -626,7 +687,7 @@ function AddNEdit() {
         )}
       </div>
       <Button
-        disabled={isSaving || !dateRange?.from}
+        disabled={isSaving || !dateRange?.from || !name}
         onClick={async () => {
           if (!userId) {
             navigate('/polzzak', { replace: true });

@@ -9,10 +9,13 @@ interface UserState {
   } | null;
   isLoading: boolean;
   error: string | null;
+}
+
+interface UserActions {
   fetchUserInfo: () => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState & UserActions>((set) => ({
   user: null,
   isLoading: false,
   error: null,
@@ -21,18 +24,12 @@ export const useUserStore = create<UserState>((set) => ({
 
     try {
       const CURRENT_USER =
-        sessionStorage.getItem('user') || localStorage.getItem('user');
-
-      if (!CURRENT_USER) {
-        throw new Error(
-          'sessionStorage에 해당 USER의 정보를 가져올 수 없습니다.',
-        );
-      }
+        localStorage.getItem('user') || sessionStorage.getItem('user');
 
       const { data: USER_DATA, error } = await supabase
-        .from('ex_users')
-        .select('nickname,email')
-        .eq('user_id', CURRENT_USER);
+        .from('users')
+        .select('nickname, email')
+        .eq('email', CURRENT_USER);
 
       if (error || !USER_DATA || USER_DATA.length === 0) {
         throw new Error('사용자 정보를 가져오는 데 실패했습니다.');
@@ -40,7 +37,6 @@ export const useUserStore = create<UserState>((set) => ({
 
       set({ user: USER_DATA[0], isLoading: false });
     } catch (error) {
-      console.error(error);
       set({
         error:
           error instanceof Error

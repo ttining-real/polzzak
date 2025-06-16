@@ -7,6 +7,7 @@ import Loader from '@/components/Loader/Loader';
 import PolzzakListItem from '@/components/Polzzak/PolzzakListItem';
 import TimelineSchedule from '@/components/Timeline/TimelineSchedule';
 import { useToast } from '@/hooks/useToast';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useHeaderStore } from '@/store/useHeaderStore';
 
 export interface ScheduleList {
@@ -29,6 +30,8 @@ function Schedule() {
   const { id } = useParams();
   const navigate = useNavigate();
   const setContentsTitle = useHeaderStore((state) => state.setContentsTitle);
+  const { user } = useAuthStore();
+  const userId = user?.id;
   const showToast = useToast();
 
   const {
@@ -39,9 +42,9 @@ function Schedule() {
     queryKey: ['polzzak', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak')
+        .from('polzzak')
         .select('*')
-        .eq('id', id)
+        .match({ user_id: userId, name: id })
         .single();
       if (error) throw error;
       return data;
@@ -70,9 +73,9 @@ function Schedule() {
     queryKey: ['schedule', id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak_schedule')
+        .from('polzzak_schedule')
         .select('date, schedule_id')
-        .eq('polzzak_id', id)
+        .eq('polzzak_id', polzzakData.id)
         .order('date', { ascending: true });
       if (error) throw error;
       return data;
@@ -90,7 +93,7 @@ function Schedule() {
     queryKey: ['schedule-details'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('ex_polzzak_detail')
+        .from('polzzak_detail')
         .select('*')
         .in('schedule_id', scheduleIds)
         .order('order', { ascending: true });

@@ -1,6 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 
 import supabase from '@/api/supabase';
 import Button from '@/components/Button/Button';
@@ -8,6 +13,9 @@ import Icon from '@/components/Icon/Icon';
 import Input from '@/components/Input/Input';
 import { Textarea } from '@/components/Input/Textarea';
 import { useToast } from '@/hooks/useToast';
+import { transAddress } from '@/lib/transAddress';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useReturnPathStore } from '@/store/useReturnPathStore';
 
 interface PlanProps {
   cardId?: string;
@@ -16,12 +24,17 @@ interface PlanProps {
     content_id: string;
     time: string;
     memo: string;
+    region?: string;
   }) => void;
 }
 
 function Plan({ cardId, onUpdatePlan }: PlanProps) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuthStore();
+  const userId = user?.id;
+  const { place, contentId, region } = location.state || {};
   const [searchParams] = useSearchParams();
   const date = cardId ? '' : searchParams.get('date');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,99 +45,137 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
     time: '',
     memo: '',
   });
+  const [isSelectMap, setIsSelectMap] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [transRegion, setTransRegion] = useState<string | null>(null);
   const showToast = useToast();
   const queryClient = useQueryClient();
 
   /* add */
   useEffect(() => {
-    if (!date) {
-      navigate(`/polzzak/${id}`);
-    } else if (!id) {
-      navigate('/polzzak');
+    if (!date || !id) {
+      navigate(`/polzzak/${id ? encodeURIComponent(id) : ''}`);
     }
   }, [date, id, navigate]);
+
+  useEffect(() => {
+    if (region) {
+      const addr = transAddress(region);
+      setTransRegion(addr);
+    }
+  }, [region]);
 
   const onSavePlan = async () => {
     if (isSaving) return;
     setIsSaving(true);
-    const { data, error: scheduleIdErr } = await supabase
-      .from('ex_polzzak_schedule')
-      .select('schedule_id')
-      .eq('polzzak_id', id)
-      .eq('date', date)
-      .single();
 
-    if (scheduleIdErr || !data) {
-      console.error(scheduleIdErr);
+    try {
+      const { data, error: scheduleIdErr } = await supabase
+        .from('polzzak')
+        .select('id, polzzak_schedule(schedule_id)')
+        .match({ user_id: userId, name: id })
+        .eq('polzzak_schedule.date', date)
+        .single();
+
+      if (scheduleIdErr) throw scheduleIdErr;
+      if (!data) return;
+
+      const scheduleId = data.polzzak_schedule[0].schedule_id;
+      const { data: orderData, error: orderErr } = await supabase
+        .from('polzzak_detail')
+        .select('order')
+        .eq('schedule_id', scheduleId)
+        .order('order', { ascending: true });
+
+      if (orderErr) throw orderErr;
+      if (!orderData) return;
+
+      const orderMap = orderData?.map((num) => num.order);
+      const myOrderNumber = orderMap.length ? Math.max(...orderMap) + 1 : 0;
+
+      const { error } = await supabase.from('polzzak_detail').insert([
+        {
+          schedule_id: scheduleId,
+          place: plan!.place.trim(),
+          time: plan.time || null,
+          memo: plan.memo.trim() || null,
+          content_id: plan?.content_id || null,
+          order: myOrderNumber,
+        },
+      ]);
+
+      if (error) throw error;
+
+      if (transRegion) {
+        const { error } = await supabase
+          .from('polzzak_region')
+          .upsert([{ polzzak_id: data.id, region: transRegion }], {
+            onConflict: 'polzzak_id,region',
+          });
+
+        if (error) throw error;
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ['schedule-details'],
+      });
+
+      navigate(`/polzzak/${id && encodeURIComponent(id)}`);
+    } catch (err) {
       showToast(
         '폴짝을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
         'top-[64px]',
         4000,
       );
       setIsSaving(false);
+      console.error(err);
       return;
     }
-
-    const scheduleId = data.schedule_id;
-    const { data: orderData, error: orderErr } = await supabase
-      .from('ex_polzzak_detail')
-      .select('order')
-      .eq('schedule_id', scheduleId)
-      .order('order', { ascending: true });
-
-    if (orderErr || !orderData) {
-      console.error(orderErr);
-      showToast(
-        '해당 폴짝을 가져오지 못했어요. 잠시 후 다시 시도해 주세요.',
-        'top-[64px]',
-        4000,
-      );
-      return;
-    }
-
-    const orderMap = orderData?.map((num) => num.order);
-    const myOrderNumber = orderMap.length ? Math.max(...orderMap) + 1 : 0;
-
-    const { error } = await supabase.from('ex_polzzak_detail').insert([
-      {
-        schedule_id: scheduleId,
-        place: plan!.place.trim(),
-        time: plan.time || null,
-        memo: plan.memo.trim() || null,
-        content_id: plan?.content_id || null,
-        order: myOrderNumber,
-      },
-    ]);
-
-    if (error) {
-      console.error(error);
-      showToast(
-        '폴짝을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
-        'top-[64px]',
-        4000,
-      );
-      setIsSaving(false);
-      return;
-    }
-
-    await queryClient.invalidateQueries({
-      queryKey: ['schedule-details'],
-    });
-
-    navigate(`/polzzak/${id}`);
   };
 
-  /* edit */
-
+  /* 맵에서 선택한 장소가 있는지 먼저 확인 */
   useEffect(() => {
-    if (cardId && onUpdatePlan) onUpdatePlan(plan);
-  }, [cardId, onUpdatePlan, plan]);
+    if (place) {
+      setIsSelectMap(true);
+    }
+  }, [place]);
 
+  /* 맵에서 선택한 장소 처리 */
+  useEffect(() => {
+    if (!place) return;
+
+    setPlan((prev) => ({ ...prev, place, content_id: contentId }));
+  }, [place, contentId]);
+
+  /* plan 상태가 변경될 때마다 부모에게 알림 */
+  useEffect(() => {
+    if (!onUpdatePlan) return;
+
+    if (transRegion) {
+      onUpdatePlan({
+        place: plan.place,
+        time: plan.time,
+        memo: plan.memo,
+        content_id: plan.content_id,
+        region: transRegion,
+      });
+    } else {
+      onUpdatePlan({
+        place: plan.place,
+        time: plan.time,
+        memo: plan.memo,
+        content_id: plan.content_id,
+      });
+    }
+  }, [plan, onUpdatePlan, transRegion]);
+
+  /* 편집 모드일 때 기존 데이터 가져오기 */
   const getEditPlan = useCallback(
     async (cardId: string) => {
+      if (place || isSelectMap) return;
+
       const { data, error } = await supabase
-        .from('ex_polzzak_detail')
+        .from('polzzak_detail')
         .select('place, time, memo, content_id, order')
         .eq('id', cardId);
 
@@ -138,14 +189,16 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
         return;
       }
 
-      setPlan({
+      const editData = {
         place: data[0].place,
         time: data[0]?.time?.slice(0, 5) ?? '',
         memo: data[0]?.memo ?? '',
         content_id: data[0]?.content_id ?? '',
-      });
+      };
+
+      setPlan(editData);
     },
-    [showToast],
+    [showToast, place, isSelectMap],
   );
 
   useEffect(() => {
@@ -162,16 +215,21 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
           placeholder="폴짝 장소를 선택해 주세요."
           value={plan.place}
           onChange={(e) =>
-            setPlan({
-              place: e.target.value,
-              time: plan.time,
-              memo: plan.memo,
-              content_id: plan.content_id,
-            })
+            setPlan((prev) => ({ ...prev, place: e.target.value }))
           }
           maxLength={20}
         >
-          <Button variant={'input'} onClick={() => navigate('/map')}>
+          <Button
+            variant={'input'}
+            onClick={() => {
+              useReturnPathStore
+                .getState()
+                .setFromPath(
+                  `${location.pathname}${location.search ? location.search : ''}`,
+                );
+              navigate('/map');
+            }}
+          >
             <Icon id="map_search" className="text-gray05" />
           </Button>
         </Input>
@@ -214,12 +272,10 @@ function Plan({ cardId, onUpdatePlan }: PlanProps) {
           placeholder="폴짝 메모를 작성해 주세요."
           value={plan.memo}
           onChange={(e) =>
-            setPlan({
-              place: plan.place,
-              time: plan.time,
+            setPlan((prev) => ({
+              ...prev,
               memo: e.target.value,
-              content_id: plan.content_id,
-            })
+            }))
           }
         />
       </section>

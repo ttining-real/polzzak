@@ -10,8 +10,8 @@ import Input from '@/components/Input/Input';
 import Validation from '@/components/Input/Validation';
 import RabbitFace from '@/components/RabbitFace/RabbitFace';
 import { useToast } from '@/hooks/useToast';
-import { validatePassword } from '@/lib/validatePassword';
-import { validateId } from '@/lib/validationId';
+import { validateEmail } from '@/lib/validationEmail';
+import { validatePassword } from '@/lib/validationPassword';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useDialogStore } from '@/store/useDialogStore';
 
@@ -20,85 +20,191 @@ function Login() {
   const showToast = useToast();
   const navigate = useNavigate();
 
-  const { isOpen, openModal, closeModal } = useDialogStore();
+  const { isOpen, isOpenId, openModal, closeModal } = useDialogStore();
+  const { session, setSession, setUser } = useAuthStore();
 
-  // 🕹️ 아이디
-  const [idValue, setIdValue] = useState('');
-  const [idMessage, setIdMessage] = useState('');
-  const [idValid, setIdValid] = useState<boolean | null>(null);
+  // 이메일
+  const [emailValue, setEmailValue] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호
+  // 비밀번호
   const [pwValue, setPwValue] = useState('');
   const [pwMessage, setPwMessage] = useState('');
   const [pwValid, setPwValid] = useState<boolean | null>(null);
 
-  // 🕹️ 비밀번호 가시성
+  // 비밀번호 가시성 버튼
   const [isVisible, setIsVisible] = useState(false);
   const inputType = isVisible ? 'text' : 'password';
   const visibleIconId: IconId = isVisible
     ? 'visibillity_on'
     : 'visibillity_off';
 
-  // 🕹️ 아이디 저장
-  const [isSavedId, setIsSavedId] = useState(() => {
-    const saved = localStorage.getItem('saveId');
-    return saved ? JSON.parse(saved) : true;
-  });
+  // 이메일 주소 저장
+  const [isSavedLogin, setIsSavedLogin] = useState<boolean>(true);
 
+  // 리다이렉트 잠금
+  const [lockRedirect, setLockRedirect] = useState(false);
+
+  // ref
   const pwInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. 페이지 진입 시 foundId 적용
+  // 로그인 여부
+  const isLoggedIn = !!session;
+
+  // '/login' 경로 접근 시
   useEffect(() => {
-    if (location.state?.foundId) {
-      setIdValue(location.state.foundId);
-      setIdValid(true);
+    if (isLoggedIn && lockRedirect) {
+      navigate('/', { replace: true });
     }
-  }, [location.state?.foundId]);
+  }, [isLoggedIn, lockRedirect, navigate, session]);
 
-  // 2. 페이지 진입 시 토스트 메시지 출력
   useEffect(() => {
-    console.log('location.state', location.state);
+    const searchParams = new URLSearchParams(location.search);
+    const emailParam = searchParams.get('email');
 
+    if (emailParam) {
+      setEmailValue(emailParam);
+
+      const [emailId, emailDomain = ''] = emailParam.split('@');
+      const { isValid, message } = validateEmail(emailId, emailDomain);
+
+      setEmailValid(isValid);
+      setEmailMessage(isValid ? '' : message);
+
+      localStorage.setItem('user', emailParam);
+    }
+  }, [location.search]);
+
+  // Supabase 인증 성공
+  useEffect(() => {
+    const hashParams = new URLSearchParams(location.hash.substring(1));
+
+    if (hashParams.get('type') === 'signup') {
+      const checkAuth = async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: sessionData } = await supabase.auth.getSession();
+
+          setSession(sessionData.session);
+          setUser(user);
+
+          const nickname = localStorage.getItem('register_nickname') ?? '';
+
+          const { error: upsertError } = await supabase.from('users').upsert(
+            {
+              id: user.id,
+              email: user.email,
+              nickname,
+              created_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' },
+          );
+
+          if (upsertError) {
+            console.error('users 테이블 upsert 실패', upsertError.message);
+            openModal('insert-error');
+            return;
+          }
+
+          setLockRedirect(false); // 로그인 성공 시, 리다이렉트 해제
+          openModal('email-verification-success');
+          // ⚠️ 수정 필요
+          // console.log(emailValue);
+          // localStorage.setItem('user', emailValue);
+          localStorage.removeItem('register_email');
+          localStorage.removeItem('register_password');
+          localStorage.removeItem('register_nickname');
+        }
+      };
+
+      checkAuth();
+    }
+  }, [location.hash, openModal, setSession, setUser]);
+
+  // 페이지 진입 시 foundEmail
+  useEffect(() => {
+    let initialEmail = '';
+    let emailToValidate = '';
+
+    // 1. location.state?.foundEmail
+    if (location.state?.foundEmail) {
+      initialEmail = location.state.foundEmail;
+      emailToValidate = location.state.foundEmail;
+    } else {
+      // 2. 저장된 이메일
+      const savedEmail = localStorage.getItem('user');
+      if (savedEmail) {
+        initialEmail = savedEmail;
+        emailToValidate = savedEmail;
+      } else {
+        // 3. 회원가입 시 저장된 이메일
+        const registerEmail = localStorage.getItem('register_email');
+        if (registerEmail) {
+          initialEmail = registerEmail;
+          emailToValidate = registerEmail;
+        }
+      }
+    }
+
+    setEmailValue(initialEmail);
+
+    if (emailToValidate) {
+      const [emailId, emailDomain] = emailToValidate.split('@');
+      const { isValid } = validateEmail(emailId, emailDomain);
+      setEmailValid(isValid);
+      setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
+    } else {
+      setEmailValid(null);
+      setEmailMessage('');
+    }
+  }, [location.state]);
+
+  // 페이지 진입 시 토스트 메시지
+  useEffect(() => {
     if (location.state?.toastMessage) {
       showToast(location.state.toastMessage);
     }
 
-    if (location.state?.foundId) {
-      setIdValue(location.state.foundId);
-      setIdValid(true);
-      return;
+    if (location.state?.foundEmail) {
+      setEmailValue(location.state.foundEmail);
+      setEmailValid(true);
     }
   }, [location.state, showToast]);
 
-  // 3. 로컬 스토리지 아이디 값 불러오기
+  // 로컬 스토리지에 저장된 이메일
   useEffect(() => {
-    if (!location.state?.foundId) {
-      if (isSavedId) {
+    if (!location.state?.foundEmail) {
+      if (isSavedLogin) {
         const savedId = localStorage.getItem('user');
         if (savedId) {
-          setIdValue(savedId);
-          setIdValid(true);
+          setEmailValue(savedId);
+          const [emailId, emailDomain = ''] = savedId.split('@');
+          const { isValid } = validateEmail(emailId, emailDomain);
+          setEmailValid(isValid);
+          setEmailMessage(isValid ? '' : '유효하지 않은 이메일입니다.');
         }
-      } else {
-        setIdValue('');
-        setIdValid(null);
       }
     }
-  }, [isSavedId, location.state?.foundId]);
+  }, [isSavedLogin, location.state?.foundEmail]);
 
-  const onChangeIDInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChangeEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setIdValue(value);
+    setEmailValue(value);
 
-    const { isValid, message } = validateId(value);
-    setIdValid(isValid);
-    setIdMessage(isValid ? '' : message);
+    const [emailId, emailDomain = ''] = value.split('@');
+    const { isValid, message } = validateEmail(emailId, emailDomain);
+    setEmailValid(isValid);
+    setEmailMessage(isValid ? '' : message);
   };
 
-  const onIdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (idValid) {
+      if (emailValid) {
         pwInputRef.current?.focus();
       }
     }
@@ -116,58 +222,94 @@ function Login() {
   const onPWKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (idValid && pwValid) onClickLogin();
+      if (emailValid && pwValid) onClickLogin();
     }
   };
 
   const onClickVisible = () => setIsVisible((prev) => !prev);
 
-  const onChangeSavedIdToggle = () => setIsSavedId((prev: boolean) => !prev);
+  const onChangeSavedIdToggle = () => setIsSavedLogin((prev: boolean) => !prev);
 
-  // * 🛡️ Supabase Auth 로그인 처리
   const onClickLogin = async () => {
-    // 1. user_id → email 매핑
-    const { data: userRow, error: findError } = await supabase
-      .from('ex_users')
-      .select('email')
-      .eq('user_id', idValue)
-      .single();
-
-    if (findError || !userRow) {
-      setIdValid(false);
-      openModal();
-      return;
-    }
-
-    const { setSession, setUser } = useAuthStore.getState();
-
-    // 2. email + password로 supabase.auth 로그인
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: userRow.email,
+      email: emailValue,
       password: pwValue,
     });
 
     if (error) {
-      openModal();
+      openModal('login-failed');
+      setPwValue(''); // 비밀번호 초기화
       return;
     }
 
     if (data.session && data.user) {
       setSession(data.session);
       setUser(data.user);
-    }
 
-    // 3. 저장 옵션에 따라 아이디 저장
-    if (isSavedId) {
-      localStorage.setItem('user', idValue);
-      localStorage.setItem('saveId', 'true');
-    } else {
-      localStorage.removeItem('user');
-      localStorage.setItem('saveId', 'false');
-    }
+      if (isSavedLogin) {
+        localStorage.setItem('user', emailValue);
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', emailValue);
+        localStorage.removeItem('user');
+      }
 
-    navigate('/', { replace: true });
+      openModal('login-success');
+    }
   };
+
+  const getDialogContent = () => {
+    switch (isOpenId) {
+      case 'login-failed':
+        return {
+          header: '로그인 실패',
+          description: ['이메일 또는 비밀번호가 일치하지 않습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'insert-error':
+        return {
+          header: '사용자 정보 저장 실패',
+          description: ['사용자 정보를 저장하는 데 실패했습니다.'],
+          button: [{ text: '확인', onClick: closeModal }],
+        };
+      case 'email-verification-success':
+        return {
+          header: '이메일 인증 성공',
+          description: [
+            '이메일 인증이 완료되었습니다.',
+            '확인 버튼을 누르면',
+            '홈 화면으로 이동합니다.',
+          ],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                setLockRedirect(true);
+              },
+            },
+          ],
+        };
+      case 'login-success':
+        return {
+          header: '로그인 성공',
+          description: ['로그인이 성공적으로 완료되었습니다.'],
+          button: [
+            {
+              text: '확인',
+              onClick: () => {
+                closeModal();
+                navigate('/', { replace: true });
+              },
+            },
+          ],
+        };
+      default:
+        return null;
+    }
+  };
+
+  const dialogContent = getDialogContent();
 
   return (
     <main className="m-auto flex h-full w-full max-w-[420px] flex-col justify-center gap-6 px-6 pb-20">
@@ -186,16 +328,16 @@ function Login() {
         <div>
           <Input
             type="text"
-            label="아이디"
-            value={idValue}
-            placeholder="아이디"
+            label="이메일"
+            value={emailValue}
+            placeholder="example@polzzak.com"
             hideLabel={true}
-            onChange={onChangeIDInput}
-            onKeyDown={onIdKeyDown}
-            aria-label="아이디를 입력해 주세요."
+            onChange={onChangeEmailInput}
+            onKeyDown={onEmailKeyDown}
+            aria-label="이메일 주소를 입력해 주세요."
           />
-          {idValid !== null && (
-            <Validation status={idValid} message={idMessage} />
+          {emailValid !== null && (
+            <Validation status={emailValid} message={emailMessage} />
           )}
         </div>
         <div>
@@ -220,51 +362,38 @@ function Login() {
         </div>
         <div className="flex items-center justify-between gap-2">
           <Checkbox
-            label="아이디 저장"
-            checked={isSavedId}
+            label="이메일 주소 저장"
+            checked={isSavedLogin}
             onCheckedChange={onChangeSavedIdToggle}
           />
         </div>
-        <Button onClick={onClickLogin} disabled={!idValid || !pwValid}>
+        <Button onClick={onClickLogin} disabled={!emailValid || !pwValid}>
           로그인
         </Button>
       </fieldset>
       <div className="fs-14 font-regular text-gray07 flex items-center justify-center gap-1">
-        <Link to="find-id" className="px-1">
-          아이디 찾기
-        </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
         <Link to="reset-password" className="px-1">
           비밀번호 재설정
         </Link>
-        <span aria-hidden={true} className="bg-gray04 h-[11px] w-[1px]"></span>
+        <span aria-hidden className="bg-gray04 h-[11px] w-[1px]"></span>
         <div className="relative">
-          <Link to="/register" className="px-1">
+          <Link to="/register?step=1" className="px-1">
             회원가입
           </Link>
           <span className="heartbeat-ring bg-primary absolute top-8 right-2 rounded-3xl px-3 py-1 whitespace-nowrap text-white">
             우리 같이 폴짝해요!
             <span
-              aria-hidden={true}
+              aria-hidden
               className="bg-primary absolute -top-1 right-4 h-2 w-2 rotate-45"
             ></span>
           </span>
         </div>
       </div>
-      {isOpen && (
+      {isOpen && dialogContent && (
         <AlertDialog
-          header="로그인에 실패하였습니다."
-          description={['아이디 또는 비밀번호를', '다시 확인해 주세요.']}
-          button={[
-            {
-              text: '확인',
-              onClick: () => {
-                closeModal();
-                setIdValue('');
-                setPwValue('');
-              },
-            },
-          ]}
+          header={dialogContent.header}
+          description={dialogContent.description}
+          button={dialogContent.button}
         />
       )}
     </main>

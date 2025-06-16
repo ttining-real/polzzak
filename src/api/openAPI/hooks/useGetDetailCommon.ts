@@ -30,23 +30,16 @@ interface detailsTypes {
 }
 
 function useGetDetailCommon(contentId: string) {
-  const [details, setDetails] = useState<detailsTypes[]>([]);
+  const [details, setDetails] = useState<detailsTypes | null>(null);
 
   useEffect(() => {
     const fetchDetailCommon = async () => {
       try {
-        const res = await client.get('/detailCommon1', {
+        const res = await client.get('/detailCommon2', {
           params: {
             pageNo: '1',
-            numOfRows: '20',
-            defaultYN: 'Y',
-            firstImageYN: 'Y',
-            areacodeYN: 'Y',
-            catcodeYN: 'Y',
-            addrinfoYN: 'Y',
-            mapinfoYN: 'Y',
-            overviewYN: 'Y',
-            contentId,
+            numOfRows: '10',
+            contentId: contentId,
           },
         });
         const items = res.data?.response?.body?.items?.item[0] ?? [];
