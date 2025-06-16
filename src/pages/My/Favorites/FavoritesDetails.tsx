@@ -20,30 +20,26 @@ function FavoritesDetails() {
   const userId = user?.id;
 
   // 🕹️ 즐겨찾기 리스트 fetch
-  const checkFolderExists = useCallback(
-    async (folderId: string) => {
-      const { data, error } = await supabase
-        .from('ex_favorite_folders')
-        .select('user_id, folder_name')
-        .eq('user_id', userId)
-        .eq('id', folderId)
-        .single();
+  const checkFolderExists = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('favorite_folders')
+      .select('id')
+      .match({ user_id: userId, folder_name: id })
+      .single();
 
-      if (error || !data) {
-        navigate('/my/favorites');
-        return null;
-      }
+    if (error || !data) {
+      navigate('/my/favorites');
+      return null;
+    }
 
-      return data;
-    },
-    [userId, navigate],
-  );
+    return data.id;
+  }, [userId, id, navigate]);
 
   const fetchFavoriteList = useCallback(
     async (folderId: string) => {
       const { data, error } = await supabase
-        .from('ex_favorite')
-        .select('ex_contents(contentid, contenttypeid)')
+        .from('favorite')
+        .select('contents(contentid, contenttypeid)')
         .eq('folder_id', folderId)
         .order('created_at', { ascending: false });
 
@@ -58,7 +54,7 @@ function FavoritesDetails() {
       }
 
       type DataType = {
-        ex_contents: {
+        contents: {
           contentid: string;
           contenttypeid: string;
         };
@@ -67,8 +63,8 @@ function FavoritesDetails() {
       const getData = data as unknown as DataType[];
 
       const contentsData = getData.map((item) => ({
-        contentid: item.ex_contents.contentid,
-        contenttypeid: item.ex_contents.contenttypeid,
+        contentid: item.contents.contentid,
+        contenttypeid: item.contents.contenttypeid,
       }));
 
       setItemList(contentsData);
@@ -79,11 +75,11 @@ function FavoritesDetails() {
   useEffect(() => {
     if (!id || !userId) return;
     const init = async () => {
-      const folder = await checkFolderExists(id);
+      const folder = await checkFolderExists();
       if (!folder) return;
-      setContentsTitle(folder.folder_name);
+      setContentsTitle(id);
 
-      await fetchFavoriteList(id);
+      await fetchFavoriteList(folder);
     };
     init();
     return () => setContentsTitle(null);

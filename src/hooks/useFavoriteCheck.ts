@@ -1,41 +1,34 @@
 import { useEffect, useState } from 'react';
 
 import supabase from '@/api/supabase';
-import { useAuthStore } from '@/store/useAuthStore';
-
-import { useFavoriteFolderId } from './useFavoriteFolderId';
 
 // ✅ 즐겨찾기 상태 체크
-export const useFavoriteCheck = (contentId: string) => {
-  const { isAuthenticated } = useAuthStore();
-  const folderId = useFavoriteFolderId();
+export const useFavoriteCheck = (
+  contentId: string,
+  userId: string | undefined,
+) => {
   const [isCheck, setIsCheck] = useState(false);
 
   useEffect(() => {
     const checkFavorite = async () => {
-      if (isAuthenticated && folderId) {
-        const { data, error } = await supabase
-          .from('ex_favorite')
-          .select('content_id')
-          .eq('folder_id', folderId)
-          .eq('content_id', contentId)
-          .single();
+      const { data, error } = await supabase
+        .from('favorite')
+        .select('content_id, favorite_folders!inner(user_id)')
+        .eq('content_id', contentId)
+        .eq('favorite_folders.user_id', userId)
+        .maybeSingle();
 
-        if (!error && data) {
-          setIsCheck(true);
-        } else {
-          setIsCheck(false);
-        }
+      if (!error && data) {
+        setIsCheck(true);
       } else {
-        // 비로그인 유저는 sessionStorage 확인
-        const stored = sessionStorage.getItem('favorites');
-        const parsed: string[] = stored ? JSON.parse(stored) : [];
-        setIsCheck(parsed.includes(contentId));
+        setIsCheck(false);
       }
     };
 
+    if (!userId) return;
+
     checkFavorite();
-  }, [isAuthenticated, folderId, contentId]);
+  }, [contentId, userId]);
 
   return [isCheck, setIsCheck] as const;
 };

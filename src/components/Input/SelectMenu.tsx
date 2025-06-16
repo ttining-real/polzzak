@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Select,
@@ -7,22 +7,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/Input/Select';
-import { formatDate, getTripDays, Schedule } from '@/lib/dateUtils';
 
-interface SelectMenuProps {
-  data: Schedule | 'email';
-  className?: string;
-  onSelectedEmail?: (email: string) => void;
+export interface FavoirteType {
+  id: string;
+  name: string;
+  storage: string[];
 }
 
-function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
-  const [daySelected, setDaySelected] = useState('Day1');
+export interface PolzzakType {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  storage: {
+    schedule_id: string;
+    date: string;
+  }[];
+}
 
-  const emailArr = ['naver.com', 'gmail.com', '직접 입력'];
+interface SelectMenuProps {
+  data: PolzzakType | 'email';
+  className?: string;
+  onSelectedEmail?: (email: string) => void;
+  setSelectPolzzak?: (id: string) => void;
+  selectedEmail?: string;
+  setSelectedEmail?: (email: string) => void;
+}
+
+function SelectMenu({
+  data,
+  className,
+  onSelectedEmail,
+  setSelectPolzzak,
+  selectedEmail,
+  setSelectedEmail,
+}: SelectMenuProps) {
+  const emailArr = [
+    'gmail.com',
+    'naver.com',
+    'daum.net',
+    'hanmail.net',
+    'kakao.com',
+    '직접 입력',
+  ];
+  const [daySelected, setDaySelected] = useState('');
+
+  useEffect(() => {
+    if (!data || data === 'email') return;
+
+    setDaySelected(`${data.storage[0].schedule_id}`);
+  }, [data]);
+
+  useEffect(() => {
+    if (!data || data === 'email') return;
+    setSelectPolzzak?.(daySelected);
+  }, [daySelected, setSelectPolzzak, data]);
 
   if (data === 'email') {
     return (
-      <Select onValueChange={(value) => onSelectedEmail?.(value)}>
+      <Select
+        value={selectedEmail ?? '직접 입력'}
+        onValueChange={(value) => {
+          setSelectedEmail?.(value);
+          onSelectedEmail?.(value);
+        }}
+      >
         <SelectTrigger className={className}>
           <SelectValue placeholder="이메일 선택" />
         </SelectTrigger>
@@ -36,21 +85,14 @@ function SelectMenu({ data, className, onSelectedEmail }: SelectMenuProps) {
       </Select>
     );
   } else {
-    const { days } = getTripDays(data);
-
-    const selectItems = Array.from({ length: days }, (_, i) => {
-      const dayLabel = `Day${i + 1}`;
-      const dateLabel = formatDate(data.startDate, i, false);
-
-      return (
-        <SelectItem key={dayLabel} value={dayLabel}>
-          {dayLabel} ({dateLabel})
-        </SelectItem>
-      );
-    });
+    const selectItems = data?.storage?.map((item, idx) => (
+      <SelectItem key={item.schedule_id} value={item.schedule_id}>
+        Day {idx + 1} ({item.date})
+      </SelectItem>
+    ));
 
     return (
-      <Select value={daySelected} onValueChange={setDaySelected}>
+      <Select value={daySelected ?? ''} onValueChange={setDaySelected}>
         <SelectTrigger className={className}>
           <SelectValue placeholder="Select a day" />
         </SelectTrigger>

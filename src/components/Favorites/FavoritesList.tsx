@@ -32,7 +32,7 @@ function FavoritesList({
       queryKey: ['favorite=images', folder.id],
       queryFn: async () => {
         const { data, error } = await supabase
-          .from('ex_favorite')
+          .from('favorite')
           .select('content_id')
           .eq('folder_id', folder.id)
           .limit(3)
@@ -65,8 +65,7 @@ function FavoritesList({
         const { data: images = [], isLoading } = fetchImagesQueries[idx];
         return (
           <FavoritesCards
-            key={folder.id}
-            id={folder.id}
+            key={folder.folder_name}
             name={folder.folder_name}
             images={isLoading ? [] : images}
             onClickDelete={() => onClickDelete(folder.id, folder.folder_name)}

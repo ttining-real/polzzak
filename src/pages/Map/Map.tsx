@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Map as MapArea,
   MapMarker,
@@ -6,20 +6,21 @@ import {
 } from 'react-kakao-maps-sdk';
 import { Outlet, useSearchParams } from 'react-router-dom';
 
-import { fetchAroundList } from '@/api/openAPI/utils/fetchAroundList';
-import { fetchMapSearchList } from '@/api/openAPI/utils/fetchMapSearchList';
 import Button from '@/components/Button/Button';
-import SlideUpDialog from '@/components/Dialog/SlideUpDialog';
+import MapDialog from '@/components/Dialog/MapDialog';
 import Loader from '@/components/Loader/Loader';
 import MapHeader from '@/components/Map/MapHeader';
 import MapMarkerList from '@/components/Map/MapMarkerList';
 import ModalContent from '@/components/Map/ModalContent';
 import ModalDetailContent from '@/components/Map/ModalDetailContent';
+import { useFetchMarkers } from '@/hooks/map/useFetchMarkers';
+import { useMapDialogEffect } from '@/hooks/map/useMapDialogEffect';
+import { useSyncFilterWithQuery } from '@/hooks/map/useSyncFilterWithQuery';
+import { useSyncLocation } from '@/hooks/map/useSyncLocation';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
-import { filterNameToType, typeToFilterName } from '@/lib/filterMap';
 import { formatMapDialogHeader } from '@/lib/formatMapDialogHeader';
+import { useMapDialogStore } from '@/store/map/useMapDialogStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useDialogStore } from '@/store/useDialogStore';
 import { useMapSearchStore } from '@/store/useMapSearchStore';
 import { DetailCommonDataType } from '@/types/detailCommonDataType';
 import { LatLng } from '@/types/LatLng';
@@ -59,7 +60,7 @@ function Map() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // 다이얼로그 상태
-  const { isOpen, openModal, closeModal } = useDialogStore();
+  const { isOpen, openModal, closeModal } = useMapDialogStore();
 
   // 재검색 버튼 상태
   const [showReSearchButton, setShowReSearchButton] = useState(false);
@@ -70,79 +71,21 @@ function Map() {
   const [selectedMarker, setSelectedMarker] =
     useState<DetailCommonDataType | null>(null);
 
-  // 쿼리 → selectedFilter 세팅
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      const matchedType = filterNameToType(categoryParam);
-      if (matchedType) {
-        setSelectedFilter(matchedType);
-      }
-    }
-  }, [searchParams]);
+  // 🚩 위치 초기화
+  useSyncLocation(location, locationError, setMyLocation, setMapCenter);
 
-  // selectedFilter → 쿼리 반영
-  useEffect(() => {
-    if (!selectedFilter) return;
+  // 🔁 필터 ↔ url 쿼리 파라미터 동기화
+  useSyncFilterWithQuery(
+    selectedFilter,
+    setSelectedFilter,
+    searchParams,
+    setSearchParams,
+  );
 
-    const filterName = typeToFilterName(selectedFilter);
+  // 🚩 마커 데이터 패칭
+  useFetchMarkers({ myLocation, selectedFilter, setMarkerData });
 
-    if (!filterName) return;
-
-    const params = new URLSearchParams(searchParams);
-    params.set('category', filterName);
-    setSearchParams(params, { replace: true });
-  }, [selectedFilter]);
-
-  // location이 업데이트되면 내 위치와 지도 중심을 설정
-  useEffect(() => {
-    if (location) {
-      setMyLocation(location);
-      setMapCenter(location);
-    }
-  }, [location]);
-
-  // 위치 정보 오류가 발생했을 경우 콘솔에 출력
-  useEffect(() => {
-    if (locationError) {
-      console.error('🚫 위치 정보를 가져올 수 없습니다. : ', locationError);
-    }
-  }, [locationError]);
-
-  useEffect(() => {
-    if (!myLocation) return;
-
-    if (!selectedFilter) return;
-
-    fetchAroundList({
-      mapX: myLocation.lng,
-      mapY: myLocation.lat,
-      ...(selectedFilter && { contentTypeId: selectedFilter }),
-    })
-      .then((res) => {
-        const rawItem = res.data?.response?.body?.items?.item; // 🔍 불러온 주변 리스트 데이터
-
-        const itemArray = Array.isArray(rawItem)
-          ? rawItem
-          : rawItem
-            ? [rawItem]
-            : [];
-
-        // detailItem[] → MarkerDataTypes[] 매핑
-        const mappedArray: MarkerDataTypes[] = itemArray.map((item) => ({
-          contentid: item.contentid,
-          contenttypeid: item.contenttypeid,
-          title: item.title,
-          mapx: item.mapx,
-          mapy: item.mapy,
-        }));
-
-        setMarkerData(mappedArray);
-      })
-      .catch((err) => {
-        console.error('🚫 API 호출 실패: ', err);
-      });
-  }, [myLocation, selectedFilter]); // ✅ 의존성 배열 추가로 무한 루프 방지
+  const search = searchParams.get('search');
 
   // 🗺️ 지도 이동 감지
   const handleCenterChanged = () => {
@@ -156,12 +99,9 @@ function Map() {
       Math.abs(mapCenter.lat - newCenter.lat) > 0.005 ||
       Math.abs(mapCenter.lng - newCenter.lng) > 0.005;
 
-    // 필터링된 상태에서만 버튼 보여주기
-    setShowReSearchButton(!!selectedFilter && moved);
-
-    // url에 search가 있을 경우 버튼 보여주기
-    const search = searchParams.get('search');
-    setShowReSearchButton(!!search && moved);
+    // 필터링 된 상태 or 검색어가 있을 경우 재검색 버튼 노출
+    const shouldShow = moved && (!!selectedFilter || !!search);
+    setShowReSearchButton(shouldShow);
   };
 
   // 📍 현재 위치에서 재검색 클릭
@@ -173,52 +113,26 @@ function Map() {
     const newCenter = { lat: center.getLat(), lng: center.getLng() };
 
     setMapCenter(newCenter);
+    setMyLocation(newCenter); // 마커 재패칭 트리거
     setShowReSearchButton(false);
   };
 
-  // 🔍 검색 쿼리에 반응하여 검색 API 호출
-  useEffect(() => {
-    const word = searchParams.get('search');
-
-    if (!word) return;
-
-    fetchMapSearchList(word).then((result) => {
-      setMarkerData(result);
-    });
-  }, [searchParams, openModal]);
-
-  // 필터링 상태 && 마커 데이터가 존재할 때 다이얼로그 열기
-  useEffect(() => {
-    if (selectedFilter && markerData.length > 0) {
-      openModal();
-    }
-  }, [selectedFilter, markerData, openModal]);
-
-  // 다이얼로그 닫히면 필터 초기화
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedFilter(null);
-
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      params.delete('search');
-      setSearchParams(params, { replace: true });
-
-      setShowReSearchButton(false);
-      resetSearchValue();
-    }
-  }, [isOpen]);
-
-  // 필터 해제 시 쿼리 제거
-  useEffect(() => {
-    if (selectedFilter === null) {
-      closeModal();
-      setMarkerData([]);
-      const params = new URLSearchParams(searchParams);
-      params.delete('category');
-      setSearchParams(params, { replace: true });
-    }
-  }, [selectedFilter]);
+  // 🌻 다이얼로그 상태 연동
+  useMapDialogEffect({
+    selectedFilter,
+    markerData,
+    selectedMarker,
+    isOpen,
+    searchParams,
+    setSelectedFilter,
+    setSelectedMarker,
+    setMarkerData,
+    setSearchParams,
+    setShowReSearchButton,
+    resetSearchValue,
+    openModal,
+    closeModal,
+  });
 
   const getFallbackContent = () => {
     // ⌛ 카카오 맵 SDK 로딩 중인 상태
@@ -237,7 +151,10 @@ function Map() {
 
   const fallbackContent = getFallbackContent();
 
-  const searchWord = searchParams.get('search');
+  // 다이얼로그 목록 보기로 변경 (뒤로 가기)
+  const handleBack = () => {
+    setSelectedMarker(null);
+  };
 
   return (
     <main className="h-full w-full">
@@ -271,6 +188,7 @@ function Map() {
             {markerData.length > 0 && (
               <MapMarkerList
                 data={markerData}
+                selectedFilter={selectedFilter}
                 onMarkerClick={setSelectedMarker}
               />
             )}
@@ -284,19 +202,17 @@ function Map() {
             )}
             <Outlet />
             {isOpen && markerData.length > 0 && (
-              <SlideUpDialog
+              <MapDialog
                 header={
                   selectedMarker
                     ? (selectedMarker.title ?? '상세 정보')
-                    : searchWord
-                      ? `${searchWord} 검색 결과`
+                    : search
+                      ? `${search} 검색 결과`
                       : selectedFilter
                         ? (formatMapDialogHeader(selectedFilter) ?? '필터 결과')
                         : '내 주변'
                 }
-                dimd={false}
-                dragIcon={true}
-                className="shadow-[0_-4px_16px_rgba(0,0,0,0.1)]"
+                onBack={selectedMarker ? handleBack : undefined}
               >
                 {selectedMarker ? (
                   <ModalDetailContent
@@ -306,7 +222,7 @@ function Map() {
                 ) : (
                   markerData.length > 0 && <ModalContent data={markerData} />
                 )}
-              </SlideUpDialog>
+              </MapDialog>
             )}
           </MapArea>
         </>

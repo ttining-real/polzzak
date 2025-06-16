@@ -97,7 +97,7 @@ function MapHeader({
                 key={filterName}
                 variant="secondary"
                 size="md"
-                className={`hover:border-primary/80 hover:text-primary h-[40px] gap-[4px] rounded-full border-2 border-white bg-white px-3 hover:bg-white ${isActive ? 'bg-primary border-primary hover:bg-primary hover:border-primary text-white hover:text-white hover:brightness-110' : ''}`}
+                className={`hover:border-primary/80 hover:text-primary h-[40px] gap-[4px] rounded-full border-1 bg-white px-3 hover:bg-white ${isActive ? 'bg-primary border-primary hover:bg-primary hover:border-primary text-white hover:text-white hover:brightness-110' : ''}`}
                 onClick={() => {
                   if (selectedFilter === type) {
                     onFilterChange(null);

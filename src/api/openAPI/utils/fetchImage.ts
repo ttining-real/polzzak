@@ -2,10 +2,9 @@ import { client } from '@/api/openAPI/client';
 
 async function fetchImage(contentIds: string[]) {
   const requests = contentIds.map((contentId) =>
-    client.get('/detailImage1', {
+    client.get('/detailImage2', {
       params: {
         contentId,
-        subImageYN: 'Y',
         numOfRows: '1',
         pageNo: '1',
       },

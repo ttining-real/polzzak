@@ -27,7 +27,8 @@ const changeDate = (date: string) => {
 function TimelineSchedule({ schedule }: TimelineScheduleProps) {
   const { id } = useParams();
   const location = useLocation();
-  const isSchedule = location.pathname === `/polzzak/${id}`;
+  const isSchedule =
+    location.pathname === `/polzzak/${id && encodeURIComponent(id)}`;
   const navigate = useNavigate();
   const { isOpenId, closeModal } = useDialogStore();
   const [changeOrderBtn, setChangeOrderBtn] = useState<string | null>(null);
@@ -36,6 +37,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
     content_id: string;
     time: string;
     memo: string;
+    region?: string;
   } | null>(null);
   const showToast = useToast();
   const queryClient = useQueryClient();
@@ -47,7 +49,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
         if (!isOpenId) return;
 
         const { error } = await supabase
-          .from('ex_polzzak_detail')
+          .from('polzzak_detail')
           .delete()
           .eq('id', isOpenId);
 
@@ -75,7 +77,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
         if (!editPlanData) return;
 
         const { error } = await supabase
-          .from('ex_polzzak_detail')
+          .from('polzzak_detail')
           .update({
             place: editPlanData.place.trim(),
             time: editPlanData.time || null,
@@ -92,6 +94,33 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
             4000,
           );
           return;
+        }
+
+        if (editPlanData.region) {
+          const { data, error: scheduleErr } = await supabase
+            .from('polzzak_schedule')
+            .select('polzzak_id')
+            .eq('schedule_id', isOpenId)
+            .single();
+
+          if (scheduleErr) {
+            console.error(scheduleErr);
+            return;
+          }
+
+          const { error } = await supabase
+            .from('polzzak_region')
+            .upsert(
+              [{ polzzak_id: data.polzzak_id, region: editPlanData.region }],
+              {
+                onConflict: 'polzzak_id,region',
+              },
+            );
+
+          if (error) {
+            console.error(error);
+            return;
+          }
         }
 
         await queryClient.invalidateQueries({
@@ -111,7 +140,7 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
       await Promise.all(
         changeCards.map(async (card, idx) => {
           const { error } = await supabase
-            .from('ex_polzzak_detail')
+            .from('polzzak_detail')
             .update({ order: idx })
             .eq('id', card.id);
 
@@ -171,7 +200,9 @@ function TimelineSchedule({ schedule }: TimelineScheduleProps) {
             <Button
               variant={'secondary'}
               onClick={() => {
-                navigate(`/polzzak/${id}/addplan?date=${daySchedule.date}`);
+                navigate(
+                  `/polzzak/${id && encodeURIComponent(id)}/addplan?date=${daySchedule.date}`,
+                );
               }}
             >
               폴짝! 한 걸음 추가하기

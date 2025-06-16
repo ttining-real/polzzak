@@ -34,7 +34,8 @@ interface ListItemData {
 
 function ListItem({ data }: ListItemData) {
   const navigate = useNavigate();
-  const { detailData, setDetailData } = useSearchStore();
+  const detailData = useSearchStore((state) => state.detailData);
+  const setDetailData = useSearchStore((state) => state.setDetailData);
   const handleFavorite = (contentid: string) => {
     console.log(`즐겨찾기 저장!, ${contentid}`);
   };
@@ -75,8 +76,6 @@ function ListItem({ data }: ListItemData) {
     navigate(`/contents/${id}`);
   };
 
-  console.log(data);
-
   return (
     <ul className="flex flex-col gap-6">
       {detailData.map((item, index) => {
@@ -103,7 +102,7 @@ function ListItem({ data }: ListItemData) {
                   <img
                     src={item.image}
                     alt={item.title}
-                    className="h-full w-full"
+                    className="h-full w-full object-cover"
                   />
                 )}
               </div>

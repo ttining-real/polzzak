@@ -12,7 +12,6 @@ import { useHeaderStore } from '@/store/useHeaderStore';
 const HEADER_TITLES: Record<string, string> = {
   '/': '🐰폴짝🐰',
   '/login': '로그인',
-  '/login/find-id': '아이디 찾기',
   '/login/reset-password': '비밀번호 재설정',
   '/search': '검색',
   '/map': '지도',
@@ -25,6 +24,9 @@ const HEADER_TITLES: Record<string, string> = {
   '/my/edit/phone-number': '휴대폰 번호 설정',
   '/my/edit/email': '이메일 설정',
   '/my/favorites': '즐겨찾기',
+  '/my/my-reviews': '나의리뷰',
+  '/notice': '공지사항',
+  '/terms': '서비스 이용약관',
 };
 
 const HIDDEN_NAV_PATHS = new Set([
@@ -32,6 +34,8 @@ const HIDDEN_NAV_PATHS = new Set([
   '/login',
   '/splash',
   '/polzzak/add',
+  '/notice',
+  '/terms',
 ]);
 
 const HIDDEN_HEADER_PATHS = new Set(['/map', '/splash']);

@@ -1,21 +1,24 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 
 import RootLayout from '@/layouts/RootLayout';
 import {
   Contents,
-  FindId,
   Home,
   Login,
   Map,
   My,
+  MyReviews,
   NotFound,
+  Notice,
   Polzzak,
   Register,
   ResetPassword,
   ResetPasswordCallback,
   Search,
   Splash,
+  Terms,
 } from '@/pages';
+import DetailReviews from '@/pages/Contents/DetailReviews';
 import ViewDetails from '@/pages/Contents/ViewDetails';
 import {
   Edit as UserEdit,
@@ -26,7 +29,6 @@ import {
 } from '@/pages/My/Edit';
 import { Favorites, FavoritesDetails } from '@/pages/My/Favorites';
 import { AddNEdit, AddPlan, Schedule } from '@/pages/Polzzak';
-import { StepPage } from '@/pages/Register';
 import SearchResult from '@/pages/Search/SearchResult';
 
 export const routes = [
@@ -43,7 +45,6 @@ export const routes = [
         element: <Outlet />,
         children: [
           { index: true, element: <Login /> },
-          { path: 'find-id', element: <FindId /> },
           { path: 'reset-password', element: <ResetPassword /> },
           {
             path: 'reset-password-callback',
@@ -54,10 +55,6 @@ export const routes = [
       {
         path: '/register',
         element: <Register />,
-        children: [
-          { index: true, element: <Navigate to="1" replace /> },
-          { path: ':step', element: <StepPage /> },
-        ],
       },
       {
         path: '/search',
@@ -141,16 +138,39 @@ export const routes = [
             path: 'favorites/:id',
             element: <FavoritesDetails />,
           },
+          {
+            path: 'my-reviews',
+            element: <MyReviews />,
+          },
         ],
       },
       {
         path: '/contents',
         element: <Contents />,
-        children: [{ path: ':id', element: <ViewDetails /> }],
+        children: [
+          {
+            path: ':id',
+            element: <ViewDetails />,
+            children: [
+              {
+                path: 'reviews',
+                element: <DetailReviews />,
+              },
+            ],
+          },
+        ],
       },
       {
         path: '/splash',
         element: <Splash />,
+      },
+      {
+        path: '/notice',
+        element: <Notice />,
+      },
+      {
+        path: '/terms',
+        element: <Terms />,
       },
     ],
   },
